@@ -19,6 +19,7 @@
   --color-foreground: #f6f2eb;
   --color-foreground-darker: #c0c9da;
   --color-foreground-darkest: #dbe1ef;
+  --color-accent: #05ec8c;
 }
 body {
   background-color: var(--color-background);
@@ -68,6 +69,7 @@ h1,
   position: relative;
   text-align: center;
   height: 50px;
+  display: flex;
   -webkit-app-region: drag;
 }
 .icon-wrapper--titlebar {
@@ -101,11 +103,58 @@ h1,
   color: var(--color-short-round);
   font-size: 1rem;
   font-weight: 200;
-  padding-top: 18px;
+  padding-top: 4px;
+  flex-grow: 1;
 }
 
 .icon-group {
   align-items: center;
   display: flex;
   justify-content: center;
+}
+
+.dial-time {
+  font-family: "RobotoMono", monospace;
+  font-size: 46px;
+  margin: 0;
+  position: absolute;
+  top: 32%;
+}
+.timer-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.dial-bg {
+  stroke: var(--color-background-lightest);
+}
+
+.dial-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 35px;
+  position: relative;
+}
+.dial-label {
+  letter-spacing: 0.1em;
+  position: absolute;
+  top: 66%;
+  text-transform: uppercase;
+}
+.dial-bg {
+  stroke: var(--color-background-lightest);
+}
+.dial-fill {
+  position: absolute;
+  transform-origin: center;
+  -webkit-app-region: no-drag;
+}
+.dial-fill--work {
+  stroke: var(--color-focus-round);
+}
+.dial-fill--shortBreak {
+  stroke: var(--color-short-round);
+}
+.dial-fill--longBreak {
+  stroke: var(--color-long-round);
 }

@@ -1,9 +1,9 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, nav, text)
+import Html exposing (Html, div, h1, nav, p, text)
 import Html.Attributes exposing (attribute, class, id, style, title)
-import Svg exposing (svg)
+import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 
 
@@ -36,88 +36,148 @@ update msg model =
             model - 1
 
 
-view : Model -> Html Msg
-view _ =
-    div [ id "app" ]
-        [ nav [ class "titlebar" ]
-            [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", style "position" "absolute" ]
-                [ div [ class "menu-wrapper" ]
-                    [ div [ class "menu-line" ] []
-                    , div [ class "menu-line" ] []
+timerView : Html Msg
+timerView =
+    div [ class "timer-wrapper" ]
+        [ div [ class "dial-wrapper" ]
+            [ p [ class "dial-time" ] [ text "25:00" ]
+            , p [ class "dial-label" ] [ text "Focus" ]
+            , svg
+                [ SvgAttr.version "1.2"
+                , SvgAttr.baseProfile "tiny"
+                , SvgAttr.id "Layer_1"
+                , SvgAttr.x "0px"
+                , SvgAttr.y "0px"
+                , SvgAttr.viewBox "0 0 230 230"
+                , SvgAttr.xmlSpace "preserve"
+                , SvgAttr.width "220"
+                , SvgAttr.height "220"
+                , SvgAttr.class "dial-fill dial-fill--work"
+                ]
+                [ path
+                    [ SvgAttr.fill "none"
+                    , SvgAttr.strokeWidth "10"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeMiterlimit "10"
+                    , SvgAttr.d "M115,5c60.8,0,110,49.2,110,110s-49.2,110-110,110S5,175.8,5,115S54.2,5,115,5"
+                    , SvgAttr.strokeDasharray "691.3321533203125"
+                    , SvgAttr.style "stroke-dashoffset: 0px;"
+                    ]
+                    []
+                ]
+            , svg
+                [ SvgAttr.version "1.2"
+                , SvgAttr.baseProfile "tiny"
+                , SvgAttr.id "Layer_1"
+                , SvgAttr.x "0px"
+                , SvgAttr.y "0px"
+                , SvgAttr.viewBox "0 0 230 230"
+                , SvgAttr.xmlSpace "preserve"
+                , SvgAttr.width "220"
+                , SvgAttr.height "220"
+                , SvgAttr.class "dial-bg"
+                ]
+                [ path
+                    [ SvgAttr.fill "none"
+                    , SvgAttr.strokeWidth "2"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeMiterlimit "10"
+                    , SvgAttr.d "M115,5c60.8,0,110,49.2,110,110s-49.2,110-110,110S5,175.8,5,115S54.2,5,115,5"
+                    ]
+                    []
+                ]
+            ]
+        ]
+
+
+navView : Html Msg
+navView =
+    nav [ class "titlebar" ]
+        [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single" ]
+            [ div [ class "menu-wrapper" ]
+                [ div [ class "menu-line" ] []
+                , div [ class "menu-line" ] []
+                ]
+            ]
+        , h1 [ class "title" ] [ text "Pomodorolm" ]
+        , div [ class "icon-group" ]
+            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px" ]
+                [ svg
+                    [ SvgAttr.version "1.2"
+                    , SvgAttr.baseProfile "tiny"
+                    , SvgAttr.id "Layer_1"
+                    , SvgAttr.x "0px"
+                    , SvgAttr.y "0px"
+                    , SvgAttr.viewBox "0 0 14 2"
+                    , SvgAttr.xmlSpace "preserve"
+                    , SvgAttr.width "15px"
+                    , SvgAttr.height "20px"
+                    , SvgAttr.class "icon icon--minimize"
+                    ]
+                    [ Svg.line
+                        [ SvgAttr.fill "none"
+                        , SvgAttr.stroke "#F6F2EB"
+                        , SvgAttr.strokeWidth "2"
+                        , SvgAttr.strokeLinecap "round"
+                        , SvgAttr.strokeMiterlimit "10"
+                        , SvgAttr.x1 "1"
+                        , SvgAttr.y1 "1"
+                        , SvgAttr.x2 "13"
+                        , SvgAttr.y2 "1"
+                        ]
+                        []
                     ]
                 ]
-            , h1 [ class "title" ] [ text "Pomodorolm" ]
-            , div [ class "icon-group", style "position" "absolute", style "top" "0", style "right" "0" ]
-                [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px" ]
-                    [ svg
-                        [ SvgAttr.version "1.2"
-                        , SvgAttr.baseProfile "tiny"
-                        , SvgAttr.id "Layer_1"
-                        , SvgAttr.x "0px"
-                        , SvgAttr.y "0px"
-                        , SvgAttr.viewBox "0 0 14 2"
-                        , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.width "15px"
-                        , SvgAttr.height "20px"
-                        , SvgAttr.class "icon icon--minimize"
-                        ]
-                        [ Svg.line
-                            [ SvgAttr.fill "none"
-                            , SvgAttr.stroke "#F6F2EB"
-                            , SvgAttr.strokeWidth "2"
-                            , SvgAttr.strokeLinecap "round"
-                            , SvgAttr.strokeMiterlimit "10"
-                            , SvgAttr.x1 "1"
-                            , SvgAttr.y1 "1"
-                            , SvgAttr.x2 "13"
-                            , SvgAttr.y2 "1"
-                            ]
-                            []
-                        ]
+            , div
+                [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--right"
+                , style "padding-right" "18px"
+                ]
+                [ svg
+                    [ SvgAttr.version "1.2"
+                    , SvgAttr.baseProfile "tiny"
+                    , SvgAttr.id "Layer_1"
+                    , SvgAttr.x "0px"
+                    , SvgAttr.y "0px"
+                    , SvgAttr.viewBox "0 0 12.6 12.6"
+                    , SvgAttr.xmlSpace "preserve"
+                    , SvgAttr.height "15px"
+                    , SvgAttr.class "icon icon--close"
                     ]
-                , div
-                    [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--right"
-                    , style "padding-right" "18px"
-                    ]
-                    [ svg
-                        [ SvgAttr.version "1.2"
-                        , SvgAttr.baseProfile "tiny"
-                        , SvgAttr.id "Layer_1"
-                        , SvgAttr.x "0px"
-                        , SvgAttr.y "0px"
-                        , SvgAttr.viewBox "0 0 12.6 12.6"
-                        , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.height "15px"
-                        , SvgAttr.class "icon icon--close"
+                    [ Svg.line
+                        [ attribute "data-v-9e10a67e" ""
+                        , SvgAttr.fill "none"
+                        , SvgAttr.stroke "#F6F2EB"
+                        , SvgAttr.strokeWidth "2"
+                        , SvgAttr.strokeLinecap "round"
+                        , SvgAttr.strokeMiterlimit "10"
+                        , SvgAttr.x1 "1"
+                        , SvgAttr.y1 "1"
+                        , SvgAttr.x2 "11.6"
+                        , SvgAttr.y2 "11.6"
                         ]
-                        [ Svg.line
-                            [ attribute "data-v-9e10a67e" ""
-                            , SvgAttr.fill "none"
-                            , SvgAttr.stroke "#F6F2EB"
-                            , SvgAttr.strokeWidth "2"
-                            , SvgAttr.strokeLinecap "round"
-                            , SvgAttr.strokeMiterlimit "10"
-                            , SvgAttr.x1 "1"
-                            , SvgAttr.y1 "1"
-                            , SvgAttr.x2 "11.6"
-                            , SvgAttr.y2 "11.6"
-                            ]
-                            []
-                        , Svg.line
-                            [ attribute "data-v-9e10a67e" ""
-                            , SvgAttr.fill "none"
-                            , SvgAttr.stroke "#F6F2EB"
-                            , SvgAttr.strokeWidth "2"
-                            , SvgAttr.strokeLinecap "round"
-                            , SvgAttr.strokeMiterlimit "10"
-                            , SvgAttr.x1 "11.6"
-                            , SvgAttr.y1 "1"
-                            , SvgAttr.x2 "1"
-                            , SvgAttr.y2 "11.6"
-                            ]
-                            []
+                        []
+                    , Svg.line
+                        [ attribute "data-v-9e10a67e" ""
+                        , SvgAttr.fill "none"
+                        , SvgAttr.stroke "#F6F2EB"
+                        , SvgAttr.strokeWidth "2"
+                        , SvgAttr.strokeLinecap "round"
+                        , SvgAttr.strokeMiterlimit "10"
+                        , SvgAttr.x1 "11.6"
+                        , SvgAttr.y1 "1"
+                        , SvgAttr.x2 "1"
+                        , SvgAttr.y2 "11.6"
                         ]
+                        []
                     ]
                 ]
             ]
+        ]
+
+
+view : Model -> Html Msg
+view _ =
+    div [ id "app" ]
+        [ navView
+        , timerView
         ]
