@@ -29,7 +29,6 @@ body {
   margin: 0;
   user-select: none;
 }
-h1,
 #app {
   animation: fade-in 0.5s ease forwards;
   position: relative;
@@ -104,6 +103,7 @@ h1,
   font-size: 1rem;
   font-weight: 200;
   padding-top: 4px;
+  padding-left: 40px;
   flex-grow: 1;
 }
 
@@ -157,4 +157,42 @@ h1,
 }
 .dial-fill--longBreak {
   stroke: var(--color-long-round);
+}
+
+.container {
+  padding: 0 18px;
+}
+
+.button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 10px 0;
+}
+
+.button {
+  border: 2px solid var(--color-background-lightest);
+  border-radius: 100%;
+  display: flex;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 50px;
+  height: 50px;
+  -webkit-app-region: no-drag;
+}
+
+.button-icon-wrapper {
+  align-items: center;
+  display: flex;
+  height: 100%;
+}
+
+.button:hover .icon--pause line {
+  stroke: var(--color-accent);
+}
+.button:hover .icon--start polygon {
+  fill: var(--color-accent);
+}
+
+.button:hover {
+  background-color: var(--color-background-light);
 }

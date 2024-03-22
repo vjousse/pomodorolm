@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, nav, p, text)
+import Html exposing (Html, div, h1, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, id, style, title)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -85,6 +85,30 @@ timerView =
                     , SvgAttr.d "M115,5c60.8,0,110,49.2,110,110s-49.2,110-110,110S5,175.8,5,115S54.2,5,115,5"
                     ]
                     []
+                ]
+            ]
+        , section [ class "container", class "button-wrapper" ]
+            [ div [ class "button" ]
+                [ div [ class "button-icon-wrapper" ]
+                    [ svg
+                        [ SvgAttr.version "1.2"
+                        , SvgAttr.baseProfile "tiny"
+                        , SvgAttr.id "Layer_1"
+                        , SvgAttr.x "0px"
+                        , SvgAttr.y "0px"
+                        , SvgAttr.viewBox "0 0 7.6 15"
+                        , SvgAttr.xmlSpace "preserve"
+                        , SvgAttr.height "15px"
+                        , SvgAttr.class "icon--start"
+                        ]
+                        [ Svg.polygon
+                            [ attribute "data-v-04292d65" ""
+                            , SvgAttr.fill "var(--color-foreground)"
+                            , SvgAttr.points "0,0 0,15 7.6,7.4 "
+                            ]
+                            []
+                        ]
+                    ]
                 ]
             ]
         ]
