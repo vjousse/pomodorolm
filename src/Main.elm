@@ -134,7 +134,7 @@ footerView =
                     , SvgAttr.viewBox "0 0 8 12"
                     , SvgAttr.xmlSpace "preserve"
                     , SvgAttr.height "15px"
-                    , SvgAttr.class "Icon--skip"
+                    , SvgAttr.class "icon--skip"
                     ]
                     [ Svg.polygon
                         [ SvgAttr.fill "var(--color-background-lightest)"
@@ -160,7 +160,7 @@ footerView =
                     , SvgAttr.viewBox "0 0 12.3 12"
                     , SvgAttr.xmlSpace "preserve"
                     , SvgAttr.height "15px"
-                    , SvgAttr.class "Icon--mute"
+                    , SvgAttr.class "icon--mute"
                     , SvgAttr.baseProfile "tiny"
                     ]
                     [ path
