@@ -3,43 +3,107 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, div, h1, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, id, style, title)
+import Html.Events exposing (onClick)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
+import Time
 
 
 main : Program () Model Msg
 main =
-    Browser.sandbox { init = init, update = update, view = view }
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
-type alias Model =
+type alias Seconds =
     Int
 
 
-init : Model
-init =
-    0
+type alias Model =
+    { currentTime : Seconds
+    , currentSession : Session
+    , longBreakDuration : Seconds
+    , pomodoroDuration : Seconds
+    , sessionStatus : SessionStatus
+    , shortBreakDuration : Seconds
+    }
+
+
+type Session
+    = Pomodoro
+    | SmallBreak
+    | LongBreak
+
+
+type SessionStatus
+    = Paused
+    | Stopped
+    | Running
+
+
+init : flags -> ( Model, Cmd Msg )
+init _ =
+    let
+        pomodoroDuration =
+            25 * 60
+    in
+    ( { currentTime = pomodoroDuration
+      , currentSession = Pomodoro
+      , longBreakDuration = 20 * 60
+      , pomodoroDuration = pomodoroDuration
+      , sessionStatus = Paused
+      , shortBreakDuration = 5 * 60
+      }
+    , Cmd.none
+    )
 
 
 type Msg
-    = Increment
-    | Decrement
+    = Pause
+    | Reset
+    | Start
+    | Stop
+    | Tick Time.Posix
+    | ToggleStatus
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increment ->
-            model + 1
+        Reset ->
+            ( { model | currentTime = model.pomodoroDuration }, Cmd.none )
 
-        Decrement ->
-            model - 1
+        Tick _ ->
+            if model.currentTime > 0 && model.sessionStatus == Running then
+                ( { model | currentTime = model.currentTime - 1 }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
+        ToggleStatus ->
+            case model.sessionStatus of
+                Running ->
+                    ( { model | sessionStatus = Paused }, Cmd.none )
+
+                _ ->
+                    ( { model | sessionStatus = Running }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
-dialView : Html Msg
-dialView =
+dialView : Seconds -> Html Msg
+dialView time =
     div [ class "dial-wrapper" ]
-        [ p [ class "dial-time" ] [ text "25:00" ]
+        [ p [ class "dial-time" ]
+            [ text <| String.padLeft 2 '0' <| String.fromInt (time // 60)
+            , text ":"
+            , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 time)
+            ]
         , p [ class "dial-label" ] [ text "Focus" ]
         , svg
             [ SvgAttr.version "1.2"
@@ -88,29 +152,79 @@ dialView =
         ]
 
 
-playPauseView : Html Msg
-playPauseView =
+playPauseView : SessionStatus -> Html Msg
+playPauseView sessionStatus =
+    let
+        pauseSvg =
+            svg
+                [ attribute "data-v-04292d65" ""
+                , SvgAttr.version "1.2"
+                , SvgAttr.baseProfile "tiny"
+                , SvgAttr.id "Layer_2"
+                , SvgAttr.x "0px"
+                , SvgAttr.y "0px"
+                , SvgAttr.viewBox "0 0 10.9 18"
+                , SvgAttr.xmlSpace "preserve"
+                , SvgAttr.height "15px"
+                , SvgAttr.class "icon--pause"
+                ]
+                [ Svg.line
+                    [ attribute "data-v-04292d65" ""
+                    , SvgAttr.fill "none"
+                    , SvgAttr.stroke "var(--color-foreground)"
+                    , SvgAttr.strokeWidth "3"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeMiterlimit "10"
+                    , SvgAttr.x1 "1.5"
+                    , SvgAttr.y1 "1.5"
+                    , SvgAttr.x2 "1.5"
+                    , SvgAttr.y2 "16.5"
+                    ]
+                    []
+                , Svg.line
+                    [ attribute "data-v-04292d65" ""
+                    , SvgAttr.fill "none"
+                    , SvgAttr.stroke "var(--color-foreground)"
+                    , SvgAttr.strokeWidth "3"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeMiterlimit "10"
+                    , SvgAttr.x1 "9.4"
+                    , SvgAttr.y1 "1.5"
+                    , SvgAttr.x2 "9.4"
+                    , SvgAttr.y2 "16.5"
+                    ]
+                    []
+                ]
+
+        playSvg =
+            svg
+                [ SvgAttr.version "1.2"
+                , SvgAttr.baseProfile "tiny"
+                , SvgAttr.id "Layer_1"
+                , SvgAttr.x "0px"
+                , SvgAttr.y "0px"
+                , SvgAttr.viewBox "0 0 7.6 15"
+                , SvgAttr.xmlSpace "preserve"
+                , SvgAttr.height "15px"
+                , SvgAttr.class "icon--start"
+                ]
+                [ Svg.polygon
+                    [ attribute "data-v-04292d65" ""
+                    , SvgAttr.fill "var(--color-foreground)"
+                    , SvgAttr.points "0,0 0,15 7.6,7.4 "
+                    ]
+                    []
+                ]
+    in
     section [ class "container", class "button-wrapper" ]
-        [ div [ class "button" ]
+        [ div [ class "button", onClick ToggleStatus ]
             [ div [ class "button-icon-wrapper" ]
-                [ svg
-                    [ SvgAttr.version "1.2"
-                    , SvgAttr.baseProfile "tiny"
-                    , SvgAttr.id "Layer_1"
-                    , SvgAttr.x "0px"
-                    , SvgAttr.y "0px"
-                    , SvgAttr.viewBox "0 0 7.6 15"
-                    , SvgAttr.xmlSpace "preserve"
-                    , SvgAttr.height "15px"
-                    , SvgAttr.class "icon--start"
-                    ]
-                    [ Svg.polygon
-                        [ attribute "data-v-04292d65" ""
-                        , SvgAttr.fill "var(--color-foreground)"
-                        , SvgAttr.points "0,0 0,15 7.6,7.4 "
-                        ]
-                        []
-                    ]
+                [ case sessionStatus of
+                    Running ->
+                        pauseSvg
+
+                    _ ->
+                        playSvg
                 ]
             ]
         ]
@@ -175,11 +289,11 @@ footerView =
         ]
 
 
-timerView : Html Msg
-timerView =
+timerView : Model -> Html Msg
+timerView model =
     div [ class "timer-wrapper" ]
-        [ dialView
-        , playPauseView
+        [ dialView model.currentTime
+        , playPauseView model.sessionStatus
         , footerView
         ]
 
@@ -270,8 +384,17 @@ navView =
 
 
 view : Model -> Html Msg
-view _ =
+view model =
     div [ id "app" ]
         [ navView
-        , timerView
+        , timerView model
         ]
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Time.every 1000 Tick
