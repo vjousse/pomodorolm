@@ -1,2 +1,6 @@
 import { Elm } from "../src/Main.elm";
-Elm.Main.init({ node: document.getElementById("elm-app") });
+var app = Elm.Main.init({ node: document.getElementById("elm-app") });
+
+app.ports.playSound.subscribe(function (soundElementId) {
+  document.getElementById(soundElementId).play();
+});

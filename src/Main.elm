@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, h1, nav, p, section, text)
@@ -79,7 +79,7 @@ update msg model =
 
         Tick _ ->
             if model.currentTime > 0 && model.sessionStatus == Running then
-                ( { model | currentTime = model.currentTime - 1 }, Cmd.none )
+                ( { model | currentTime = model.currentTime - 1 }, playSound "audio-tick" )
 
             else
                 ( model, Cmd.none )
@@ -398,3 +398,10 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Time.every 1000 Tick
+
+
+
+-- PORTS
+
+
+port playSound : String -> Cmd msg
