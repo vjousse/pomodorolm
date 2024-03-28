@@ -25,17 +25,18 @@ type alias Seconds =
 
 type alias Model =
     { currentTime : Seconds
-    , currentSession : Session
+    , currentSessionType : Session
     , longBreakDuration : Seconds
     , pomodoroDuration : Seconds
     , sessionStatus : SessionStatus
     , shortBreakDuration : Seconds
+    , strokeDasharray : Float
     }
 
 
 type Session
     = Pomodoro
-    | SmallBreak
+    | ShortBreak
     | LongBreak
 
 
@@ -52,11 +53,12 @@ init _ =
             25 * 60
     in
     ( { currentTime = pomodoroDuration
-      , currentSession = Pomodoro
+      , currentSessionType = Pomodoro
       , longBreakDuration = 20 * 60
       , pomodoroDuration = pomodoroDuration
       , sessionStatus = Paused
       , shortBreakDuration = 5 * 60
+      , strokeDasharray = 691.3321533203125
       }
     , Cmd.none
     )
@@ -96,13 +98,17 @@ update msg model =
             ( model, Cmd.none )
 
 
-dialView : Seconds -> Html Msg
-dialView time =
+dialView : Seconds -> Seconds -> Float -> Html Msg
+dialView currentTime maxTime maxStrokeDasharray =
+    let
+        strokeDasharray =
+            maxStrokeDasharray - (toFloat currentTime * maxStrokeDasharray) / toFloat maxTime
+    in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
-            [ text <| String.padLeft 2 '0' <| String.fromInt (time // 60)
+            [ text <| String.padLeft 2 '0' <| String.fromInt (currentTime // 60)
             , text ":"
-            , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 time)
+            , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 currentTime)
             ]
         , p [ class "dial-label" ] [ text "Focus" ]
         , svg
@@ -123,8 +129,8 @@ dialView time =
                 , SvgAttr.strokeLinecap "round"
                 , SvgAttr.strokeMiterlimit "10"
                 , SvgAttr.d "M115,5c60.8,0,110,49.2,110,110s-49.2,110-110,110S5,175.8,5,115S54.2,5,115,5"
-                , SvgAttr.strokeDasharray "691.3321533203125"
-                , SvgAttr.style "stroke-dashoffset: 0px;"
+                , SvgAttr.strokeDasharray <| String.fromFloat maxStrokeDasharray
+                , SvgAttr.style <| "stroke-dashoffset: " ++ String.fromFloat strokeDasharray ++ "px;"
                 ]
                 []
             ]
@@ -293,6 +299,17 @@ timerView : Model -> Html Msg
 timerView model =
     div [ class "timer-wrapper" ]
         [ dialView model.currentTime
+            (case model.currentSessionType of
+                Pomodoro ->
+                    model.pomodoroDuration
+
+                LongBreak ->
+                    model.longBreakDuration
+
+                ShortBreak ->
+                    model.shortBreakDuration
+            )
+            model.strokeDasharray
         , playPauseView model.sessionStatus
         , footerView
         ]
