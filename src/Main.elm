@@ -101,8 +101,41 @@ update msg model =
 dialView : Seconds -> Seconds -> Float -> Html Msg
 dialView currentTime maxTime maxStrokeDasharray =
     let
+        percent =
+            1 * toFloat currentTime / toFloat maxTime
+
         strokeDasharray =
-            maxStrokeDasharray - (toFloat currentTime * maxStrokeDasharray) / toFloat maxTime
+            maxStrokeDasharray - maxStrokeDasharray * percent
+
+        colorToHtmlRgbString c =
+            "rgb(" ++ String.fromInt c.r ++ ", " ++ String.fromInt c.g ++ ", " ++ String.fromInt c.b ++ ")"
+
+        green =
+            { r = 5, g = 236, b = 140 }
+
+        orange =
+            { r = 255, g = 127, b = 14 }
+
+        red =
+            { r = 255, g = 78, b = 77 }
+
+        color =
+            colorToHtmlRgbString <|
+                let
+                    relativePercent =
+                        1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
+                in
+                if percent > 0.5 then
+                    { r = orange.r + (relativePercent * (green.r - orange.r)) |> round
+                    , g = orange.g + (relativePercent * (green.g - orange.g)) |> round
+                    , b = orange.b + (relativePercent * (green.b - orange.b)) |> round
+                    }
+
+                else
+                    { r = red.r + ((1 + relativePercent) * (orange.r - red.r)) |> round
+                    , g = red.g + ((1 + relativePercent) * (orange.g - red.g)) |> round
+                    , b = red.b + ((1 + relativePercent) * (orange.b - red.b)) |> round
+                    }
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -110,7 +143,7 @@ dialView currentTime maxTime maxStrokeDasharray =
             , text ":"
             , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 currentTime)
             ]
-        , p [ class "dial-label" ] [ text "Focus" ]
+        , p [ class "dial-label", style "color" color ] [ text "Focus" ]
         , svg
             [ SvgAttr.version "1.2"
             , SvgAttr.baseProfile "tiny"
@@ -121,7 +154,8 @@ dialView currentTime maxTime maxStrokeDasharray =
             , SvgAttr.xmlSpace "preserve"
             , SvgAttr.width "220"
             , SvgAttr.height "220"
-            , SvgAttr.class "dial-fill dial-fill--work"
+            , SvgAttr.class "dial-fill"
+            , SvgAttr.style <| "stroke: " ++ color ++ ";"
             ]
             [ path
                 [ SvgAttr.fill "none"
