@@ -1,0 +1,244 @@
+@font-face {
+  font-family: "Lato";
+  src: url(/fonts/Lato-Regular.ttf);
+  font-weight: 400;
+}
+@font-face {
+  font-family: "RobotoMono";
+  src: url(/fonts/RobotoMono-Light.ttf);
+  font-weight: 200;
+}
+
+:root {
+  --color-long-round: #0bbddb;
+  --color-short-round: #05ec8c;
+  --color-focus-round: #ff4e4d;
+  --color-background: #2f384b;
+  --color-background-light: #3d4457;
+  --color-background-lightest: #858c99;
+  --color-foreground: #f6f2eb;
+  --color-foreground-darker: #c0c9da;
+  --color-foreground-darkest: #dbe1ef;
+  --color-accent: #05ec8c;
+}
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  cursor: default;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  user-select: none;
+}
+#app {
+  animation: fade-in 0.5s ease forwards;
+  position: relative;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.icon-wrapper {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+.icon-wrapper--single {
+  padding: 18px;
+}
+.menu-line {
+  background-color: var(--color-background-lightest);
+  display: inline-block;
+  transition: all 0.3s ease;
+  width: 20px;
+  height: 2px;
+}
+.menu-line:last-child {
+  width: 10px;
+}
+.menu-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 80%;
+}
+.titlebar {
+  letter-spacing: 0.05em;
+  margin-bottom: 18px;
+  position: relative;
+  text-align: center;
+  height: 50px;
+  display: flex;
+  -webkit-app-region: drag;
+}
+.icon-wrapper--titlebar {
+  -webkit-app-region: no-drag;
+}
+.icon-wrapper--titlebar:hover .menu-line {
+  background-color: var(--color-accent);
+}
+.icon-wrapper--titlebar:hover .icon--close line {
+  stroke: var(--color-focus-round);
+}
+.icon-wrapper--titlebar:hover .icon--minimize line {
+  stroke: var(--color-accent);
+}
+
+.icon--close line,
+.icon--minimize line {
+  stroke: var(--color-background-lightest);
+  transition: all 0.3s ease;
+}
+
+.icon-wrapper--double--left {
+  padding: 18px 9px 18px 18px;
+}
+
+.icon-wrapper--double--right {
+  padding: 18px 18px 18px 9px;
+}
+
+.title {
+  color: var(--color-short-round);
+  font-size: 1rem;
+  font-weight: 200;
+  padding-top: 4px;
+  padding-left: 40px;
+  flex-grow: 1;
+}
+
+.icon-group {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.dial-time {
+  font-family: "RobotoMono", monospace;
+  font-size: 46px;
+  margin: 0;
+  position: absolute;
+  top: 32%;
+}
+.timer-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.dial-bg {
+  stroke: var(--color-background-lightest);
+}
+
+.dial-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 35px;
+  position: relative;
+}
+.dial-label {
+  letter-spacing: 0.1em;
+  position: absolute;
+  top: 66%;
+  text-transform: uppercase;
+}
+.dial-bg {
+  stroke: var(--color-background-lightest);
+}
+.dial-fill {
+  position: absolute;
+  transform-origin: center;
+  -webkit-app-region: no-drag;
+}
+.dial-fill--work {
+  stroke: var(--color-focus-round);
+}
+.dial-fill--shortBreak {
+  stroke: var(--color-short-round);
+}
+.dial-fill--longBreak {
+  stroke: var(--color-long-round);
+}
+
+.container {
+  padding: 0 18px;
+}
+
+.button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 10px 0;
+}
+
+.button {
+  border: 2px solid var(--color-background-lightest);
+  border-radius: 100%;
+  display: flex;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 50px;
+  height: 50px;
+  -webkit-app-region: no-drag;
+}
+
+.button-icon-wrapper {
+  align-items: center;
+  display: flex;
+  height: 100%;
+}
+
+.button:hover .icon--pause line {
+  stroke: var(--color-accent);
+}
+.button:hover .icon--start polygon {
+  fill: var(--color-accent);
+}
+
+.button:hover {
+  background-color: var(--color-background-light);
+}
+
+.footer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.round-wrapper {
+  text-align: center;
+}
+.round-wrapper .total-rounds {
+  color: var(--color-foreground-darker);
+  font-size: 0.7rem;
+}
+
+.icon--mute path {
+  transition: all 0.3s ease;
+}
+.icon--muted path {
+  transition: all 0.3s ease;
+}
+.icon-wrapper:hover .icon--muted path:first-child {
+  fill: var(--color-accent);
+}
+.icon-wrapper:hover .icon--mute path {
+  fill: var(--color-accent);
+}
+.icon-wrapper:hover .icon--skip polygon,
+.icon-wrapper:hover .icon--skip rect {
+  fill: var(--color-accent);
+}
+.icon--skip polygon,
+.icon--skip rect {
+  transition: all 0.3s ease;
+}
+
+.text-button {
+  color: var(--color-foreground-darker);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  margin-top: 12px;
+  transition: all 0.3s ease;
+}
+.text-button:hover {
+  color: var(--color-accent);
+}
