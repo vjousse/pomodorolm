@@ -2,6 +2,9 @@
 
 elm-stuff/
 
+# Generated icon
+temp_icon.png
+
 # Logs
 logs
 *.log

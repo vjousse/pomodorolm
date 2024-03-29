@@ -2,6 +2,8 @@ import "../main.css";
 
 import { Elm } from "../src-elm/Main.elm";
 
+import { invoke } from "@tauri-apps/api";
+
 if (process.env.NODE_ENV === "development") {
   const ElmDebugTransform = await import("elm-debug-transformer");
 
@@ -18,27 +20,26 @@ app.ports.playSound.subscribe(function (soundElementId: string) {
     soundElementId
   ) as HTMLVideoElement;
 
+  console.log("Playing sound");
+
   audioPlayer.play();
 });
 
-/*
-document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`;
+type Color = {
+  r: number;
+  g: number;
+  b: number;
+};
+type ElmState = {
+  color: Color;
+  percentage: number;
+};
 
-setupCounter(document.querySelector<HTMLButtonElement>("#counter")!);
-*/
+app.ports.updateCurrentState.subscribe(function (state: ElmState) {
+  invoke("change_icon", {
+    red: state.color.r,
+    green: state.color.g,
+    blue: state.color.b,
+    fillPercentage: state.percentage,
+  });
+});

@@ -24,9 +24,13 @@ type alias Seconds =
 
 
 type alias Model =
-    { currentTime : Seconds
-    , currentSessionType : Session
+    { currentColor : Color
+    , currentTime : Seconds
+    , currentSessionType : SessionType
+    , endColor : Color
+    , initialColor : Color
     , longBreakDuration : Seconds
+    , middleColor : Color
     , pomodoroDuration : Seconds
     , sessionStatus : SessionStatus
     , shortBreakDuration : Seconds
@@ -34,7 +38,15 @@ type alias Model =
     }
 
 
-type Session
+type alias Color =
+    { r : Int, g : Int, b : Int }
+
+
+type alias CurrentState =
+    { color : Color, percentage : Float }
+
+
+type SessionType
     = Pomodoro
     | ShortBreak
     | LongBreak
@@ -46,21 +58,40 @@ type SessionStatus
     | Running
 
 
+green : Color
+green =
+    { r = 5, g = 236, b = 140 }
+
+
+orange : Color
+orange =
+    { r = 255, g = 127, b = 14 }
+
+
+red : Color
+red =
+    { r = 255, g = 78, b = 77 }
+
+
 init : flags -> ( Model, Cmd Msg )
 init _ =
     let
         pomodoroDuration =
             62
     in
-    ( { currentTime = pomodoroDuration
+    ( { currentColor = green
+      , currentTime = pomodoroDuration
       , currentSessionType = Pomodoro
+      , endColor = red
+      , initialColor = green
       , longBreakDuration = 20 * 60
+      , middleColor = orange
       , pomodoroDuration = pomodoroDuration
       , sessionStatus = Paused
       , shortBreakDuration = 5 * 60
       , strokeDasharray = 691.3321533203125
       }
-    , Cmd.none
+    , updateCurrentState { color = green, percentage = 1 }
     )
 
 
@@ -81,7 +112,22 @@ update msg model =
 
         Tick _ ->
             if model.currentTime > 0 && model.sessionStatus == Running then
-                ( { model | currentTime = model.currentTime - 1 }, playSound "audio-tick" )
+                let
+                    newTime =
+                        model.currentTime - 1
+
+                    maxTime =
+                        getCurrentMaxTime model
+
+                    currentColor =
+                        computeCurrentColor newTime maxTime
+
+                    percent =
+                        1 * toFloat newTime / toFloat maxTime
+                in
+                ( { model | currentTime = newTime, currentColor = currentColor }
+                , Cmd.batch [ playSound "audio-tick", updateCurrentState { color = currentColor, percentage = percent } ]
+                )
 
             else
                 ( model, Cmd.none )
@@ -98,6 +144,28 @@ update msg model =
             ( model, Cmd.none )
 
 
+computeCurrentColor : Seconds -> Seconds -> Color
+computeCurrentColor currentTime maxTime =
+    let
+        percent =
+            1 * toFloat currentTime / toFloat maxTime
+
+        relativePercent =
+            1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
+    in
+    if percent > 0.5 then
+        { r = toFloat orange.r + (relativePercent * toFloat (green.r - orange.r)) |> round
+        , g = toFloat orange.g + (relativePercent * toFloat (green.g - orange.g)) |> round
+        , b = toFloat orange.b + (relativePercent * toFloat (green.b - orange.b)) |> round
+        }
+
+    else
+        { r = toFloat red.r + ((1 + relativePercent) * toFloat (orange.r - red.r)) |> round
+        , g = toFloat red.g + ((1 + relativePercent) * toFloat (orange.g - red.g)) |> round
+        , b = toFloat red.b + ((1 + relativePercent) * toFloat (orange.b - red.b)) |> round
+        }
+
+
 dialView : Seconds -> Seconds -> Float -> Html Msg
 dialView currentTime maxTime maxStrokeDasharray =
     let
@@ -110,32 +178,8 @@ dialView currentTime maxTime maxStrokeDasharray =
         colorToHtmlRgbString c =
             "rgb(" ++ String.fromInt c.r ++ ", " ++ String.fromInt c.g ++ ", " ++ String.fromInt c.b ++ ")"
 
-        green =
-            { r = 5, g = 236, b = 140 }
-
-        orange =
-            { r = 255, g = 127, b = 14 }
-
-        red =
-            { r = 255, g = 78, b = 77 }
-
         color =
-            colorToHtmlRgbString <|
-                let
-                    relativePercent =
-                        1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
-                in
-                if percent > 0.5 then
-                    { r = orange.r + (relativePercent * (green.r - orange.r)) |> round
-                    , g = orange.g + (relativePercent * (green.g - orange.g)) |> round
-                    , b = orange.b + (relativePercent * (green.b - orange.b)) |> round
-                    }
-
-                else
-                    { r = red.r + ((1 + relativePercent) * (orange.r - red.r)) |> round
-                    , g = red.g + ((1 + relativePercent) * (orange.g - red.g)) |> round
-                    , b = red.b + ((1 + relativePercent) * (orange.b - red.b)) |> round
-                    }
+            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -329,21 +373,23 @@ footerView =
         ]
 
 
+getCurrentMaxTime : Model -> Seconds
+getCurrentMaxTime model =
+    case model.currentSessionType of
+        Pomodoro ->
+            model.pomodoroDuration
+
+        LongBreak ->
+            model.longBreakDuration
+
+        ShortBreak ->
+            model.shortBreakDuration
+
+
 timerView : Model -> Html Msg
 timerView model =
     div [ class "timer-wrapper" ]
-        [ dialView model.currentTime
-            (case model.currentSessionType of
-                Pomodoro ->
-                    model.pomodoroDuration
-
-                LongBreak ->
-                    model.longBreakDuration
-
-                ShortBreak ->
-                    model.shortBreakDuration
-            )
-            model.strokeDasharray
+        [ dialView model.currentTime (getCurrentMaxTime model) model.strokeDasharray
         , playPauseView model.sessionStatus
         , footerView
         ]
@@ -456,3 +502,6 @@ subscriptions _ =
 
 
 port playSound : String -> Cmd msg
+
+
+port updateCurrentState : CurrentState -> Cmd msg

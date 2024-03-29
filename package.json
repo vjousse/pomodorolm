@@ -18,5 +18,9 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
     "vite-plugin-elm": "^3.0.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.5.3",
+    "tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log#v1"
   }
 }
