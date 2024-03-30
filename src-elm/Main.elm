@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Browser
+import Debug exposing (toString)
 import Html exposing (Html, div, h1, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, id, style, title)
 import Html.Events exposing (onClick)
@@ -25,12 +26,15 @@ type alias Seconds =
 
 type alias Model =
     { currentColor : Color
-    , currentTime : Seconds
+    , currentRoundNumber : Int
     , currentSessionType : SessionType
+    , currentTime : Seconds
     , endColor : Color
     , initialColor : Color
     , longBreakDuration : Seconds
+    , maxRoundNumber : Int
     , middleColor : Color
+    , playTickSoundWork : Bool
     , pomodoroDuration : Seconds
     , sessionStatus : SessionStatus
     , shortBreakDuration : Seconds
@@ -58,6 +62,14 @@ type SessionStatus
     | Running
 
 
+type alias NextRoundInfo =
+    { nextSessionType : SessionType
+    , htmlIdOfAudioToPlay : String
+    , nextRoundNumber : Int
+    , nextTime : Seconds
+    }
+
+
 green : Color
 green =
     { r = 5, g = 236, b = 140 }
@@ -73,18 +85,31 @@ red =
     { r = 255, g = 78, b = 77 }
 
 
+blue : Color
+blue =
+    { r = 11, g = 189, b = 219 }
+
+
+pink : Color
+pink =
+    { r = 255, g = 137, b = 167 }
+
+
 init : flags -> ( Model, Cmd Msg )
 init _ =
     let
         pomodoroDuration =
-            62
+            10
     in
     ( { currentColor = green
-      , currentTime = pomodoroDuration
+      , currentRoundNumber = 1
       , currentSessionType = Pomodoro
+      , currentTime = pomodoroDuration
       , endColor = red
       , initialColor = green
+      , playTickSoundWork = True
       , longBreakDuration = 20 * 60
+      , maxRoundNumber = 4
       , middleColor = orange
       , pomodoroDuration = pomodoroDuration
       , sessionStatus = Paused
@@ -96,19 +121,87 @@ init _ =
 
 
 type Msg
-    = Pause
-    | Reset
-    | Start
-    | Stop
+    = Reset
+    | SkipCurrentRound
     | Tick Time.Posix
     | ToggleStatus
+
+
+getNextRoundInfo : Model -> NextRoundInfo
+getNextRoundInfo model =
+    case model.currentSessionType of
+        Pomodoro ->
+            if model.currentRoundNumber == model.maxRoundNumber then
+                { nextSessionType = LongBreak
+                , htmlIdOfAudioToPlay = "audio-long-break"
+                , nextRoundNumber = model.currentRoundNumber
+                , nextTime = model.longBreakDuration
+                }
+
+            else
+                { nextSessionType = ShortBreak
+                , htmlIdOfAudioToPlay = "audio-short-break"
+                , nextRoundNumber = model.currentRoundNumber
+                , nextTime = model.shortBreakDuration
+                }
+
+        ShortBreak ->
+            { nextSessionType = Pomodoro
+            , htmlIdOfAudioToPlay = "audio-work"
+            , nextRoundNumber = model.currentRoundNumber + 1
+            , nextTime = model.pomodoroDuration
+            }
+
+        LongBreak ->
+            { nextSessionType = Pomodoro
+            , htmlIdOfAudioToPlay = "audio-work"
+            , nextRoundNumber = 1
+            , nextTime = model.pomodoroDuration
+            }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Reset ->
-            ( { model | currentTime = model.pomodoroDuration }, Cmd.none )
+            ( { model
+                | sessionStatus = Stopped
+                , currentTime =
+                    case model.currentSessionType of
+                        Pomodoro ->
+                            model.pomodoroDuration
+
+                        ShortBreak ->
+                            model.shortBreakDuration
+
+                        LongBreak ->
+                            model.longBreakDuration
+              }
+            , updateCurrentState
+                { color = colorForSessionType model.currentSessionType
+                , percentage = 100
+                }
+            )
+
+        SkipCurrentRound ->
+            let
+                nextRoundInfo =
+                    getNextRoundInfo model
+            in
+            ( { model
+                | currentRoundNumber = nextRoundInfo.nextRoundNumber
+                , currentSessionType = nextRoundInfo.nextSessionType
+                , currentTime = nextRoundInfo.nextTime
+                , sessionStatus = Stopped
+              }
+            , Cmd.batch
+                [ playSound nextRoundInfo.htmlIdOfAudioToPlay
+                , updateCurrentState
+                    { color = colorForSessionType nextRoundInfo.nextSessionType
+                    , percentage = 100
+                    }
+                ]
+            )
 
         Tick _ ->
             if model.currentTime > 0 && model.sessionStatus == Running then
@@ -120,13 +213,34 @@ update msg model =
                         getCurrentMaxTime model
 
                     currentColor =
-                        computeCurrentColor newTime maxTime
+                        computeCurrentColor newTime maxTime model.currentSessionType
 
                     percent =
                         1 * toFloat newTime / toFloat maxTime
                 in
                 ( { model | currentTime = newTime, currentColor = currentColor }
-                , Cmd.batch [ playSound "audio-tick", updateCurrentState { color = currentColor, percentage = percent } ]
+                , Cmd.batch
+                    [ if model.playTickSoundWork then
+                        playSound "audio-tick"
+
+                      else
+                        Cmd.none
+                    , updateCurrentState { color = currentColor, percentage = percent }
+                    ]
+                )
+
+            else if model.currentTime == 0 then
+                let
+                    nextRoundInfo =
+                        getNextRoundInfo model
+                in
+                ( { model
+                    | currentRoundNumber = nextRoundInfo.nextRoundNumber
+                    , currentSessionType = nextRoundInfo.nextSessionType
+                    , currentTime = nextRoundInfo.nextTime
+                    , sessionStatus = Stopped
+                  }
+                , playSound nextRoundInfo.htmlIdOfAudioToPlay
                 )
 
             else
@@ -140,12 +254,22 @@ update msg model =
                 _ ->
                     ( { model | sessionStatus = Running }, Cmd.none )
 
-        _ ->
-            ( model, Cmd.none )
+
+colorForSessionType : SessionType -> Color
+colorForSessionType sessionType =
+    case sessionType of
+        Pomodoro ->
+            green
+
+        ShortBreak ->
+            pink
+
+        LongBreak ->
+            blue
 
 
-computeCurrentColor : Seconds -> Seconds -> Color
-computeCurrentColor currentTime maxTime =
+computeCurrentColor : Seconds -> Seconds -> SessionType -> Color
+computeCurrentColor currentTime maxTime sessionType =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
@@ -153,21 +277,26 @@ computeCurrentColor currentTime maxTime =
         relativePercent =
             1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
     in
-    if percent > 0.5 then
-        { r = toFloat orange.r + (relativePercent * toFloat (green.r - orange.r)) |> round
-        , g = toFloat orange.g + (relativePercent * toFloat (green.g - orange.g)) |> round
-        , b = toFloat orange.b + (relativePercent * toFloat (green.b - orange.b)) |> round
-        }
+    case sessionType of
+        Pomodoro ->
+            if percent > 0.5 then
+                { r = toFloat orange.r + (relativePercent * toFloat (green.r - orange.r)) |> round
+                , g = toFloat orange.g + (relativePercent * toFloat (green.g - orange.g)) |> round
+                , b = toFloat orange.b + (relativePercent * toFloat (green.b - orange.b)) |> round
+                }
 
-    else
-        { r = toFloat red.r + ((1 + relativePercent) * toFloat (orange.r - red.r)) |> round
-        , g = toFloat red.g + ((1 + relativePercent) * toFloat (orange.g - red.g)) |> round
-        , b = toFloat red.b + ((1 + relativePercent) * toFloat (orange.b - red.b)) |> round
-        }
+            else
+                { r = toFloat red.r + ((1 + relativePercent) * toFloat (orange.r - red.r)) |> round
+                , g = toFloat red.g + ((1 + relativePercent) * toFloat (orange.g - red.g)) |> round
+                , b = toFloat red.b + ((1 + relativePercent) * toFloat (orange.b - red.b)) |> round
+                }
+
+        s ->
+            colorForSessionType s
 
 
-dialView : Seconds -> Seconds -> Float -> Html Msg
-dialView currentTime maxTime maxStrokeDasharray =
+dialView : SessionType -> Seconds -> Seconds -> Float -> Html Msg
+dialView sessionType currentTime maxTime maxStrokeDasharray =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
@@ -179,7 +308,7 @@ dialView currentTime maxTime maxStrokeDasharray =
             "rgb(" ++ String.fromInt c.r ++ ", " ++ String.fromInt c.g ++ ", " ++ String.fromInt c.b ++ ")"
 
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime
+            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -187,7 +316,18 @@ dialView currentTime maxTime maxStrokeDasharray =
             , text ":"
             , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 currentTime)
             ]
-        , p [ class "dial-label", style "color" color ] [ text "Focus" ]
+        , p [ class "dial-label", style "color" color ]
+            [ text <|
+                case sessionType of
+                    Pomodoro ->
+                        "Focus"
+
+                    ShortBreak ->
+                        "Short break"
+
+                    LongBreak ->
+                        "Long break"
+            ]
         , svg
             [ SvgAttr.version "1.2"
             , SvgAttr.baseProfile "tiny"
@@ -314,15 +454,15 @@ playPauseView sessionStatus =
         ]
 
 
-footerView : Html Msg
-footerView =
+footerView : Model -> Html Msg
+footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
-            [ p [] [ text "1/4" ]
-            , p [ class "text-button", title "Reset current round" ] [ text "Reset" ]
+            [ p [] [ text <| toString model.currentRoundNumber ++ "/" ++ toString model.maxRoundNumber ]
+            , p [ class "text-button", title "Reset current round", onClick Reset ] [ text "Reset" ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
-            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round" ]
+            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick SkipCurrentRound ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -389,9 +529,9 @@ getCurrentMaxTime model =
 timerView : Model -> Html Msg
 timerView model =
     div [ class "timer-wrapper" ]
-        [ dialView model.currentTime (getCurrentMaxTime model) model.strokeDasharray
+        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray
         , playPauseView model.sessionStatus
-        , footerView
+        , footerView model
         ]
 
 
