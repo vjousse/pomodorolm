@@ -15,12 +15,27 @@ if (process.env.NODE_ENV === "development") {
 const root = document.querySelector("#app div");
 const app = Elm.Main.init({ node: root });
 
+app.ports.setVolume.subscribe(function (volume: number) {
+  let audioFileIds: string[] = [
+    "audio-long-break",
+    "audio-short-break",
+    "audio-work",
+    "audio-tick",
+  ];
+
+  for (var id of audioFileIds) {
+    let audioPlayer: HTMLVideoElement = document.getElementById(
+      id
+    ) as HTMLVideoElement;
+
+    audioPlayer.volume = volume;
+  }
+});
+
 app.ports.playSound.subscribe(function (soundElementId: string) {
   let audioPlayer: HTMLVideoElement = document.getElementById(
     soundElementId
   ) as HTMLVideoElement;
-
-  console.log("Playing sound");
 
   audioPlayer.play();
 });
