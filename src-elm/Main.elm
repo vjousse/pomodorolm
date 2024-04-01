@@ -25,7 +25,9 @@ type alias Seconds =
 
 
 type alias Model =
-    { currentColor : Color
+    { autoStartWorkTimer : Bool
+    , autoStartBreakTimer : Bool
+    , currentColor : Color
     , currentRoundNumber : Int
     , currentSessionType : SessionType
     , currentTime : Seconds
@@ -47,7 +49,7 @@ type alias Color =
 
 
 type alias CurrentState =
-    { color : Color, percentage : Float }
+    { color : Color, percentage : Float, paused : Bool }
 
 
 type SessionType
@@ -101,7 +103,9 @@ init _ =
         pomodoroDuration =
             10
     in
-    ( { currentColor = green
+    ( { autoStartBreakTimer = True
+      , autoStartWorkTimer = True
+      , currentColor = green
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
       , currentTime = pomodoroDuration
@@ -112,11 +116,11 @@ init _ =
       , maxRoundNumber = 4
       , middleColor = orange
       , pomodoroDuration = pomodoroDuration
-      , sessionStatus = Paused
+      , sessionStatus = Stopped
       , shortBreakDuration = 5 * 60
       , strokeDasharray = 691.3321533203125
       }
-    , updateCurrentState { color = green, percentage = 1 }
+    , updateCurrentState { color = green, percentage = 1, paused = False }
     )
 
 
@@ -180,6 +184,12 @@ update msg model =
             , updateCurrentState
                 { color = colorForSessionType model.currentSessionType
                 , percentage = 100
+                , paused =
+                    if model.sessionStatus == Paused then
+                        True
+
+                    else
+                        False
                 }
             )
 
@@ -192,13 +202,33 @@ update msg model =
                 | currentRoundNumber = nextRoundInfo.nextRoundNumber
                 , currentSessionType = nextRoundInfo.nextSessionType
                 , currentTime = nextRoundInfo.nextTime
-                , sessionStatus = Stopped
+                , sessionStatus =
+                    case nextRoundInfo.nextSessionType of
+                        Pomodoro ->
+                            if model.autoStartWorkTimer then
+                                Running
+
+                            else
+                                Stopped
+
+                        _ ->
+                            if model.autoStartBreakTimer then
+                                Running
+
+                            else
+                                Stopped
               }
             , Cmd.batch
                 [ playSound nextRoundInfo.htmlIdOfAudioToPlay
                 , updateCurrentState
                     { color = colorForSessionType nextRoundInfo.nextSessionType
                     , percentage = 100
+                    , paused =
+                        if model.sessionStatus == Paused then
+                            True
+
+                        else
+                            False
                     }
                 ]
             )
@@ -225,7 +255,16 @@ update msg model =
 
                       else
                         Cmd.none
-                    , updateCurrentState { color = currentColor, percentage = percent }
+                    , updateCurrentState
+                        { color = currentColor
+                        , percentage = percent
+                        , paused =
+                            if model.sessionStatus == Paused then
+                                True
+
+                            else
+                                False
+                        }
                     ]
                 )
 
@@ -238,7 +277,21 @@ update msg model =
                     | currentRoundNumber = nextRoundInfo.nextRoundNumber
                     , currentSessionType = nextRoundInfo.nextSessionType
                     , currentTime = nextRoundInfo.nextTime
-                    , sessionStatus = Stopped
+                    , sessionStatus =
+                        case nextRoundInfo.nextSessionType of
+                            Pomodoro ->
+                                if model.autoStartWorkTimer then
+                                    Running
+
+                                else
+                                    Stopped
+
+                            _ ->
+                                if model.autoStartBreakTimer then
+                                    Running
+
+                                else
+                                    Stopped
                   }
                 , playSound nextRoundInfo.htmlIdOfAudioToPlay
                 )
@@ -249,10 +302,22 @@ update msg model =
         ToggleStatus ->
             case model.sessionStatus of
                 Running ->
-                    ( { model | sessionStatus = Paused }, Cmd.none )
+                    ( { model | sessionStatus = Paused }
+                    , updateCurrentState
+                        { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                        , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                        , paused = True
+                        }
+                    )
 
                 _ ->
-                    ( { model | sessionStatus = Running }, Cmd.none )
+                    ( { model | sessionStatus = Running }
+                    , updateCurrentState
+                        { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                        , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                        , paused = False
+                        }
+                    )
 
 
 colorForSessionType : SessionType -> Color

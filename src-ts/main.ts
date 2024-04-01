@@ -33,6 +33,7 @@ type Color = {
 type ElmState = {
   color: Color;
   percentage: number;
+  paused: boolean;
 };
 
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
@@ -41,5 +42,6 @@ app.ports.updateCurrentState.subscribe(function (state: ElmState) {
     green: state.color.g,
     blue: state.color.b,
     fillPercentage: state.percentage,
+    paused: state.paused,
   });
 });
