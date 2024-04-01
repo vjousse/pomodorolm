@@ -417,6 +417,17 @@ input[type="range"]::-webkit-slider-thumb {
   padding: 2px 6px;
 }
 
+.setting-input {
+  background-color: var(--color-background);
+  display: inline-block;
+  font-family: "RobotoMono", monospace;
+  font-size: 12px;
+  color: var(--color-foreground);
+  border: none;
+}
+.setting-input:focus {
+  outline: none;
+}
 #drawer .slider-wrapper {
   position: relative;
 }

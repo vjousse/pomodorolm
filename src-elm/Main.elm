@@ -362,7 +362,37 @@ update msg model =
                 ( model, Cmd.none )
 
         ToggleDrawer ->
-            ( { model | drawerOpen = not model.drawerOpen }, Cmd.none )
+            ( { model
+                | drawerOpen = not model.drawerOpen
+
+                -- Avoid having impossible states
+                , maxRoundNumber =
+                    if model.maxRoundNumber == 0 then
+                        1
+
+                    else
+                        model.maxRoundNumber
+                , pomodoroDuration =
+                    if model.pomodoroDuration == 0 then
+                        60
+
+                    else
+                        model.pomodoroDuration
+                , shortBreakDuration =
+                    if model.shortBreakDuration == 0 then
+                        60
+
+                    else
+                        model.shortBreakDuration
+                , longBreakDuration =
+                    if model.longBreakDuration == 0 then
+                        60
+
+                    else
+                        model.longBreakDuration
+              }
+            , Cmd.none
+            )
 
         ToggleMute ->
             let
@@ -409,11 +439,23 @@ update msg model =
             in
             case settingType of
                 FocusTime ->
+                    let
+                        newValue =
+                            if value > 90 then
+                                90 * 60
+
+                            else
+                                value * 60
+                    in
                     ( { model
-                        | pomodoroDuration = value * 60
+                        | pomodoroDuration = newValue
                         , currentTime =
                             if model.currentSessionType == Pomodoro then
-                                value * 60
+                                if newValue == 0 then
+                                    60
+
+                                else
+                                    newValue
 
                             else
                                 model.currentTime
@@ -422,11 +464,23 @@ update msg model =
                     )
 
                 ShortBreakTime ->
+                    let
+                        newValue =
+                            if value > 90 then
+                                90 * 60
+
+                            else
+                                value * 60
+                    in
                     ( { model
-                        | shortBreakDuration = value * 60
+                        | shortBreakDuration = newValue
                         , currentTime =
                             if model.currentSessionType == ShortBreak then
-                                value * 60
+                                if newValue == 0 then
+                                    60
+
+                                else
+                                    newValue
 
                             else
                                 model.currentTime
@@ -435,11 +489,23 @@ update msg model =
                     )
 
                 LongBreakTime ->
+                    let
+                        newValue =
+                            if value > 90 then
+                                90 * 60
+
+                            else
+                                value * 60
+                    in
                     ( { model
-                        | longBreakDuration = value * 60
+                        | longBreakDuration = newValue
                         , currentTime =
                             if model.currentSessionType == LongBreak then
-                                value * 60
+                                if newValue == 0 then
+                                    60
+
+                                else
+                                    newValue
 
                             else
                                 model.currentTime
@@ -448,13 +514,16 @@ update msg model =
                     )
 
                 Rounds ->
-                    ( { model
-                        | maxRoundNumber =
-                            if value == 0 then
-                                1
+                    let
+                        newValue =
+                            if value > 12 then
+                                12
 
                             else
                                 value
+                    in
+                    ( { model
+                        | maxRoundNumber = newValue
                       }
                     , Cmd.none
                     )
@@ -922,7 +991,18 @@ drawerView model =
                 , p
                     [ class "setting-value"
                     ]
-                    [ text <| secondsToString model.pomodoroDuration ]
+                    [ input
+                        [ type_ "text"
+                        , class "setting-input"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , value <| toString (toFloat model.pomodoroDuration / 60)
+                        , onInput <| UpdateSetting FocusTime
+                        , style "width" <| toString (String.length <| toString (toFloat model.pomodoroDuration / 60)) ++ "ch"
+                        ]
+                        []
+                    , text ":00"
+                    ]
                 , div
                     [ class "slider-wrapper"
                     ]
@@ -953,7 +1033,18 @@ drawerView model =
                 , p
                     [ class "setting-value"
                     ]
-                    [ text <| secondsToString model.shortBreakDuration ]
+                    [ input
+                        [ type_ "text"
+                        , class "setting-input"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , value <| toString (toFloat model.shortBreakDuration / 60)
+                        , onInput <| UpdateSetting ShortBreakTime
+                        , style "width" <| toString (String.length <| toString (toFloat model.shortBreakDuration / 60)) ++ "ch"
+                        ]
+                        []
+                    , text ":00"
+                    ]
                 , div
                     [ class "slider-wrapper"
                     ]
@@ -984,7 +1075,18 @@ drawerView model =
                 , p
                     [ class "setting-value"
                     ]
-                    [ text <| secondsToString model.longBreakDuration ]
+                    [ input
+                        [ type_ "text"
+                        , class "setting-input"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , value <| toString (toFloat model.longBreakDuration / 60)
+                        , onInput <| UpdateSetting LongBreakTime
+                        , style "width" <| toString (String.length <| toString (toFloat model.longBreakDuration / 60)) ++ "ch"
+                        ]
+                        []
+                    , text ":00"
+                    ]
                 , div
                     [ class "slider-wrapper"
                     ]
@@ -1015,7 +1117,18 @@ drawerView model =
                 , p
                     [ class "setting-value"
                     ]
-                    [ text <| toString model.maxRoundNumber ]
+                    [ input
+                        [ type_ "text"
+                        , class "setting-input"
+                        , Html.Attributes.min "0"
+                        , Html.Attributes.max "12"
+                        , Html.Attributes.step "1"
+                        , value <| toString model.maxRoundNumber
+                        , onInput <| UpdateSetting Rounds
+                        , style "width" <| toString (String.length <| toString model.maxRoundNumber) ++ "ch"
+                        ]
+                        []
+                    ]
                 , div
                     [ class "slider-wrapper"
                     ]
