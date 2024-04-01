@@ -3,6 +3,7 @@ import "../main.css";
 import { Elm } from "../src-elm/Main.elm";
 
 import { invoke } from "@tauri-apps/api";
+import { appWindow } from "@tauri-apps/api/window";
 
 if (process.env.NODE_ENV === "development") {
   const ElmDebugTransform = await import("elm-debug-transformer");
@@ -38,6 +39,14 @@ app.ports.playSound.subscribe(function (soundElementId: string) {
   ) as HTMLVideoElement;
 
   audioPlayer.play();
+});
+
+app.ports.minimizeWindow.subscribe(function () {
+  invoke("minimize_window");
+});
+
+app.ports.closeWindow.subscribe(function () {
+  invoke("close_window");
 });
 
 type Color = {

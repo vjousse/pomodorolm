@@ -3,6 +3,7 @@
 
 use image::{ImageBuffer, Rgba};
 use std::path::Path;
+use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 
 fn main() {
@@ -18,7 +19,11 @@ fn main() {
 
     tauri::Builder::default()
         .system_tray(system_tray)
-        .invoke_handler(tauri::generate_handler![change_icon])
+        .invoke_handler(tauri::generate_handler![
+            change_icon,
+            close_window,
+            minimize_window
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -114,4 +119,16 @@ async fn change_icon(
         .tray_handle()
         .set_icon(tauri::Icon::File(temp_path.to_path_buf()))
         .expect("Failed to set icon");
+}
+
+#[tauri::command]
+async fn minimize_window(app_handle: tauri::AppHandle) {
+    let window = app_handle.get_window("main").expect("window not found");
+    window.minimize().expect("failed to minimize window");
+}
+
+#[tauri::command]
+async fn close_window(app_handle: tauri::AppHandle) {
+    let window = app_handle.get_window("main").expect("window not found");
+    window.close().expect("failed to close window");
 }

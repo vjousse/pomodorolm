@@ -133,7 +133,9 @@ init _ =
 
 
 type Msg
-    = HideVolumeBar
+    = CloseWindow
+    | HideVolumeBar
+    | MinimizeWindow
     | Reset
     | SkipCurrentRound
     | ShowVolumeBar
@@ -179,8 +181,14 @@ getNextRoundInfo model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        CloseWindow ->
+            ( model, closeWindow () )
+
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
+
+        MinimizeWindow ->
+            ( model, minimizeWindow () )
 
         Reset ->
             ( { model
@@ -713,7 +721,7 @@ navView =
             ]
         , h1 [ class "title" ] [ text "Pomodorolm" ]
         , div [ class "icon-group" ]
-            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px" ]
+            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px", onClick MinimizeWindow ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -743,6 +751,7 @@ navView =
             , div
                 [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--right"
                 , style "padding-right" "18px"
+                , onClick CloseWindow
                 ]
                 [ svg
                     [ SvgAttr.version "1.2"
@@ -812,6 +821,12 @@ port playSound : String -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg
+
+
+port closeWindow : () -> Cmd msg
+
+
+port minimizeWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
