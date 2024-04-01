@@ -41,6 +41,7 @@ type alias Model =
     , playTickSoundWork : Bool
     , pomodoroDuration : Seconds
     , sessionStatus : SessionStatus
+    , settingTab : SettingTab
     , shortBreakDuration : Seconds
     , strokeDasharray : Float
     , volume : Float
@@ -66,6 +67,12 @@ type SessionStatus
     = Paused
     | Stopped
     | Running
+
+
+type SettingTab
+    = Timer
+    | Settings
+    | About
 
 
 type alias NextRoundInfo =
@@ -136,6 +143,7 @@ init _ =
       , muted = False
       , pomodoroDuration = defaults.pomodoroDuration
       , sessionStatus = Stopped
+      , settingTab = Timer
       , shortBreakDuration = defaults.shortBreakDuration
       , strokeDasharray = 691.3321533203125
       , volume = 1
@@ -154,6 +162,7 @@ type SettingType
 
 type Msg
     = CloseWindow
+    | ChangeSettingTab SettingTab
     | HideVolumeBar
     | MinimizeWindow
     | Reset
@@ -204,6 +213,9 @@ getNextRoundInfo model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ChangeSettingTab settingTab ->
+            ( { model | settingTab = settingTab }, Cmd.none )
+
         CloseWindow ->
             ( model, closeWindow () )
 
@@ -969,202 +981,231 @@ navView model =
         ]
 
 
+timerSettingView : Model -> Html Msg
+timerSettingView model =
+    div [ class "container" ]
+        [ p
+            [ class "drawer-heading"
+            ]
+            [ text "Timer" ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Focus" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , value <| toString (toFloat model.pomodoroDuration / 60)
+                    , onInput <| UpdateSetting FocusTime
+                    , style "width" <| toString (String.length <| toString (toFloat model.pomodoroDuration / 60)) ++ "ch"
+                    ]
+                    []
+                , text ":00"
+                ]
+            , div
+                [ class "slider-wrapper"
+                ]
+                [ input
+                    [ type_ "range"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , Html.Attributes.step "1"
+                    , class "slider slider--red"
+                    , value <| toString (toFloat model.pomodoroDuration / 60)
+                    , onInput <| UpdateSetting FocusTime
+                    ]
+                    []
+                , div
+                    [ class "slider-bar slider-bar--red"
+                    , style "width" (toString ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Short Break" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , value <| toString (toFloat model.shortBreakDuration / 60)
+                    , onInput <| UpdateSetting ShortBreakTime
+                    , style "width" <| toString (String.length <| toString (toFloat model.shortBreakDuration / 60)) ++ "ch"
+                    ]
+                    []
+                , text ":00"
+                ]
+            , div
+                [ class "slider-wrapper"
+                ]
+                [ input
+                    [ type_ "range"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , Html.Attributes.step "1"
+                    , class "slider slider--green"
+                    , value <| toString (toFloat model.shortBreakDuration / 60)
+                    , onInput <| UpdateSetting ShortBreakTime
+                    ]
+                    []
+                , div
+                    [ class "slider-bar slider-bar--green"
+                    , style "width" (toString ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Long Break" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , value <| toString (toFloat model.longBreakDuration / 60)
+                    , onInput <| UpdateSetting LongBreakTime
+                    , style "width" <| toString (String.length <| toString (toFloat model.longBreakDuration / 60)) ++ "ch"
+                    ]
+                    []
+                , text ":00"
+                ]
+            , div
+                [ class "slider-wrapper"
+                ]
+                [ input
+                    [ type_ "range"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.max "90"
+                    , Html.Attributes.step "1"
+                    , class "slider slider--blue"
+                    , value <| toString (toFloat model.longBreakDuration / 60)
+                    , onInput <| UpdateSetting LongBreakTime
+                    ]
+                    []
+                , div
+                    [ class "slider-bar slider-bar--blue"
+                    , style "width" (toString ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Rounds" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , Html.Attributes.min "0"
+                    , Html.Attributes.max "12"
+                    , Html.Attributes.step "1"
+                    , value <| toString model.maxRoundNumber
+                    , onInput <| UpdateSetting Rounds
+                    , style "width" <| toString (String.length <| toString model.maxRoundNumber) ++ "ch"
+                    ]
+                    []
+                ]
+            , div
+                [ class "slider-wrapper"
+                ]
+                [ input
+                    [ type_ "range"
+                    , Html.Attributes.min "0"
+                    , Html.Attributes.max "12"
+                    , Html.Attributes.step "1"
+                    , class "slider"
+                    , value <| toString model.maxRoundNumber
+                    , onInput <| UpdateSetting Rounds
+                    ]
+                    []
+                , div
+                    [ class "slider-bar slider-bar--blue-grey"
+                    , style "width" (toString (100 * toFloat model.maxRoundNumber / 12) ++ "%")
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "text-button"
+                , onClick ResetSettings
+                ]
+                [ text "Reset Defaults" ]
+            ]
+        ]
+
+
+settingsSettingView : Model -> Html Msg
+settingsSettingView model =
+    div [ class "container" ] []
+
+
+aboutSettingView : Model -> Html Msg
+aboutSettingView model =
+    div [ class "container" ] []
+
+
 drawerView : Model -> Html Msg
 drawerView model =
     div
         [ id "drawer"
         ]
-        [ div
-            [ class "container"
-            ]
-            [ p
-                [ class "drawer-heading"
-                ]
-                [ text "Timer" ]
-            , div
-                [ class "setting-wrapper"
-                ]
-                [ p
-                    [ class "setting-title"
-                    ]
-                    [ text "Focus" ]
-                , p
-                    [ class "setting-value"
-                    ]
-                    [ input
-                        [ type_ "text"
-                        , class "setting-input"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , value <| toString (toFloat model.pomodoroDuration / 60)
-                        , onInput <| UpdateSetting FocusTime
-                        , style "width" <| toString (String.length <| toString (toFloat model.pomodoroDuration / 60)) ++ "ch"
-                        ]
-                        []
-                    , text ":00"
-                    ]
-                , div
-                    [ class "slider-wrapper"
-                    ]
-                    [ input
-                        [ type_ "range"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , Html.Attributes.step "1"
-                        , class "slider slider--red"
-                        , value <| toString (toFloat model.pomodoroDuration / 60)
-                        , onInput <| UpdateSetting FocusTime
-                        ]
-                        []
-                    , div
-                        [ class "slider-bar slider-bar--red"
-                        , style "width" (toString ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
-                        ]
-                        []
-                    ]
-                ]
-            , div
-                [ class "setting-wrapper"
-                ]
-                [ p
-                    [ class "setting-title"
-                    ]
-                    [ text "Short Break" ]
-                , p
-                    [ class "setting-value"
-                    ]
-                    [ input
-                        [ type_ "text"
-                        , class "setting-input"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , value <| toString (toFloat model.shortBreakDuration / 60)
-                        , onInput <| UpdateSetting ShortBreakTime
-                        , style "width" <| toString (String.length <| toString (toFloat model.shortBreakDuration / 60)) ++ "ch"
-                        ]
-                        []
-                    , text ":00"
-                    ]
-                , div
-                    [ class "slider-wrapper"
-                    ]
-                    [ input
-                        [ type_ "range"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , Html.Attributes.step "1"
-                        , class "slider slider--green"
-                        , value <| toString (toFloat model.shortBreakDuration / 60)
-                        , onInput <| UpdateSetting ShortBreakTime
-                        ]
-                        []
-                    , div
-                        [ class "slider-bar slider-bar--green"
-                        , style "width" (toString ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
-                        ]
-                        []
-                    ]
-                ]
-            , div
-                [ class "setting-wrapper"
-                ]
-                [ p
-                    [ class "setting-title"
-                    ]
-                    [ text "Long Break" ]
-                , p
-                    [ class "setting-value"
-                    ]
-                    [ input
-                        [ type_ "text"
-                        , class "setting-input"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , value <| toString (toFloat model.longBreakDuration / 60)
-                        , onInput <| UpdateSetting LongBreakTime
-                        , style "width" <| toString (String.length <| toString (toFloat model.longBreakDuration / 60)) ++ "ch"
-                        ]
-                        []
-                    , text ":00"
-                    ]
-                , div
-                    [ class "slider-wrapper"
-                    ]
-                    [ input
-                        [ type_ "range"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.max "90"
-                        , Html.Attributes.step "1"
-                        , class "slider slider--blue"
-                        , value <| toString (toFloat model.longBreakDuration / 60)
-                        , onInput <| UpdateSetting LongBreakTime
-                        ]
-                        []
-                    , div
-                        [ class "slider-bar slider-bar--blue"
-                        , style "width" (toString ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
-                        ]
-                        []
-                    ]
-                ]
-            , div
-                [ class "setting-wrapper"
-                ]
-                [ p
-                    [ class "setting-title"
-                    ]
-                    [ text "Rounds" ]
-                , p
-                    [ class "setting-value"
-                    ]
-                    [ input
-                        [ type_ "text"
-                        , class "setting-input"
-                        , Html.Attributes.min "0"
-                        , Html.Attributes.max "12"
-                        , Html.Attributes.step "1"
-                        , value <| toString model.maxRoundNumber
-                        , onInput <| UpdateSetting Rounds
-                        , style "width" <| toString (String.length <| toString model.maxRoundNumber) ++ "ch"
-                        ]
-                        []
-                    ]
-                , div
-                    [ class "slider-wrapper"
-                    ]
-                    [ input
-                        [ type_ "range"
-                        , Html.Attributes.min "0"
-                        , Html.Attributes.max "12"
-                        , Html.Attributes.step "1"
-                        , class "slider"
-                        , value <| toString model.maxRoundNumber
-                        , onInput <| UpdateSetting Rounds
-                        ]
-                        []
-                    , div
-                        [ class "slider-bar slider-bar--blue-grey"
-                        , style "width" (toString (100 * toFloat model.maxRoundNumber / 12) ++ "%")
-                        ]
-                        []
-                    ]
-                ]
-            , div
-                [ class "setting-wrapper"
-                ]
-                [ p
-                    [ class "text-button"
-                    , onClick ResetSettings
-                    ]
-                    [ text "Reset Defaults" ]
-                ]
-            ]
+        [ case model.settingTab of
+            Timer ->
+                timerSettingView model
+
+            Settings ->
+                settingsSettingView model
+
+            About ->
+                aboutSettingView model
         , div
             [ class "drawer-menu"
             ]
             [ div
                 [ title "Timer Configuration"
-                , class "drawer-menu-wrapper is-active"
+                , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == Timer then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab Timer
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -1202,6 +1243,14 @@ drawerView model =
             , div
                 [ title "Options"
                 , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == Settings then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab Settings
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -1228,6 +1277,14 @@ drawerView model =
             , div
                 [ title "About"
                 , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == About then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab About
                 ]
                 [ div
                     [ class "Drawer-menu-button"
