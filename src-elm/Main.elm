@@ -2,9 +2,9 @@ port module Main exposing (..)
 
 import Browser
 import Debug exposing (toString)
-import Html exposing (Html, div, h1, nav, p, section, text)
-import Html.Attributes exposing (attribute, class, id, style, title)
-import Html.Events exposing (onClick)
+import Html exposing (Html, div, h1, input, nav, p, section, text)
+import Html.Attributes exposing (attribute, class, id, style, title, type_, value)
+import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Time
@@ -44,6 +44,7 @@ type alias Model =
     , shortBreakDuration : Seconds
     , strokeDasharray : Float
     , volume : Float
+    , volumeSliderHidden : Bool
     }
 
 
@@ -125,17 +126,21 @@ init _ =
       , shortBreakDuration = 5 * 60
       , strokeDasharray = 691.3321533203125
       , volume = 1
+      , volumeSliderHidden = True
       }
     , updateCurrentState { color = green, percentage = 1, paused = False }
     )
 
 
 type Msg
-    = Reset
+    = HideVolumeBar
+    | Reset
     | SkipCurrentRound
+    | ShowVolumeBar
     | Tick Time.Posix
     | ToggleMute
     | ToggleStatus
+    | UpdateVolume String
 
 
 getNextRoundInfo : Model -> NextRoundInfo
@@ -174,6 +179,9 @@ getNextRoundInfo model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        HideVolumeBar ->
+            ( { model | volumeSliderHidden = True }, Cmd.none )
+
         Reset ->
             ( { model
                 | sessionStatus = Stopped
@@ -239,6 +247,9 @@ update msg model =
                     }
                 ]
             )
+
+        ShowVolumeBar ->
+            ( { model | volumeSliderHidden = False }, Cmd.none )
 
         Tick _ ->
             if model.currentTime > 0 && model.sessionStatus == Running then
@@ -307,12 +318,16 @@ update msg model =
                 ( model, Cmd.none )
 
         ToggleMute ->
-            ( { model | muted = not model.muted }
-            , if model.muted then
-                setVolume model.volume
+            let
+                newVolume =
+                    if model.muted then
+                        model.volume
 
-              else
-                setVolume 0
+                    else
+                        0
+            in
+            ( { model | muted = not model.muted, volume = newVolume }
+            , setVolume newVolume
             )
 
         ToggleStatus ->
@@ -334,6 +349,28 @@ update msg model =
                         , paused = False
                         }
                     )
+
+        UpdateVolume volumeStr ->
+            let
+                newVolume =
+                    case String.toInt volumeStr of
+                        Nothing ->
+                            model.volume
+
+                        Just v ->
+                            toFloat v / 100
+            in
+            ( { model
+                | volume = newVolume
+                , muted =
+                    if newVolume > 0 then
+                        False
+
+                    else
+                        True
+              }
+            , setVolume newVolume
+            )
 
 
 colorForSessionType : SessionType -> Color
@@ -570,7 +607,7 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ class "icon-wrapper", class "icon-wrapper--double--right", onClick ToggleMute, title "Mute" ]
+            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, onMouseOver ShowVolumeBar, title "Mute" ]
                 [ if model.muted == False then
                     svg
                         [ SvgAttr.version "1.2"
@@ -614,6 +651,30 @@ footerView model =
                             ]
                             []
                         ]
+                ]
+            , div
+                [ class "slider-wrapper"
+                , class "slider-wrapper--vert"
+                , id "volume-slider"
+                , style "display"
+                    (if model.volumeSliderHidden then
+                        "none"
+
+                     else
+                        "block"
+                    )
+                , onMouseLeave HideVolumeBar
+                ]
+                [ input
+                    [ type_ "range"
+                    , Html.Attributes.min "0"
+                    , Html.Attributes.max "100"
+                    , class "slider"
+                    , onInput UpdateVolume
+                    , value (model.volume * 100 |> toString)
+                    ]
+                    []
+                , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
                 ]
             ]
         ]
