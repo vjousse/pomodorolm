@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Browser
 import Debug exposing (toString)
 import Html exposing (Html, div, h1, input, nav, p, section, text)
-import Html.Attributes exposing (attribute, class, id, style, title, type_, value)
+import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -105,7 +105,7 @@ init : flags -> ( Model, Cmd Msg )
 init _ =
     let
         pomodoroDuration =
-            10
+            25 * 60
     in
     ( { autoStartBreakTimer = True
       , autoStartWorkTimer = True
@@ -113,7 +113,7 @@ init _ =
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
       , currentTime = pomodoroDuration
-      , drawerOpen = False
+      , drawerOpen = True
       , endColor = red
       , initialColor = green
       , playTickSoundWork = True
@@ -132,6 +132,13 @@ init _ =
     )
 
 
+type SettingType
+    = FocusTime
+    | ShortBreakTime
+    | LongBreakTime
+    | Rounds
+
+
 type Msg
     = CloseWindow
     | HideVolumeBar
@@ -140,9 +147,11 @@ type Msg
     | SkipCurrentRound
     | ShowVolumeBar
     | Tick Time.Posix
+    | ToggleDrawer
     | ToggleMute
     | ToggleStatus
     | UpdateVolume String
+    | UpdateSetting SettingType String
 
 
 getNextRoundInfo : Model -> NextRoundInfo
@@ -325,6 +334,9 @@ update msg model =
             else
                 ( model, Cmd.none )
 
+        ToggleDrawer ->
+            ( { model | drawerOpen = not model.drawerOpen }, Cmd.none )
+
         ToggleMute ->
             let
                 newVolume =
@@ -357,6 +369,23 @@ update msg model =
                         , paused = False
                         }
                     )
+
+        UpdateSetting settingType v ->
+            let
+                value =
+                    case String.toInt v of
+                        Nothing ->
+                            0
+
+                        Just stringValue ->
+                            stringValue
+            in
+            case settingType of
+                FocusTime ->
+                    ( { model | pomodoroDuration = value * 60, currentTime = value * 60 }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
         UpdateVolume volumeStr ->
             let
@@ -421,6 +450,11 @@ computeCurrentColor currentTime maxTime sessionType =
             colorForSessionType s
 
 
+secondsToString : Seconds -> String
+secondsToString seconds =
+    (String.padLeft 2 '0' <| String.fromInt (seconds // 60)) ++ ":" ++ (String.padLeft 2 '0' <| String.fromInt (modBy 60 seconds))
+
+
 dialView : SessionType -> Seconds -> Seconds -> Float -> Html Msg
 dialView sessionType currentTime maxTime maxStrokeDasharray =
     let
@@ -438,10 +472,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray =
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
-            [ text <| String.padLeft 2 '0' <| String.fromInt (currentTime // 60)
-            , text ":"
-            , text <| String.padLeft 2 '0' <| String.fromInt (modBy 60 currentTime)
-            ]
+            [ text <| secondsToString currentTime ]
         , p [ class "dial-label", style "color" color ]
             [ text <|
                 case sessionType of
@@ -507,8 +538,7 @@ playPauseView sessionStatus =
     let
         pauseSvg =
             svg
-                [ attribute "data-v-04292d65" ""
-                , SvgAttr.version "1.2"
+                [ SvgAttr.version "1.2"
                 , SvgAttr.baseProfile "tiny"
                 , SvgAttr.id "Layer_2"
                 , SvgAttr.x "0px"
@@ -519,8 +549,7 @@ playPauseView sessionStatus =
                 , SvgAttr.class "icon--pause"
                 ]
                 [ Svg.line
-                    [ attribute "data-v-04292d65" ""
-                    , SvgAttr.fill "none"
+                    [ SvgAttr.fill "none"
                     , SvgAttr.stroke "var(--color-foreground)"
                     , SvgAttr.strokeWidth "3"
                     , SvgAttr.strokeLinecap "round"
@@ -532,8 +561,7 @@ playPauseView sessionStatus =
                     ]
                     []
                 , Svg.line
-                    [ attribute "data-v-04292d65" ""
-                    , SvgAttr.fill "none"
+                    [ SvgAttr.fill "none"
                     , SvgAttr.stroke "var(--color-foreground)"
                     , SvgAttr.strokeWidth "3"
                     , SvgAttr.strokeLinecap "round"
@@ -559,8 +587,7 @@ playPauseView sessionStatus =
                 , SvgAttr.class "icon--start"
                 ]
                 [ Svg.polygon
-                    [ attribute "data-v-04292d65" ""
-                    , SvgAttr.fill "var(--color-foreground)"
+                    [ SvgAttr.fill "var(--color-foreground)"
                     , SvgAttr.points "0,0 0,15 7.6,7.4 "
                     ]
                     []
@@ -629,8 +656,7 @@ footerView model =
                         , SvgAttr.baseProfile "tiny"
                         ]
                         [ path
-                            [ attribute "data-v-b9a0799a" ""
-                            , SvgAttr.fill "var(--color-background-lightest)"
+                            [ SvgAttr.fill "var(--color-background-lightest)"
                             , SvgAttr.d "M0,3.9v4.1h2.7l3.4,3.4V0.5L2.7,3.9H0z M9.2,6c0-1.2-0.7-2.3-1.7-2.8v5.5C8.5,8.3,9.2,7.2,9.2,6z M7.5,0v1.4 c2,0.6,3.4,2.4,3.4,4.6s-1.4,4-3.4,4.6V12c2.7-0.6,4.8-3.1,4.8-6S10.3,0.6,7.5,0z"
                             ]
                             []
@@ -653,8 +679,7 @@ footerView model =
                             ]
                             []
                         , path
-                            [ attribute "data-v-b9a0799a" ""
-                            , SvgAttr.fill "none"
+                            [ SvgAttr.fill "none"
                             , SvgAttr.d "M-467,269h24v24h-24V269z"
                             ]
                             []
@@ -710,11 +735,20 @@ timerView model =
         ]
 
 
-navView : Html Msg
-navView =
+navView : Model -> Html Msg
+navView model =
     nav [ class "titlebar" ]
-        [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single" ]
-            [ div [ class "menu-wrapper" ]
+        [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick ToggleDrawer ]
+            [ div
+                [ class "menu-wrapper"
+                , class
+                    (if model.drawerOpen then
+                        "is-collapsed"
+
+                     else
+                        ""
+                    )
+                ]
                 [ div [ class "menu-line" ] []
                 , div [ class "menu-line" ] []
                 ]
@@ -765,8 +799,7 @@ navView =
                     , SvgAttr.class "icon icon--close"
                     ]
                     [ Svg.line
-                        [ attribute "data-v-9e10a67e" ""
-                        , SvgAttr.fill "none"
+                        [ SvgAttr.fill "none"
                         , SvgAttr.stroke "#F6F2EB"
                         , SvgAttr.strokeWidth "2"
                         , SvgAttr.strokeLinecap "round"
@@ -778,8 +811,7 @@ navView =
                         ]
                         []
                     , Svg.line
-                        [ attribute "data-v-9e10a67e" ""
-                        , SvgAttr.fill "none"
+                        [ SvgAttr.fill "none"
                         , SvgAttr.stroke "#F6F2EB"
                         , SvgAttr.strokeWidth "2"
                         , SvgAttr.strokeLinecap "round"
@@ -796,11 +828,290 @@ navView =
         ]
 
 
+drawerView : Model -> Html Msg
+drawerView model =
+    div
+        [ id "drawer"
+        ]
+        [ div
+            [ class "container"
+            ]
+            [ p
+                [ class "drawer-heading"
+                ]
+                [ text "Timer" ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p
+                    [ class "setting-title"
+                    ]
+                    [ text "Focus" ]
+                , p
+                    [ class "setting-value"
+                    ]
+                    [ text <| secondsToString model.pomodoroDuration ]
+                , div
+                    [ class "slider-wrapper"
+                    ]
+                    [ input
+                        [ type_ "range"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , Html.Attributes.step "1"
+                        , class "slider slider--red"
+                        , value <| toString (toFloat model.pomodoroDuration / 60)
+                        , onInput <| UpdateSetting FocusTime
+                        ]
+                        []
+                    , div
+                        [ class "slider-bar slider-bar--red"
+                        , style "width" (toString ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
+                        ]
+                        []
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p
+                    [ class "setting-title"
+                    ]
+                    [ text "Short Break" ]
+                , p
+                    [ class "setting-value"
+                    ]
+                    [ text <| secondsToString model.shortBreakDuration ]
+                , div
+                    [ class "slider-wrapper"
+                    ]
+                    [ input
+                        [ type_ "range"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , Html.Attributes.step "1"
+                        , class "slider slider--green"
+                        , value <| toString (toFloat model.shortBreakDuration / 60)
+                        , onInput <| UpdateSetting ShortBreakTime
+                        ]
+                        []
+                    , div
+                        [ class "slider-bar slider-bar--green"
+                        , style "width" (toString ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
+                        ]
+                        []
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p
+                    [ class "setting-title"
+                    ]
+                    [ text "Long Break" ]
+                , p
+                    [ class "setting-value"
+                    ]
+                    [ text <| secondsToString model.longBreakDuration ]
+                , div
+                    [ class "slider-wrapper"
+                    ]
+                    [ input
+                        [ type_ "range"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "90"
+                        , Html.Attributes.step "1"
+                        , class "slider slider--blue"
+                        , value <| toString (toFloat model.longBreakDuration / 60)
+                        , onInput <| UpdateSetting LongBreakTime
+                        ]
+                        []
+                    , div
+                        [ class "slider-bar slider-bar--blue"
+                        , style "width" (toString ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
+                        ]
+                        []
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p
+                    [ class "setting-title"
+                    ]
+                    [ text "Rounds" ]
+                , p
+                    [ class "setting-value"
+                    ]
+                    [ text <| toString model.maxRoundNumber ]
+                , div
+                    [ class "slider-wrapper"
+                    ]
+                    [ input
+                        [ type_ "range"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.max "12"
+                        , Html.Attributes.step "1"
+                        , class "slider"
+                        ]
+                        []
+                    , div
+                        [ class "slider-bar slider-bar--blueGrey"
+                        , style "width" "44.5%"
+                        ]
+                        []
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p
+                    [ class "text-button"
+                    ]
+                    [ text "Reset Defaults" ]
+                ]
+            ]
+        , div
+            [ class "drawer-menu"
+            ]
+            [ div
+                [ title "Timer Configuration"
+                , class "drawer-menu-wrapper is-active"
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ div
+                        [ class "icon-wrapper"
+                        ]
+                        [ svg
+                            [ SvgAttr.version "1.2"
+                            , SvgAttr.baseProfile "tiny"
+                            , SvgAttr.id "timer-icon"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "0 0 20 20"
+                            , SvgAttr.width "18"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.class "icon"
+                            ]
+                            [ Svg.g []
+                                [ path
+                                    [ SvgAttr.fill "var(--color-background-lightest)"
+                                    , SvgAttr.d "M10,0C4.5,0,0,4.5,0,10s4.5,10,10,10c5.5,0,10-4.5,10-10S15.5,0,10,0z M10,18c-4.4,0-8-3.6-8-8s3.6-8,8-8\n              s8,3.6,8,8S14.4,18,10,18z"
+                                    ]
+                                    []
+                                , path
+                                    [ SvgAttr.fill "var(--color-background-lightest)"
+                                    , SvgAttr.d "M10.5,5H9v6l5.3,3.1l0.8-1.2l-4.5-2.7V5z"
+                                    ]
+                                    []
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            , div
+                [ title "Options"
+                , class "drawer-menu-wrapper"
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ svg
+                        [ SvgAttr.version "1.2"
+                        , SvgAttr.baseProfile "tiny"
+                        , SvgAttr.id "settings-icon"
+                        , SvgAttr.x "0px"
+                        , SvgAttr.y "0px"
+                        , SvgAttr.viewBox "0 0 19.5 20"
+                        , SvgAttr.width "18"
+                        , SvgAttr.xmlSpace "preserve"
+                        , SvgAttr.class "icon"
+                        ]
+                        [ path
+                            [ SvgAttr.fill "var(--color-background-lightest)"
+                            , SvgAttr.d "M17.2,11c0-0.3,0.1-0.6,0.1-1s0-0.7-0.1-1l2.1-1.6c0.2-0.1,0.2-0.4,0.1-0.6l-2-3.5C17.3,3.1,17,3,16.8,3.1\n          l-2.5,1c-0.5-0.4-1.1-0.7-1.7-1l-0.4-2.7C12.2,0.2,12,0,11.7,0h-4C7.5,0,7.3,0.2,7.2,0.4L6.9,3.1c-0.6,0.3-1.2,0.6-1.7,1l-2.5-1\n          C2.4,3,2.2,3.1,2.1,3.3l-2,3.5C-0.1,6.9,0,7.2,0.2,7.4L2.3,9c0,0.3-0.1,0.6-0.1,1s0,0.7,0.1,1l-2.1,1.6C0,12.8-0.1,13,0.1,13.3\n          l2,3.5c0.1,0.2,0.4,0.3,0.6,0.2l2.5-1c0.5,0.4,1.1,0.7,1.7,1l0.4,2.6c0,0.2,0.2,0.4,0.5,0.4h4c0.3,0,0.5-0.2,0.5-0.4l0.4-2.6\n          c0.6-0.3,1.2-0.6,1.7-1l2.5,1c0.2,0.1,0.5,0,0.6-0.2l2-3.5c0.1-0.2,0.1-0.5-0.1-0.6L17.2,11z M9.7,13.5c-1.9,0-3.5-1.6-3.5-3.5\n          s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S11.7,13.5,9.7,13.5z"
+                            ]
+                            []
+                        ]
+                    ]
+                ]
+            , div
+                [ title "Themes"
+                , class "drawer-menu-wrapper"
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ div
+                        [ class "icon-wrapper"
+                        ]
+                        [ svg
+                            [ SvgAttr.height "24"
+                            , SvgAttr.viewBox "0 0 24 24"
+                            , SvgAttr.width "24"
+                            , SvgAttr.id "theme-icon"
+                            , SvgAttr.class "icon"
+                            ]
+                            [ path
+                                [ SvgAttr.d "M0 0h24v24H0z"
+                                , SvgAttr.fill "none"
+                                ]
+                                []
+                            , path
+                                [ SvgAttr.fill "var(--color-background-lightest)"
+                                , SvgAttr.d "M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                                ]
+                                []
+                            ]
+                        ]
+                    ]
+                ]
+            , div
+                [ title "About"
+                , class "drawer-menu-wrapper"
+                ]
+                [ div
+                    [ class "Drawer-menu-button"
+                    ]
+                    [ div
+                        [ class "icon-wrapper"
+                        ]
+                        [ svg
+                            [ SvgAttr.id "about-icon"
+                            , SvgAttr.width "24"
+                            , SvgAttr.height "24"
+                            , SvgAttr.viewBox "0 0 24 24"
+                            , SvgAttr.class "icon"
+                            ]
+                            [ path
+                                [ SvgAttr.fill "none"
+                                , SvgAttr.d "M0 0h24v24H0V0z"
+                                ]
+                                []
+                            , path
+                                [ SvgAttr.fill "var(--color-background-lightest)"
+                                , SvgAttr.d "M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+                                ]
+                                []
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div [ id "app" ]
-        [ navView
-        , timerView model
+        [ navView model
+        , if model.drawerOpen then
+            drawerView model
+
+          else
+            timerView model
         ]
 
 
