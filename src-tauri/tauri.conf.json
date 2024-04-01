@@ -65,11 +65,13 @@
     },
     "windows": [
       {
+        "alwaysOnTop": true,
+        "center": true,
         "fullscreen": false,
-        "height": 600,
+        "height": 478,
         "resizable": true,
         "title": "Pomodorolm",
-        "width": 800
+        "width": 360
       }
     ]
   }
