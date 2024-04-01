@@ -1,3 +1,7 @@
+# Warning
+
+_This is still a work in progress, expect some production ready releases soon_
+
 # Installation
 
 You will need to [install rust](https://www.rust-lang.org/tools/install) first.
