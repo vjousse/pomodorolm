@@ -306,13 +306,17 @@ body {
   background: var(--color-accent);
 }
 
+#volume-slider input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--color-background-lightest);
+}
+
 input[type="range"] {
   -webkit-appearance: none;
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
   height: 3px;
-  background: var(--color-background-lightest);
+  background-color: var(--color-background);
   border: none;
   border-radius: 3px;
 }

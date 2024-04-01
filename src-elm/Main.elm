@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Browser
 import Debug exposing (toString)
 import Html exposing (Html, div, h1, input, nav, p, section, text)
-import Html.Attributes exposing (class, id, style, title, type_, value)
+import Html.Attributes exposing (class, default, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -76,6 +76,23 @@ type alias NextRoundInfo =
     }
 
 
+type alias Defaults =
+    { longBreakDuration : Seconds
+    , pomodoroDuration : Seconds
+    , shortBreakDuration : Seconds
+    , maxRoundNumber : Int
+    }
+
+
+defaults : Defaults
+defaults =
+    { longBreakDuration = 20 * 60
+    , pomodoroDuration = 25 * 60
+    , shortBreakDuration = 5 * 60
+    , maxRoundNumber = 4
+    }
+
+
 green : Color
 green =
     { r = 5, g = 236, b = 140 }
@@ -103,27 +120,23 @@ pink =
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    let
-        pomodoroDuration =
-            25 * 60
-    in
     ( { autoStartBreakTimer = True
       , autoStartWorkTimer = True
       , currentColor = green
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
-      , currentTime = pomodoroDuration
+      , currentTime = defaults.pomodoroDuration
       , drawerOpen = True
       , endColor = red
       , initialColor = green
       , playTickSoundWork = True
-      , longBreakDuration = 20 * 60
-      , maxRoundNumber = 4
+      , longBreakDuration = defaults.longBreakDuration
+      , maxRoundNumber = defaults.maxRoundNumber
       , middleColor = orange
       , muted = False
-      , pomodoroDuration = pomodoroDuration
+      , pomodoroDuration = defaults.pomodoroDuration
       , sessionStatus = Stopped
-      , shortBreakDuration = 5 * 60
+      , shortBreakDuration = defaults.shortBreakDuration
       , strokeDasharray = 691.3321533203125
       , volume = 1
       , volumeSliderHidden = True
@@ -144,6 +157,7 @@ type Msg
     | HideVolumeBar
     | MinimizeWindow
     | Reset
+    | ResetSettings
     | SkipCurrentRound
     | ShowVolumeBar
     | Tick Time.Posix
@@ -223,6 +237,16 @@ update msg model =
                     else
                         False
                 }
+            )
+
+        ResetSettings ->
+            ( { model
+                | pomodoroDuration = defaults.pomodoroDuration
+                , shortBreakDuration = defaults.shortBreakDuration
+                , longBreakDuration = defaults.longBreakDuration
+                , maxRoundNumber = defaults.maxRoundNumber
+              }
+            , Cmd.none
             )
 
         SkipCurrentRound ->
@@ -384,8 +408,23 @@ update msg model =
                 FocusTime ->
                     ( { model | pomodoroDuration = value * 60, currentTime = value * 60 }, Cmd.none )
 
-                _ ->
-                    ( model, Cmd.none )
+                ShortBreakTime ->
+                    ( { model | shortBreakDuration = value * 60, currentTime = value * 60 }, Cmd.none )
+
+                LongBreakTime ->
+                    ( { model | longBreakDuration = value * 60, currentTime = value * 60 }, Cmd.none )
+
+                Rounds ->
+                    ( { model
+                        | maxRoundNumber =
+                            if value == 0 then
+                                1
+
+                            else
+                                value
+                      }
+                    , Cmd.none
+                    )
 
         UpdateVolume volumeStr ->
             let
@@ -949,15 +988,17 @@ drawerView model =
                     ]
                     [ input
                         [ type_ "range"
-                        , Html.Attributes.min "1"
+                        , Html.Attributes.min "0"
                         , Html.Attributes.max "12"
                         , Html.Attributes.step "1"
                         , class "slider"
+                        , value <| toString model.maxRoundNumber
+                        , onInput <| UpdateSetting Rounds
                         ]
                         []
                     , div
-                        [ class "slider-bar slider-bar--blueGrey"
-                        , style "width" "44.5%"
+                        [ class "slider-bar slider-bar--blue-grey"
+                        , style "width" (toString (100 * toFloat model.maxRoundNumber / 12) ++ "%")
                         ]
                         []
                     ]
@@ -967,6 +1008,7 @@ drawerView model =
                 ]
                 [ p
                     [ class "text-button"
+                    , onClick ResetSettings
                     ]
                     [ text "Reset Defaults" ]
                 ]
