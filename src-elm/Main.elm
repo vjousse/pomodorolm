@@ -1,7 +1,6 @@
 port module Main exposing (..)
 
 import Browser
-import Debug exposing (toString)
 import Html exposing (Html, div, h1, input, nav, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
@@ -764,7 +763,7 @@ footerView : Model -> Html Msg
 footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
-            [ p [] [ text <| toString model.currentRoundNumber ++ "/" ++ toString model.maxRoundNumber ]
+            [ p [] [ text <| String.fromInt model.currentRoundNumber ++ "/" ++ String.fromInt model.maxRoundNumber ]
             , p [ class "text-button", title "Reset current round", onClick Reset ] [ text "Reset" ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
@@ -857,7 +856,7 @@ footerView model =
                     , Html.Attributes.max "100"
                     , class "slider"
                     , onInput UpdateVolume
-                    , value (model.volume * 100 |> toString)
+                    , value (model.volume * 100 |> String.fromFloat)
                     ]
                     []
                 , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
@@ -1003,9 +1002,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| toString (toFloat model.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.pomodoroDuration / 60)
                     , onInput <| UpdateSetting FocusTime
-                    , style "width" <| toString (String.length <| toString (toFloat model.pomodoroDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.pomodoroDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1019,13 +1018,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
-                    , value <| toString (toFloat model.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.pomodoroDuration / 60)
                     , onInput <| UpdateSetting FocusTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--red"
-                    , style "width" (toString ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1045,9 +1044,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| toString (toFloat model.shortBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.shortBreakDuration / 60)
                     , onInput <| UpdateSetting ShortBreakTime
-                    , style "width" <| toString (String.length <| toString (toFloat model.shortBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.shortBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1061,13 +1060,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
-                    , value <| toString (toFloat model.shortBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.shortBreakDuration / 60)
                     , onInput <| UpdateSetting ShortBreakTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--green"
-                    , style "width" (toString ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1087,9 +1086,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| toString (toFloat model.longBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.longBreakDuration / 60)
                     , onInput <| UpdateSetting LongBreakTime
-                    , style "width" <| toString (String.length <| toString (toFloat model.longBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.longBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1103,13 +1102,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
-                    , value <| toString (toFloat model.longBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.longBreakDuration / 60)
                     , onInput <| UpdateSetting LongBreakTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue"
-                    , style "width" (toString ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1130,9 +1129,9 @@ timerSettingView model =
                     , Html.Attributes.min "0"
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
-                    , value <| toString model.maxRoundNumber
+                    , value <| String.fromInt model.maxRoundNumber
                     , onInput <| UpdateSetting Rounds
-                    , style "width" <| toString (String.length <| toString model.maxRoundNumber) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromInt model.maxRoundNumber) ++ "ch"
                     ]
                     []
                 ]
@@ -1145,13 +1144,13 @@ timerSettingView model =
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
                     , class "slider"
-                    , value <| toString model.maxRoundNumber
+                    , value <| String.fromInt model.maxRoundNumber
                     , onInput <| UpdateSetting Rounds
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue-grey"
-                    , style "width" (toString (100 * toFloat model.maxRoundNumber / 12) ++ "%")
+                    , style "width" (String.fromFloat (100 * toFloat model.maxRoundNumber / 12) ++ "%")
                     ]
                     []
                 ]
