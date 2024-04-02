@@ -39,7 +39,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "org.jousse.vincent",
       "longDescription": "",
       "macOS": {
         "entitlements": null,

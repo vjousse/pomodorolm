@@ -1,0 +1,5 @@
+**/elm-stuff
+**/.git
+**/node_modules
+**/target
+**/dist

@@ -1,6 +1,7 @@
 # Elm
 
 elm-stuff/
+target/
 
 # Generated icon
 temp_icon.png
