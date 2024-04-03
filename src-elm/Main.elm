@@ -1,8 +1,8 @@
 port module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, input, nav, p, section, text)
-import Html.Attributes exposing (class, id, style, title, type_, value)
+import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
+import Html.Attributes exposing (class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -1281,9 +1281,24 @@ settingsSettingView model =
         ]
 
 
-aboutSettingView : Model -> Html Msg
-aboutSettingView model =
-    div [ class "container" ] []
+aboutSettingView : Html Msg
+aboutSettingView =
+    div [ class "container", id "about" ]
+        [ p [ class "drawer-heading" ] [ text "About" ]
+        , section []
+            [ h2 [] [ text "Pomodrolm" ]
+            , p [ class "label" ] [ text "Version: dev" ]
+            , p [ class "label" ]
+                [ a
+                    [ href "https://github.com/vjousse/pomodorolm"
+                    , class "label"
+                    , class "link"
+                    , target "_blank"
+                    ]
+                    [ text "Licence, Documentation and Source Code" ]
+                ]
+            ]
+        ]
 
 
 drawerView : Model -> Html Msg
@@ -1299,7 +1314,7 @@ drawerView model =
                 settingsSettingView model
 
             AboutTab ->
-                aboutSettingView model
+                aboutSettingView
         , div
             [ class "drawer-menu"
             ]

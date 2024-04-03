@@ -493,3 +493,37 @@ input[type="range"]::-webkit-slider-thumb {
   padding: 12px;
   cursor: pointer;
 }
+
+#about h2 {
+  color: var(--color-short-round);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0.5em 0;
+}
+
+#about .label {
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  line-height: 2;
+}
+
+#about .label .link,
+#about .label.link {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--color-accent);
+}
+#about .label .link:hover,
+#about .label.link:hover,
+#about .label .link:visited,
+#about .label.link:visited {
+  color: var(--color-accent);
+}
+
+#about section {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  padding-top: 2em;
+  height: 100%;
+}
