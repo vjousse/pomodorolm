@@ -527,3 +527,8 @@ input[type="range"]::-webkit-slider-thumb {
   padding-top: 2em;
   height: 100%;
 }
+
+#drawer .container {
+  max-height: calc(100% - 36px);
+  overflow-y: auto;
+}
