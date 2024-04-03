@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Browser
 import Html exposing (Html, div, h1, input, nav, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
-import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
+import Html.Events exposing (onClick, onInput, onMouseLeave)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Time
@@ -39,6 +39,7 @@ type alias Model =
     , muted : Bool
     , playTickSoundWork : Bool
     , pomodoroDuration : Seconds
+    , settingsConfig : SettingsConfig
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
     , shortBreakDuration : Seconds
@@ -50,6 +51,18 @@ type alias Model =
 
 type alias Color =
     { r : Int, g : Int, b : Int }
+
+
+type alias SettingsConfig =
+    { alwaysOnTop : Bool
+    , autoStartWorkTimer : Bool
+    , autoStartBreakTimer : Bool
+    , tickSoundsDuringWork : Bool
+    , tickSoundsDuringBreak : Bool
+    , desktopNotifications : Bool
+    , minimizeToTray : Bool
+    , minimizeToTrayOnClose : Bool
+    }
 
 
 type alias CurrentState =
@@ -69,9 +82,20 @@ type SessionStatus
 
 
 type SettingTab
-    = Timer
-    | Settings
-    | About
+    = TimerTab
+    | SettingsTab
+    | AboutTab
+
+
+type Setting
+    = AlwaysOnTop
+    | AutoStartWorkTimer
+    | AutoStartBreakTimer
+    | TickSoundsDuringWork
+    | TickSoundsDuringBreak
+    | DesktopNotifications
+    | MinimizeToTray
+    | MinimizeToTrayOnClose
 
 
 type alias NextRoundInfo =
@@ -142,7 +166,17 @@ init _ =
       , muted = False
       , pomodoroDuration = defaults.pomodoroDuration
       , sessionStatus = Stopped
-      , settingTab = Timer
+      , settingTab = TimerTab
+      , settingsConfig =
+            { alwaysOnTop = True
+            , autoStartWorkTimer = True
+            , autoStartBreakTimer = True
+            , tickSoundsDuringWork = True
+            , tickSoundsDuringBreak = True
+            , desktopNotifications = True
+            , minimizeToTray = True
+            , minimizeToTrayOnClose = True
+            }
       , shortBreakDuration = defaults.shortBreakDuration
       , strokeDasharray = 691.3321533203125
       , volume = 1
@@ -162,6 +196,7 @@ type SettingType
 type Msg
     = CloseWindow
     | ChangeSettingTab SettingTab
+    | ChangeSettingConfig Setting
     | HideVolumeBar
     | MinimizeWindow
     | Reset
@@ -212,6 +247,39 @@ getNextRoundInfo model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ChangeSettingConfig settingConfig ->
+            let
+                settingsConfig =
+                    model.settingsConfig
+
+                newSettingsConfig =
+                    case settingConfig of
+                        AlwaysOnTop ->
+                            { settingsConfig | alwaysOnTop = not settingsConfig.alwaysOnTop }
+
+                        AutoStartBreakTimer ->
+                            { settingsConfig | autoStartBreakTimer = not settingsConfig.autoStartBreakTimer }
+
+                        AutoStartWorkTimer ->
+                            { settingsConfig | autoStartWorkTimer = not settingsConfig.autoStartWorkTimer }
+
+                        TickSoundsDuringWork ->
+                            { settingsConfig | tickSoundsDuringWork = not settingsConfig.tickSoundsDuringWork }
+
+                        TickSoundsDuringBreak ->
+                            { settingsConfig | tickSoundsDuringBreak = not settingsConfig.tickSoundsDuringBreak }
+
+                        DesktopNotifications ->
+                            { settingsConfig | desktopNotifications = not settingsConfig.desktopNotifications }
+
+                        MinimizeToTray ->
+                            { settingsConfig | minimizeToTray = not settingsConfig.minimizeToTray }
+
+                        MinimizeToTrayOnClose ->
+                            { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
+            in
+            ( { model | settingsConfig = newSettingsConfig }, Cmd.none )
+
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
 
@@ -1177,7 +1245,40 @@ timerSettingView model =
 
 settingsSettingView : Model -> Html Msg
 settingsSettingView model =
-    div [ class "container" ] []
+    let
+        settingWrapper : String -> Msg -> Bool -> Html Msg
+        settingWrapper title msg settingActive =
+            div
+                [ class "setting-wrapper"
+                , onClick msg
+                ]
+                [ p [ class "setting-title" ] [ text title ]
+                , div
+                    [ class "checkbox"
+                    , class <|
+                        if settingActive then
+                            "is-active"
+
+                        else
+                            "is-inactive"
+                    ]
+                    []
+                ]
+    in
+    div [ class "container", id "settings" ]
+        [ p
+            [ class "drawer-heading"
+            ]
+            [ text "Settings" ]
+        , settingWrapper "Always On Top" (ChangeSettingConfig AlwaysOnTop) model.settingsConfig.alwaysOnTop
+        , settingWrapper "Auto-start Work Timer" (ChangeSettingConfig AutoStartWorkTimer) model.settingsConfig.autoStartWorkTimer
+        , settingWrapper "Auto-start Break Timer" (ChangeSettingConfig AutoStartBreakTimer) model.settingsConfig.autoStartBreakTimer
+        , settingWrapper "Tick Sounds - Work" (ChangeSettingConfig TickSoundsDuringWork) model.settingsConfig.tickSoundsDuringWork
+        , settingWrapper "Tick Sounds - Break" (ChangeSettingConfig TickSoundsDuringBreak) model.settingsConfig.tickSoundsDuringBreak
+        , settingWrapper "Desktop Notifications" (ChangeSettingConfig DesktopNotifications) model.settingsConfig.desktopNotifications
+        , settingWrapper "Minimize to Tray" (ChangeSettingConfig MinimizeToTray) model.settingsConfig.minimizeToTray
+        , settingWrapper "Minimize to Tray on Close" (ChangeSettingConfig MinimizeToTrayOnClose) model.settingsConfig.minimizeToTrayOnClose
+        ]
 
 
 aboutSettingView : Model -> Html Msg
@@ -1191,13 +1292,13 @@ drawerView model =
         [ id "drawer"
         ]
         [ case model.settingTab of
-            Timer ->
+            TimerTab ->
                 timerSettingView model
 
-            Settings ->
+            SettingsTab ->
                 settingsSettingView model
 
-            About ->
+            AboutTab ->
                 aboutSettingView model
         , div
             [ class "drawer-menu"
@@ -1206,13 +1307,13 @@ drawerView model =
                 [ title "Timer Configuration"
                 , class "drawer-menu-wrapper"
                 , class
-                    (if model.settingTab == Timer then
+                    (if model.settingTab == TimerTab then
                         "is-active"
 
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab Timer
+                , onClick <| ChangeSettingTab TimerTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -1251,13 +1352,13 @@ drawerView model =
                 [ title "Options"
                 , class "drawer-menu-wrapper"
                 , class
-                    (if model.settingTab == Settings then
+                    (if model.settingTab == SettingsTab then
                         "is-active"
 
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab Settings
+                , onClick <| ChangeSettingTab SettingsTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -1285,13 +1386,13 @@ drawerView model =
                 [ title "About"
                 , class "drawer-menu-wrapper"
                 , class
-                    (if model.settingTab == About then
+                    (if model.settingTab == AboutTab then
                         "is-active"
 
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab About
+                , onClick <| ChangeSettingTab AboutTab
                 ]
                 [ div
                     [ class "Drawer-menu-button"

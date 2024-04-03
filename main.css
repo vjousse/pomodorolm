@@ -462,3 +462,34 @@ input[type="range"]::-webkit-slider-thumb {
   border: 2px solid var(--color-focus-round);
   -webkit-app-region: no-drag;
 }
+
+.checkbox {
+  background-color: var(--color-background);
+  border: 2px solid var(--color-background-lightest);
+  border-radius: 100%;
+  display: inline-block;
+  transition: all 0.3s ease;
+  width: 16px;
+  height: 16px;
+}
+.checkbox:hover {
+  border-color: var(--color-accent);
+}
+.checkbox.is-active {
+  background-color: var(--color-accent);
+  border-color: var(--color-background);
+}
+.checkbox.is-active:hover {
+  background-color: var(--color-accent);
+  border-color: var(--color-background-lightest);
+}
+
+#settings .setting-wrapper {
+  background-color: var(--color-background);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  padding: 12px;
+  cursor: pointer;
+}
