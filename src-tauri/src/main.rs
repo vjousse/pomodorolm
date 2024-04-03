@@ -13,6 +13,10 @@ use tauri_plugin_log::LogTarget;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
+use rodio::{source::Source, Decoder, OutputStream};
+use std::fs::File;
+use std::io::BufReader;
+
 #[tokio::main]
 async fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
@@ -56,7 +60,8 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
-            minimize_window
+            minimize_window,
+            play_sound
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -153,6 +158,37 @@ async fn change_icon(
         .tray_handle()
         .set_icon(tauri::Icon::File(temp_path.to_path_buf()))
         .expect("Failed to set icon");
+}
+
+#[tauri::command]
+async fn play_sound(app_handle: tauri::AppHandle, sound_id: String) {
+    let sound_file: Option<&str> = match sound_id.as_str() {
+        "audio-long-break" => Some("alert-long-break.mp3"),
+        "audio-short-break" => Some("alert-short-break.mp3"),
+        "audio-work" => Some("alert-work.mp3"),
+        "audio-tick" => Some("tick.mp3"),
+        _ => None,
+    };
+
+    if let Some(file) = sound_file {
+        let resource_path = app_handle
+            .path_resolver()
+            .resolve_resource(format!("audio/{}", file))
+            .expect("failed to resolve resource");
+
+        // Get a output stream handle to the default physical sound device
+        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        // Load a sound from a file, using a path relative to Cargo.toml
+        let file = BufReader::new(File::open(resource_path).unwrap());
+        // Decode that sound file into a source
+        let source = Decoder::new(file).unwrap();
+        // Play the sound directly on the device
+        let _ = stream_handle.play_raw(source.convert_samples());
+
+        // The sound plays in a separate audio thread,
+        // so we need to keep this thread alive while it's playing.
+        std::thread::sleep(std::time::Duration::from_secs(5));
+    }
 }
 
 #[tauri::command]

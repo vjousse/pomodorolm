@@ -289,7 +289,11 @@ update msg model =
                                 Stopped
               }
             , Cmd.batch
-                [ playSound nextRoundInfo.htmlIdOfAudioToPlay
+                [ if model.muted then
+                    Cmd.none
+
+                  else
+                    playSound nextRoundInfo.htmlIdOfAudioToPlay
                 , updateCurrentState
                     { color = colorForSessionType nextRoundInfo.nextSessionType
                     , percentage = 100
@@ -323,7 +327,7 @@ update msg model =
                 in
                 ( { model | currentTime = newTime, currentColor = currentColor }
                 , Cmd.batch
-                    [ if model.playTickSoundWork then
+                    [ if model.playTickSoundWork && not model.muted then
                         playSound "audio-tick"
 
                       else
@@ -366,7 +370,11 @@ update msg model =
                                 else
                                     Stopped
                   }
-                , playSound nextRoundInfo.htmlIdOfAudioToPlay
+                , if model.muted then
+                    Cmd.none
+
+                  else
+                    playSound nextRoundInfo.htmlIdOfAudioToPlay
                 )
 
             else
@@ -794,7 +802,7 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, onMouseOver ShowVolumeBar, title "Mute" ]
+            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, title "Mute" ]
                 [ if model.muted == False then
                     svg
                         [ SvgAttr.version "1.2"

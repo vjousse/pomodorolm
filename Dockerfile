@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgtk-3-dev \
     libayatana-appindicator3-dev\
-    librsvg2-dev
+    librsvg2-dev\
+    libasound2-dev
 
 RUN curl -sL https://deb.nodesource.com/setup_current.x | bash -
 RUN apt-get install -y nodejs
