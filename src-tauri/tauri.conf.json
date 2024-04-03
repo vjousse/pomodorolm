@@ -18,6 +18,12 @@
         "execute": true,
         "sidecar": true,
         "open": true
+      },
+      "fs": {
+        "readFile": true,
+        "scope": [
+          "$RESOURCE/*"
+        ]
       }
     },
     "systemTray": {
@@ -48,7 +54,9 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "audio/*"
+      ],
       "shortDescription": "",
       "targets": "all",
       "windows": {

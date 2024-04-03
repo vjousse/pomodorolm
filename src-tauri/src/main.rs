@@ -1,12 +1,20 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use axum::{
+    http::{HeaderValue, Method},
+    Router,
+};
 use image::{ImageBuffer, Rgba};
 use std::path::Path;
 use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
+use tauri_plugin_log::LogTarget;
+use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
 
@@ -18,7 +26,33 @@ fn main() {
     let system_tray = SystemTray::new().with_menu(tray_menu);
 
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+                .build(),
+        )
         .system_tray(system_tray)
+        .setup(|app| {
+            let resource_path = app
+                .path_resolver()
+                .resolve_resource("audio/")
+                .expect("failed to resolve resource");
+
+            tokio::spawn(async move {
+                let serve_dir = ServeDir::new(resource_path);
+
+                let app = Router::new().nest_service("/", serve_dir).layer(
+                    CorsLayer::new()
+                        .allow_origin("*".parse::<HeaderValue>().unwrap())
+                        .allow_methods([Method::GET]),
+                );
+                let listener = tokio::net::TcpListener::bind("127.0.0.1:16780")
+                    .await
+                    .unwrap();
+                axum::serve(listener, app).await.unwrap();
+            });
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
