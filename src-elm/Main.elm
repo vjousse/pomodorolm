@@ -9,7 +9,7 @@ import Svg.Attributes as SvgAttr
 import Time
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
@@ -24,8 +24,7 @@ type alias Seconds =
 
 
 type alias Model =
-    { autoStartWorkTimer : Bool
-    , autoStartBreakTimer : Bool
+    { config : Config
     , currentColor : Color
     , currentRoundNumber : Int
     , currentSessionType : SessionType
@@ -33,16 +32,10 @@ type alias Model =
     , drawerOpen : Bool
     , endColor : Color
     , initialColor : Color
-    , longBreakDuration : Seconds
-    , maxRoundNumber : Int
     , middleColor : Color
     , muted : Bool
-    , playTickSoundWork : Bool
-    , pomodoroDuration : Seconds
-    , settingsConfig : SettingsConfig
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
-    , shortBreakDuration : Seconds
     , strokeDasharray : Float
     , volume : Float
     , volumeSliderHidden : Bool
@@ -53,15 +46,19 @@ type alias Color =
     { r : Int, g : Int, b : Int }
 
 
-type alias SettingsConfig =
+type alias Config =
     { alwaysOnTop : Bool
     , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
-    , tickSoundsDuringWork : Bool
-    , tickSoundsDuringBreak : Bool
     , desktopNotifications : Bool
+    , longBreakDuration : Seconds
+    , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
+    , pomodoroDuration : Seconds
+    , shortBreakDuration : Seconds
+    , tickSoundsDuringWork : Bool
+    , tickSoundsDuringBreak : Bool
     }
 
 
@@ -114,6 +111,22 @@ type alias Defaults =
     }
 
 
+type alias Flags =
+    { alwaysOnTop : Bool
+    , autoStartWorkTimer : Bool
+    , autoStartBreakTimer : Bool
+    , desktopNotifications : Bool
+    , longBreakDuration : Seconds
+    , maxRoundNumber : Int
+    , minimizeToTray : Bool
+    , minimizeToTrayOnClose : Bool
+    , pomodoroDuration : Seconds
+    , shortBreakDuration : Seconds
+    , tickSoundsDuringWork : Bool
+    , tickSoundsDuringBreak : Bool
+    }
+
+
 defaults : Defaults
 defaults =
     { longBreakDuration = 20 * 60
@@ -148,36 +161,33 @@ pink =
     { r = 255, g = 137, b = 167 }
 
 
-init : flags -> ( Model, Cmd Msg )
-init _ =
-    ( { autoStartBreakTimer = True
-      , autoStartWorkTimer = True
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( { config =
+            { alwaysOnTop = flags.alwaysOnTop
+            , autoStartWorkTimer = flags.autoStartWorkTimer
+            , autoStartBreakTimer = flags.autoStartBreakTimer
+            , desktopNotifications = flags.desktopNotifications
+            , longBreakDuration = flags.longBreakDuration
+            , maxRoundNumber = flags.maxRoundNumber
+            , minimizeToTray = flags.minimizeToTray
+            , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
+            , pomodoroDuration = flags.pomodoroDuration
+            , shortBreakDuration = flags.shortBreakDuration
+            , tickSoundsDuringWork = flags.tickSoundsDuringWork
+            , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
+            }
       , currentColor = green
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
-      , currentTime = defaults.pomodoroDuration
+      , currentTime = flags.pomodoroDuration
       , drawerOpen = False
       , endColor = red
       , initialColor = green
-      , playTickSoundWork = True
-      , longBreakDuration = defaults.longBreakDuration
-      , maxRoundNumber = defaults.maxRoundNumber
       , middleColor = orange
       , muted = False
-      , pomodoroDuration = defaults.pomodoroDuration
       , sessionStatus = Stopped
       , settingTab = TimerTab
-      , settingsConfig =
-            { alwaysOnTop = True
-            , autoStartWorkTimer = True
-            , autoStartBreakTimer = True
-            , tickSoundsDuringWork = True
-            , tickSoundsDuringBreak = True
-            , desktopNotifications = True
-            , minimizeToTray = True
-            , minimizeToTrayOnClose = True
-            }
-      , shortBreakDuration = defaults.shortBreakDuration
       , strokeDasharray = 691.3321533203125
       , volume = 1
       , volumeSliderHidden = True
@@ -215,32 +225,32 @@ getNextRoundInfo : Model -> NextRoundInfo
 getNextRoundInfo model =
     case model.currentSessionType of
         Pomodoro ->
-            if model.currentRoundNumber == model.maxRoundNumber then
+            if model.currentRoundNumber == model.config.maxRoundNumber then
                 { nextSessionType = LongBreak
                 , htmlIdOfAudioToPlay = "audio-long-break"
                 , nextRoundNumber = model.currentRoundNumber
-                , nextTime = model.longBreakDuration
+                , nextTime = model.config.longBreakDuration
                 }
 
             else
                 { nextSessionType = ShortBreak
                 , htmlIdOfAudioToPlay = "audio-short-break"
                 , nextRoundNumber = model.currentRoundNumber
-                , nextTime = model.shortBreakDuration
+                , nextTime = model.config.shortBreakDuration
                 }
 
         ShortBreak ->
             { nextSessionType = Pomodoro
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = model.currentRoundNumber + 1
-            , nextTime = model.pomodoroDuration
+            , nextTime = model.config.pomodoroDuration
             }
 
         LongBreak ->
             { nextSessionType = Pomodoro
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = 1
-            , nextTime = model.pomodoroDuration
+            , nextTime = model.config.pomodoroDuration
             }
 
 
@@ -250,7 +260,7 @@ update msg model =
         ChangeSettingConfig settingConfig ->
             let
                 settingsConfig =
-                    model.settingsConfig
+                    model.config
 
                 newSettingsConfig =
                     case settingConfig of
@@ -278,7 +288,7 @@ update msg model =
                         MinimizeToTrayOnClose ->
                             { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
             in
-            ( { model | settingsConfig = newSettingsConfig }, Cmd.none )
+            ( { model | config = newSettingsConfig }, Cmd.none )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -298,13 +308,13 @@ update msg model =
                 , currentTime =
                     case model.currentSessionType of
                         Pomodoro ->
-                            model.pomodoroDuration
+                            model.config.pomodoroDuration
 
                         ShortBreak ->
-                            model.shortBreakDuration
+                            model.config.shortBreakDuration
 
                         LongBreak ->
-                            model.longBreakDuration
+                            model.config.longBreakDuration
               }
             , updateCurrentState
                 { color = colorForSessionType model.currentSessionType
@@ -319,11 +329,20 @@ update msg model =
             )
 
         ResetSettings ->
+            let
+                config =
+                    model.config
+
+                newConfig =
+                    { config
+                        | pomodoroDuration = defaults.pomodoroDuration
+                        , shortBreakDuration = defaults.shortBreakDuration
+                        , longBreakDuration = defaults.longBreakDuration
+                        , maxRoundNumber = defaults.maxRoundNumber
+                    }
+            in
             ( { model
-                | pomodoroDuration = defaults.pomodoroDuration
-                , shortBreakDuration = defaults.shortBreakDuration
-                , longBreakDuration = defaults.longBreakDuration
-                , maxRoundNumber = defaults.maxRoundNumber
+                | config = newConfig
                 , currentTime = defaults.pomodoroDuration
                 , currentSessionType = Pomodoro
                 , sessionStatus = Stopped
@@ -343,14 +362,14 @@ update msg model =
                 , sessionStatus =
                     case nextRoundInfo.nextSessionType of
                         Pomodoro ->
-                            if model.autoStartWorkTimer then
+                            if model.config.autoStartWorkTimer then
                                 Running
 
                             else
                                 Stopped
 
                         _ ->
-                            if model.autoStartBreakTimer then
+                            if model.config.autoStartBreakTimer then
                                 Running
 
                             else
@@ -395,7 +414,7 @@ update msg model =
                 in
                 ( { model | currentTime = newTime, currentColor = currentColor }
                 , Cmd.batch
-                    [ if model.playTickSoundWork && not model.muted then
+                    [ if model.config.tickSoundsDuringWork && not model.muted then
                         playSound "audio-tick"
 
                       else
@@ -425,14 +444,14 @@ update msg model =
                     , sessionStatus =
                         case nextRoundInfo.nextSessionType of
                             Pomodoro ->
-                                if model.autoStartWorkTimer then
+                                if model.config.autoStartWorkTimer then
                                     Running
 
                                 else
                                     Stopped
 
                             _ ->
-                                if model.autoStartBreakTimer then
+                                if model.config.autoStartBreakTimer then
                                     Running
 
                                 else
@@ -449,34 +468,42 @@ update msg model =
                 ( model, Cmd.none )
 
         ToggleDrawer ->
+            let
+                config =
+                    model.config
+
+                newConfig =
+                    { config
+                        | -- Avoid having impossible states
+                          maxRoundNumber =
+                            if model.config.maxRoundNumber == 0 then
+                                1
+
+                            else
+                                model.config.maxRoundNumber
+                        , pomodoroDuration =
+                            if model.config.pomodoroDuration == 0 then
+                                60
+
+                            else
+                                model.config.pomodoroDuration
+                        , shortBreakDuration =
+                            if model.config.shortBreakDuration == 0 then
+                                60
+
+                            else
+                                model.config.shortBreakDuration
+                        , longBreakDuration =
+                            if model.config.longBreakDuration == 0 then
+                                60
+
+                            else
+                                model.config.longBreakDuration
+                    }
+            in
             ( { model
                 | drawerOpen = not model.drawerOpen
-
-                -- Avoid having impossible states
-                , maxRoundNumber =
-                    if model.maxRoundNumber == 0 then
-                        1
-
-                    else
-                        model.maxRoundNumber
-                , pomodoroDuration =
-                    if model.pomodoroDuration == 0 then
-                        60
-
-                    else
-                        model.pomodoroDuration
-                , shortBreakDuration =
-                    if model.shortBreakDuration == 0 then
-                        60
-
-                    else
-                        model.shortBreakDuration
-                , longBreakDuration =
-                    if model.longBreakDuration == 0 then
-                        60
-
-                    else
-                        model.longBreakDuration
+                , config = newConfig
               }
             , Cmd.none
             )
@@ -523,6 +550,9 @@ update msg model =
 
                         Just stringValue ->
                             stringValue
+
+                config =
+                    model.config
             in
             case settingType of
                 FocusTime ->
@@ -535,7 +565,7 @@ update msg model =
                                 value * 60
                     in
                     ( { model
-                        | pomodoroDuration = newValue
+                        | config = { config | pomodoroDuration = newValue }
                         , currentTime =
                             if model.currentSessionType == Pomodoro then
                                 if newValue == 0 then
@@ -560,7 +590,7 @@ update msg model =
                                 value * 60
                     in
                     ( { model
-                        | shortBreakDuration = newValue
+                        | config = { config | shortBreakDuration = newValue }
                         , currentTime =
                             if model.currentSessionType == ShortBreak then
                                 if newValue == 0 then
@@ -585,7 +615,7 @@ update msg model =
                                 value * 60
                     in
                     ( { model
-                        | longBreakDuration = newValue
+                        | config = { config | longBreakDuration = newValue }
                         , currentTime =
                             if model.currentSessionType == LongBreak then
                                 if newValue == 0 then
@@ -610,7 +640,7 @@ update msg model =
                                 value
                     in
                     ( { model
-                        | maxRoundNumber = newValue
+                        | config = { config | maxRoundNumber = newValue }
                       }
                     , Cmd.none
                     )
@@ -839,7 +869,7 @@ footerView : Model -> Html Msg
 footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
-            [ p [] [ text <| String.fromInt model.currentRoundNumber ++ "/" ++ String.fromInt model.maxRoundNumber ]
+            [ p [] [ text <| String.fromInt model.currentRoundNumber ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
             , p [ class "text-button", title "Reset current round", onClick Reset ] [ text "Reset" ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
@@ -945,13 +975,13 @@ getCurrentMaxTime : Model -> Seconds
 getCurrentMaxTime model =
     case model.currentSessionType of
         Pomodoro ->
-            model.pomodoroDuration
+            model.config.pomodoroDuration
 
         LongBreak ->
-            model.longBreakDuration
+            model.config.longBreakDuration
 
         ShortBreak ->
-            model.shortBreakDuration
+            model.config.shortBreakDuration
 
 
 timerView : Model -> Html Msg
@@ -1078,9 +1108,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| String.fromFloat (toFloat model.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)
                     , onInput <| UpdateSetting FocusTime
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.pomodoroDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1094,13 +1124,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
-                    , value <| String.fromFloat (toFloat model.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)
                     , onInput <| UpdateSetting FocusTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--red"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1120,9 +1150,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| String.fromFloat (toFloat model.shortBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
                     , onInput <| UpdateSetting ShortBreakTime
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.shortBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1136,13 +1166,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
-                    , value <| String.fromFloat (toFloat model.shortBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
                     , onInput <| UpdateSetting ShortBreakTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--green"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1162,9 +1192,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| String.fromFloat (toFloat model.longBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
                     , onInput <| UpdateSetting LongBreakTime
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.longBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.longBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -1178,13 +1208,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
-                    , value <| String.fromFloat (toFloat model.longBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
                     , onInput <| UpdateSetting LongBreakTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.longBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.longBreakDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -1205,9 +1235,9 @@ timerSettingView model =
                     , Html.Attributes.min "0"
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
-                    , value <| String.fromInt model.maxRoundNumber
+                    , value <| String.fromInt model.config.maxRoundNumber
                     , onInput <| UpdateSetting Rounds
-                    , style "width" <| String.fromInt (String.length <| String.fromInt model.maxRoundNumber) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromInt model.config.maxRoundNumber) ++ "ch"
                     ]
                     []
                 ]
@@ -1220,13 +1250,13 @@ timerSettingView model =
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
                     , class "slider"
-                    , value <| String.fromInt model.maxRoundNumber
+                    , value <| String.fromInt model.config.maxRoundNumber
                     , onInput <| UpdateSetting Rounds
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue-grey"
-                    , style "width" (String.fromFloat (100 * toFloat model.maxRoundNumber / 12) ++ "%")
+                    , style "width" (String.fromFloat (100 * toFloat model.config.maxRoundNumber / 12) ++ "%")
                     ]
                     []
                 ]
@@ -1270,14 +1300,14 @@ settingsSettingView model =
             [ class "drawer-heading"
             ]
             [ text "Settings" ]
-        , settingWrapper "Always On Top" (ChangeSettingConfig AlwaysOnTop) model.settingsConfig.alwaysOnTop
-        , settingWrapper "Auto-start Work Timer" (ChangeSettingConfig AutoStartWorkTimer) model.settingsConfig.autoStartWorkTimer
-        , settingWrapper "Auto-start Break Timer" (ChangeSettingConfig AutoStartBreakTimer) model.settingsConfig.autoStartBreakTimer
-        , settingWrapper "Tick Sounds - Work" (ChangeSettingConfig TickSoundsDuringWork) model.settingsConfig.tickSoundsDuringWork
-        , settingWrapper "Tick Sounds - Break" (ChangeSettingConfig TickSoundsDuringBreak) model.settingsConfig.tickSoundsDuringBreak
-        , settingWrapper "Desktop Notifications" (ChangeSettingConfig DesktopNotifications) model.settingsConfig.desktopNotifications
-        , settingWrapper "Minimize to Tray" (ChangeSettingConfig MinimizeToTray) model.settingsConfig.minimizeToTray
-        , settingWrapper "Minimize to Tray on Close" (ChangeSettingConfig MinimizeToTrayOnClose) model.settingsConfig.minimizeToTrayOnClose
+        , settingWrapper "Always On Top" (ChangeSettingConfig AlwaysOnTop) model.config.alwaysOnTop
+        , settingWrapper "Auto-start Work Timer" (ChangeSettingConfig AutoStartWorkTimer) model.config.autoStartWorkTimer
+        , settingWrapper "Auto-start Break Timer" (ChangeSettingConfig AutoStartBreakTimer) model.config.autoStartBreakTimer
+        , settingWrapper "Tick Sounds - Work" (ChangeSettingConfig TickSoundsDuringWork) model.config.tickSoundsDuringWork
+        , settingWrapper "Tick Sounds - Break" (ChangeSettingConfig TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
+        , settingWrapper "Desktop Notifications" (ChangeSettingConfig DesktopNotifications) model.config.desktopNotifications
+        , settingWrapper "Minimize to Tray" (ChangeSettingConfig MinimizeToTray) model.config.minimizeToTray
+        , settingWrapper "Minimize to Tray on Close" (ChangeSettingConfig MinimizeToTrayOnClose) model.config.minimizeToTrayOnClose
         ]
 
 

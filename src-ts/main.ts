@@ -5,7 +5,23 @@ import { Elm } from "../src-elm/Main.elm";
 import { invoke } from "@tauri-apps/api";
 
 const root = document.querySelector("#app div");
-const app = Elm.Main.init({ node: root });
+const app = Elm.Main.init({
+  node: root,
+  flags: {
+    alwaysOnTop: true,
+    autoStartWorkTimer: true,
+    autoStartBreakTimer: true,
+    desktopNotifications: false,
+    longBreakDuration: 60 * 20,
+    maxRoundNumber: 4,
+    minimizeToTray: true,
+    minimizeToTrayOnClose: true,
+    pomodoroDuration: 60 * 19,
+    shortBreakDuration: 60 * 5,
+    tickSoundsDuringWork: true,
+    tickSoundsDuringBreak: true,
+  },
+});
 
 app.ports.playSound.subscribe(function (soundElementId: string) {
   invoke("play_sound", { soundId: soundElementId });
