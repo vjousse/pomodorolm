@@ -1,10 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use axum::{
-    http::{HeaderValue, Method},
-    Router,
-};
 use image::{ImageBuffer, Rgba};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -12,8 +8,6 @@ use std::{io::Write, path::Path};
 use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 use tauri_plugin_log::LogTarget;
-use tower_http::cors::CorsLayer;
-use tower_http::services::ServeDir;
 
 use rodio::{source::Source, Decoder, OutputStream};
 use std::fs;
@@ -58,8 +52,7 @@ impl Default for Config {
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
 
@@ -78,11 +71,6 @@ async fn main() {
         )
         .system_tray(system_tray)
         .setup(|app| {
-            let resource_path = app
-                .path_resolver()
-                .resolve_resource("audio/")
-                .expect("failed to resolve resource");
-
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
                 let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
 
@@ -109,20 +97,6 @@ async fn main() {
 
                 app.manage(ConfigState(Mutex::new(config)));
             }
-
-            tokio::spawn(async move {
-                let serve_dir = ServeDir::new(resource_path);
-
-                let app = Router::new().nest_service("/", serve_dir).layer(
-                    CorsLayer::new()
-                        .allow_origin("*".parse::<HeaderValue>().unwrap())
-                        .allow_methods([Method::GET]),
-                );
-                let listener = tokio::net::TcpListener::bind("127.0.0.1:16780")
-                    .await
-                    .unwrap();
-                axum::serve(listener, app).await.unwrap();
-            });
 
             Ok(())
         })
@@ -249,7 +223,7 @@ fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle,
         let _ = match file {
             Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
             Err(_) => {
-                println!("Error opeining config file on update");
+                println!("Error opening config file on update");
                 Ok(())
             }
         };
@@ -257,21 +231,22 @@ fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle,
 }
 
 #[tauri::command]
-fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -> Option<Config> {
+fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -> Config {
     let mut state_guard = state.0.lock().unwrap();
 
     let config: Config;
 
-    if let Some(config_dir) = app_handle.path_resolver().app_config_dir() {
-        let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
-        let toml_str = fs::read_to_string(config_file_path).expect("Unable to open config file");
-        config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
-        *state_guard = config;
+    let config_dir = app_handle
+        .path_resolver()
+        .app_config_dir()
+        .expect("Impossible to get config dir");
 
-        return Some(config);
-    };
+    let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+    let toml_str = fs::read_to_string(config_file_path).expect("Unable to open config file");
+    config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
+    *state_guard = config;
 
-    None
+    return config;
 }
 
 #[tauri::command]
