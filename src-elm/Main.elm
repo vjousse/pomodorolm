@@ -288,7 +288,7 @@ update msg model =
                         MinimizeToTrayOnClose ->
                             { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
             in
-            ( { model | config = newSettingsConfig }, Cmd.none )
+            ( { model | config = newSettingsConfig }, updateConfig newSettingsConfig )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -563,9 +563,12 @@ update msg model =
 
                             else
                                 value * 60
+
+                        newConfig =
+                            { config | pomodoroDuration = newValue }
                     in
                     ( { model
-                        | config = { config | pomodoroDuration = newValue }
+                        | config = newConfig
                         , currentTime =
                             if model.currentSessionType == Pomodoro then
                                 if newValue == 0 then
@@ -577,7 +580,7 @@ update msg model =
                             else
                                 model.currentTime
                       }
-                    , Cmd.none
+                    , updateConfig newConfig
                     )
 
                 ShortBreakTime ->
@@ -1508,3 +1511,6 @@ port minimizeWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
+
+
+port updateConfig : Config -> Cmd msg

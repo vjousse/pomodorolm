@@ -21,9 +21,7 @@
       },
       "fs": {
         "readFile": true,
-        "scope": [
-          "$RESOURCE/*"
-        ]
+        "scope": ["$RESOURCE/*"]
       }
     },
     "systemTray": {
@@ -45,7 +43,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "org.jousse.vincent",
+      "identifier": "pomodorolm",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -54,9 +52,7 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [
-        "audio/*"
-      ],
+      "resources": ["audio/*"],
       "shortDescription": "",
       "targets": "all",
       "windows": {

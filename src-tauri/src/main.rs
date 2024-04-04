@@ -6,7 +6,9 @@ use axum::{
     Router,
 };
 use image::{ImageBuffer, Rgba};
-use std::path::Path;
+use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+use std::{io::Write, path::Path};
 use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 use tauri_plugin_log::LogTarget;
@@ -14,8 +16,47 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 use rodio::{source::Source, Decoder, OutputStream};
+use std::fs;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::BufReader;
+
+pub struct ConfigState(Mutex<Config>);
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+struct Config {
+    always_on_top: bool,
+    auto_start_work_timer: bool,
+    auto_start_break_timer: bool,
+    desktop_notifications: bool,
+    long_break_duration: u16,
+    max_round_number: u16,
+    minimize_to_tray: bool,
+    minimize_to_tray_on_close: bool,
+    pomodoro_duration: u16,
+    short_break_duration: u16,
+    tick_sounds_during_work: bool,
+    tick_sounds_during_break: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            always_on_top: true,
+            auto_start_work_timer: true,
+            auto_start_break_timer: true,
+            desktop_notifications: true,
+            long_break_duration: 20 * 60,
+            max_round_number: 4u16,
+            minimize_to_tray: true,
+            minimize_to_tray_on_close: true,
+            pomodoro_duration: 25 * 60,
+            short_break_duration: 5 * 60,
+            tick_sounds_during_work: true,
+            tick_sounds_during_break: true,
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -42,6 +83,33 @@ async fn main() {
                 .resolve_resource("audio/")
                 .expect("failed to resolve resource");
 
+            if let Some(config_dir) = app.path_resolver().app_config_dir() {
+                let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+
+                let config = if !fs::metadata(config_file_path).is_ok() {
+                    let mut file = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .create(true)
+                        .open(config_file_path)?;
+
+                    let default_config = Config {
+                        ..Default::default()
+                    };
+
+                    file.write_all(toml::to_string(&default_config).unwrap().as_bytes())?;
+                    default_config
+                } else {
+                    // Open the file
+                    let toml_str = fs::read_to_string(config_file_path)?;
+                    let config: Config = toml::from_str(toml_str.as_str())?;
+
+                    config
+                };
+
+                app.manage(ConfigState(Mutex::new(config)));
+            }
+
             tokio::spawn(async move {
                 let serve_dir = ServeDir::new(resource_path);
 
@@ -55,13 +123,16 @@ async fn main() {
                     .unwrap();
                 axum::serve(listener, app).await.unwrap();
             });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
+            load_config,
             minimize_window,
-            play_sound
+            play_sound,
+            update_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -158,6 +229,49 @@ async fn change_icon(
         .tray_handle()
         .set_icon(tauri::Icon::File(temp_path.to_path_buf()))
         .expect("Failed to set icon");
+}
+
+#[tauri::command]
+fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle, config: Config) {
+    let mut state_guard = state.0.lock().unwrap();
+
+    *state_guard = config;
+
+    if let Some(config_dir) = app_handle.path_resolver().app_config_dir() {
+        let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(config_file_path);
+
+        let _ = match file {
+            Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
+            Err(_) => {
+                println!("Error opeining config file on update");
+                Ok(())
+            }
+        };
+    };
+}
+
+#[tauri::command]
+fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -> Option<Config> {
+    let mut state_guard = state.0.lock().unwrap();
+
+    let config: Config;
+
+    if let Some(config_dir) = app_handle.path_resolver().app_config_dir() {
+        let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+        let toml_str = fs::read_to_string(config_file_path).expect("Unable to open config file");
+        config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
+        *state_guard = config;
+
+        return Some(config);
+    };
+
+    None
 }
 
 #[tauri::command]

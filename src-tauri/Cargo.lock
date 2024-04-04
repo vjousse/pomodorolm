@@ -114,6 +114,7 @@ dependencies = [
  "tauri-plugin-log",
  "tempfile",
  "tokio",
+ "toml 0.8.12",
  "tower-http",
 ]
 
