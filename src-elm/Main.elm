@@ -414,11 +414,20 @@ update msg model =
                 in
                 ( { model | currentTime = newTime, currentColor = currentColor }
                 , Cmd.batch
-                    [ if model.config.tickSoundsDuringWork && not model.muted then
-                        playSound "audio-tick"
+                    [ case model.currentSessionType of
+                        Pomodoro ->
+                            if model.config.tickSoundsDuringWork && not model.muted then
+                                playSound "audio-tick"
 
-                      else
-                        Cmd.none
+                            else
+                                Cmd.none
+
+                        _ ->
+                            if model.config.tickSoundsDuringBreak && not model.muted then
+                                playSound "audio-tick"
+
+                            else
+                                Cmd.none
                     , updateCurrentState
                         { color = currentColor
                         , percentage = percent
