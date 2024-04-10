@@ -4,7 +4,8 @@
 use image::{ImageBuffer, Rgba};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use std::{io::Write, path::Path};
+use std::{io::Write, path::Path, path::PathBuf};
+use tauri::api::notification::Notification;
 use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 use tauri_plugin_log::LogTarget;
@@ -31,6 +32,16 @@ struct Config {
     short_break_duration: u16,
     tick_sounds_during_work: bool,
     tick_sounds_during_break: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ElmNotification {
+    body: String,
+    title: String,
+    name: String,
+    red: u8,
+    green: u8,
+    blue: u8,
 }
 
 impl Default for Config {
@@ -74,6 +85,14 @@ fn main() {
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
                 let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
 
+                println!("Config file path: {}", config_file_path);
+
+                let resource_path = app.path_resolver().resolve_resource("audio/");
+                let data_path = app.path_resolver().app_data_dir();
+
+                println!("Resource audio path: {:#?}", resource_path);
+                println!("Data path: {:#?}", data_path);
+
                 let config = if !fs::metadata(config_file_path).is_ok() {
                     let mut file = OpenOptions::new()
                         .read(true)
@@ -97,7 +116,6 @@ fn main() {
 
                 app.manage(ConfigState(Mutex::new(config)));
             }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -105,6 +123,7 @@ fn main() {
             close_window,
             load_config,
             minimize_window,
+            notify,
             play_sound,
             update_config
         ])
@@ -112,19 +131,16 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-#[tauri::command]
-async fn change_icon(
-    app_handle: tauri::AppHandle,
+fn create_icon(
+    width: u32,
+    height: u32,
     red: u8,
     green: u8,
     blue: u8,
     fill_percentage: f32,
     paused: bool,
-) {
-    // Image dimensions
-    let width = 512;
-    let height = 512;
-
+    path_name: &str,
+) -> PathBuf {
     // Create a new ImageBuffer with RGBA colors
     //let mut imgbuf = ImageBuffer::from_pixel(width, height, Rgba([0, 0, 0, 0])); // Transparent background
     let mut imgbuf = ImageBuffer::<Rgba<u8>, _>::new(width, height); // Transparent background
@@ -193,16 +209,45 @@ async fn change_icon(
     }
 
     // Create a temporary file path
-    let temp_path = Path::new("temp_icon.png");
+    let temp_path = Path::new(path_name);
 
     // Save the DynamicImage to the temporary file
     imgbuf.save(temp_path).expect("Failed to save image");
 
-    // Set the icon using the temporary file
-    app_handle
-        .tray_handle()
-        .set_icon(tauri::Icon::File(temp_path.to_path_buf()))
-        .expect("Failed to set icon");
+    return temp_path.to_path_buf();
+}
+
+#[tauri::command]
+async fn change_icon(
+    app_handle: tauri::AppHandle,
+    red: u8,
+    green: u8,
+    blue: u8,
+    fill_percentage: f32,
+    paused: bool,
+) {
+    // Image dimensions
+    let width = 512;
+    let height = 512;
+
+    if let Some(data_dir) = app_handle.path_resolver().app_data_dir() {
+        let icon_path_buf = create_icon(
+            width,
+            height,
+            red,
+            green,
+            blue,
+            fill_percentage,
+            paused,
+            format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
+        );
+
+        // Set the icon using the temporary file
+        app_handle
+            .tray_handle()
+            .set_icon(tauri::Icon::File(icon_path_buf))
+            .expect("Failed to set icon");
+    }
 }
 
 #[tauri::command]
@@ -276,7 +321,7 @@ async fn play_sound(app_handle: tauri::AppHandle, sound_id: String) {
 
         // The sound plays in a separate audio thread,
         // so we need to keep this thread alive while it's playing.
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(2));
     }
 }
 
@@ -290,4 +335,29 @@ async fn minimize_window(app_handle: tauri::AppHandle) {
 async fn close_window(app_handle: tauri::AppHandle) {
     let window = app_handle.get_window("main").expect("window not found");
     window.close().expect("failed to close window");
+}
+
+#[tauri::command]
+async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
+    if let Some(data_dir) = app_handle.path_resolver().app_data_dir() {
+        let icon_path_buf = create_icon(
+            512,
+            512,
+            notification.red,
+            notification.green,
+            notification.blue,
+            1_f32,
+            false,
+            format!("{}/temp_icon_notification.png", data_dir.to_string_lossy()).as_str(),
+        );
+
+        println!("PATH BUF {:#?}", icon_path_buf);
+
+        // shows a notification with the given title and body
+        let _ = Notification::new(&app_handle.config().tauri.bundle.identifier)
+            .title(notification.title)
+            .body(notification.body)
+            .icon(icon_path_buf.to_string_lossy())
+            .show();
+    }
 }

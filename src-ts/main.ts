@@ -4,6 +4,11 @@ import { Elm } from "../src-elm/Main.elm";
 
 import { invoke } from "@tauri-apps/api";
 
+import { attachConsole, info } from "tauri-plugin-log-api";
+
+// Display logs in the webview inspector
+attachConsole();
+
 type Color = {
   r: number;
   g: number;
@@ -14,6 +19,15 @@ type ElmState = {
   color: Color;
   percentage: number;
   paused: boolean;
+};
+
+type Notification = {
+  body: string;
+  title: string;
+  name: string;
+  red: number;
+  green: number;
+  blue: number;
 };
 
 type ElmConfig = {
@@ -69,6 +83,7 @@ invoke("load_config").then((config) => {
   });
 
   app.ports.playSound.subscribe(function (soundElementId: string) {
+    info("Playing sound");
     invoke("play_sound", { soundId: soundElementId });
   });
 
@@ -78,6 +93,10 @@ invoke("load_config").then((config) => {
 
   app.ports.closeWindow.subscribe(function () {
     invoke("close_window");
+  });
+
+  app.ports.notify.subscribe(function (notification: Notification) {
+    invoke("notify", { notification: notification });
   });
 
   app.ports.updateConfig.subscribe(function (config: ElmConfig) {

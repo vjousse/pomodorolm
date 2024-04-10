@@ -95,11 +95,22 @@ type Setting
     | MinimizeToTrayOnClose
 
 
+type alias Notification =
+    { body : String
+    , title : String
+    , name : String
+    , red : Int
+    , green : Int
+    , blue : Int
+    }
+
+
 type alias NextRoundInfo =
     { nextSessionType : SessionType
     , htmlIdOfAudioToPlay : String
     , nextRoundNumber : Int
     , nextTime : Seconds
+    , notification : Notification
     }
 
 
@@ -223,6 +234,35 @@ type Msg
 
 getNextRoundInfo : Model -> NextRoundInfo
 getNextRoundInfo model =
+    let
+        getNotification : String -> String -> String -> Seconds -> SessionType -> Notification
+        getNotification title body name duration sessionType =
+            let
+                color =
+                    computeCurrentColor 1 1 sessionType
+
+                minutes =
+                    (duration |> toFloat) / 60 |> round
+            in
+            { title = title
+            , body =
+                "Start a "
+                    ++ String.fromInt minutes
+                    ++ " minute"
+                    ++ (if minutes > 1 then
+                            "s"
+
+                        else
+                            ""
+                       )
+                    ++ " "
+                    ++ body
+            , name = name
+            , red = color.r
+            , green = color.g
+            , blue = color.b
+            }
+    in
     case model.currentSessionType of
         Pomodoro ->
             if model.currentRoundNumber == model.config.maxRoundNumber then
@@ -230,6 +270,7 @@ getNextRoundInfo model =
                 , htmlIdOfAudioToPlay = "audio-long-break"
                 , nextRoundNumber = model.currentRoundNumber
                 , nextTime = model.config.longBreakDuration
+                , notification = getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration LongBreak
                 }
 
             else
@@ -237,6 +278,7 @@ getNextRoundInfo model =
                 , htmlIdOfAudioToPlay = "audio-short-break"
                 , nextRoundNumber = model.currentRoundNumber
                 , nextTime = model.config.shortBreakDuration
+                , notification = getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration ShortBreak
                 }
 
         ShortBreak ->
@@ -244,6 +286,7 @@ getNextRoundInfo model =
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = model.currentRoundNumber + 1
             , nextTime = model.config.pomodoroDuration
+            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
             }
 
         LongBreak ->
@@ -251,6 +294,7 @@ getNextRoundInfo model =
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = 1
             , nextTime = model.config.pomodoroDuration
+            , notification = getNotification "Long break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
             }
 
 
@@ -391,6 +435,11 @@ update msg model =
                         else
                             False
                     }
+                , if model.config.desktopNotifications then
+                    notify nextRoundInfo.notification
+
+                  else
+                    Cmd.none
                 ]
             )
 
@@ -1520,6 +1569,9 @@ port minimizeWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
+
+
+port notify : Notification -> Cmd msg
 
 
 port updateConfig : Config -> Cmd msg
