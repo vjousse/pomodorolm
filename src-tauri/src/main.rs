@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::{io::Write, path::Path, path::PathBuf};
 use tauri::api::notification::Notification;
 use tauri::Manager;
-use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 use tauri_plugin_log::LogTarget;
 
 use rodio::{source::Source, Decoder, OutputStream};
@@ -64,8 +64,9 @@ impl Default for Config {
 }
 
 fn main() {
+    // @TODO: replace strings with enums using https://crates.io/crates/strum_macros
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    let hide = CustomMenuItem::new("hide".to_string(), "Hide");
+    let hide = CustomMenuItem::new("toggle_visibility".to_string(), "Hide");
 
     let tray_menu = SystemTrayMenu::new()
         .add_item(quit)
@@ -81,6 +82,28 @@ fn main() {
                 .build(),
         )
         .system_tray(system_tray)
+        .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::MenuItemClick { id, .. } => {
+                let item_handle = app.tray_handle().get_item(&id);
+                match id.as_str() {
+                    "quit" => {
+                        std::process::exit(0);
+                    }
+                    "toggle_visibility" => {
+                        let window = app.get_window("main").unwrap();
+                        if window.is_visible().unwrap() {
+                            window.hide().unwrap();
+                            item_handle.set_title("Show").unwrap();
+                        } else {
+                            window.show().unwrap();
+                            item_handle.set_title("Hide").unwrap();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        })
         .setup(|app| {
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
                 let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
@@ -328,7 +351,11 @@ async fn play_sound(app_handle: tauri::AppHandle, sound_id: String) {
 #[tauri::command]
 async fn minimize_window(app_handle: tauri::AppHandle) {
     let window = app_handle.get_window("main").expect("window not found");
-    window.minimize().expect("failed to minimize window");
+
+    let item_handle = app_handle.tray_handle().get_item("toggle_visibility");
+    item_handle.set_title("Show").unwrap();
+
+    window.hide().expect("failed to hide window");
 }
 
 #[tauri::command]
