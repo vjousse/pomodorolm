@@ -38,10 +38,19 @@ struct Config {
 struct ElmNotification {
     body: String,
     title: String,
-    name: String,
     red: u8,
     green: u8,
     blue: u8,
+}
+
+struct PomodorolmIcon {
+    width: u32,
+    height: u32,
+    red: u8,
+    green: u8,
+    blue: u8,
+    fill_percentage: f32,
+    paused: bool,
 }
 
 impl Default for Config {
@@ -82,8 +91,8 @@ fn main() {
                 .build(),
         )
         .system_tray(system_tray)
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::MenuItemClick { id, .. } => {
+        .on_system_tray_event(|app, event| {
+            if let SystemTrayEvent::MenuItemClick { id, .. } = event {
                 let item_handle = app.tray_handle().get_item(&id);
                 match id.as_str() {
                     "quit" => {
@@ -102,7 +111,6 @@ fn main() {
                     _ => {}
                 }
             }
-            _ => {}
         })
         .setup(|app| {
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
@@ -116,11 +124,12 @@ fn main() {
                 println!("Resource audio path: {:#?}", resource_path);
                 println!("Data path: {:#?}", data_path);
 
-                let config = if !fs::metadata(config_file_path).is_ok() {
+                let config = if fs::metadata(config_file_path).is_err() {
                     let mut file = OpenOptions::new()
                         .read(true)
                         .write(true)
                         .create(true)
+                        .truncate(true)
                         .open(config_file_path)?;
 
                     let default_config = Config {
@@ -154,46 +163,41 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-fn create_icon(
-    width: u32,
-    height: u32,
-    red: u8,
-    green: u8,
-    blue: u8,
-    fill_percentage: f32,
-    paused: bool,
-    path_name: &str,
-) -> PathBuf {
+fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
     // Create a new ImageBuffer with RGBA colors
     //let mut imgbuf = ImageBuffer::from_pixel(width, height, Rgba([0, 0, 0, 0])); // Transparent background
-    let mut imgbuf = ImageBuffer::<Rgba<u8>, _>::new(width, height); // Transparent background
-                                                                     //
-                                                                     // Define circle parameters
-    let center_x = width as f32 / 2.0;
-    let center_y = height as f32 / 2.0;
-    let outer_radius = width as f32 / 2.0;
+    let mut imgbuf = ImageBuffer::<Rgba<u8>, _>::new(icon.width, icon.height); // Transparent background
+                                                                               //
+                                                                               // Define circle parameters
+    let center_x = icon.width as f32 / 2.0;
+    let center_y = icon.height as f32 / 2.0;
+    let outer_radius = icon.width as f32 / 2.0;
     let inner_radius = outer_radius * 0.40; // 40% of the outer radius
 
     let start_angle = 0.0; // Start from the top center
-    let end_angle = 360.0 * fill_percentage; // End at the specified percentage of the circle
+    let end_angle = 360.0 * icon.fill_percentage; // End at the specified percentage of the circle
 
-    if paused {
+    if icon.paused {
         // Define parameters for the pause icon
-        let icon_width = (width as f32 * 0.3) as i32; // Width of the pause bars
-        let icon_height = (height as f32 * 0.6) as i32; // Height of the pause bars
-        let bar_thickness = (width as f32 * 0.15) as i32; // Thickness of the pause bars
-        let bar_spacing = (width as f32 * 0.01) as i32; // Spacing between the pause bars
-                                                        //
-                                                        // Calculate positions for the pause bars
-        let first_bar_x = (width as i32 - bar_spacing - icon_width) / 2;
+        let icon_width = (icon.width as f32 * 0.3) as i32; // Width of the pause bars
+        let icon_height = (icon.height as f32 * 0.6) as i32; // Height of the pause bars
+        let bar_thickness = (icon.width as f32 * 0.15) as i32; // Thickness of the pause bars
+        let bar_spacing = (icon.width as f32 * 0.01) as i32; // Spacing between the pause bars
+                                                             //
+                                                             // Calculate positions for the pause bars
+        let first_bar_x = (icon.width as i32 - bar_spacing - icon_width) / 2;
         let second_bar_x = first_bar_x + bar_spacing + icon_width;
 
-        let bar_y = (height as i32 - icon_height) / 2;
+        let bar_y = (icon.height as i32 - icon_height) / 2;
 
         // Draw the first pause bar
         for y in bar_y..bar_y + icon_height {
             for x in first_bar_x..first_bar_x + bar_thickness {
-                imgbuf.put_pixel(x as u32, y as u32, Rgba([red, green, blue, 255]));
+                imgbuf.put_pixel(
+                    x as u32,
+                    y as u32,
+                    Rgba([icon.red, icon.green, icon.blue, 255]),
+                );
                 // Fill with white
             }
         }
@@ -201,14 +205,18 @@ fn create_icon(
         // Draw the second pause bar
         for y in bar_y..bar_y + icon_height {
             for x in second_bar_x..second_bar_x + bar_thickness {
-                imgbuf.put_pixel(x as u32, y as u32, Rgba([red, green, blue, 255]));
+                imgbuf.put_pixel(
+                    x as u32,
+                    y as u32,
+                    Rgba([icon.red, icon.green, icon.blue, 255]),
+                );
                 // Fill with white
             }
         }
     } else {
         // Draw the circle
-        for y in 0..height {
-            for x in 0..width {
+        for y in 0..icon.height {
+            for x in 0..icon.width {
                 // Calculate the distance of the current pixel from the center of the outer circle
                 let dx = x as f32 - center_x;
                 let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
@@ -224,7 +232,8 @@ fn create_icon(
                         && pixel_angle <= end_angle
                         && distance_squared >= inner_radius * inner_radius
                     {
-                        imgbuf.put_pixel(x, y, Rgba([red, green, blue, 255])); // Fill with red
+                        imgbuf.put_pixel(x, y, Rgba([icon.red, icon.green, icon.blue, 255]));
+                        // Fill with red
                     }
                 }
             }
@@ -237,7 +246,7 @@ fn create_icon(
     // Save the DynamicImage to the temporary file
     imgbuf.save(temp_path).expect("Failed to save image");
 
-    return temp_path.to_path_buf();
+    temp_path.to_path_buf()
 }
 
 #[tauri::command]
@@ -255,13 +264,15 @@ async fn change_icon(
 
     if let Some(data_dir) = app_handle.path_resolver().app_data_dir() {
         let icon_path_buf = create_icon(
-            width,
-            height,
-            red,
-            green,
-            blue,
-            fill_percentage,
-            paused,
+            PomodorolmIcon {
+                width,
+                height,
+                red,
+                green,
+                blue,
+                fill_percentage,
+                paused,
+            },
             format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
         );
 
@@ -286,6 +297,7 @@ fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle,
             .read(true)
             .write(true)
             .create(true)
+            .truncate(true)
             .open(config_file_path);
 
         let _ = match file {
@@ -302,8 +314,6 @@ fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle,
 fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -> Config {
     let mut state_guard = state.0.lock().unwrap();
 
-    let config: Config;
-
     let config_dir = app_handle
         .path_resolver()
         .app_config_dir()
@@ -311,10 +321,10 @@ fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -
 
     let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
     let toml_str = fs::read_to_string(config_file_path).expect("Unable to open config file");
-    config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
+    let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
     *state_guard = config;
 
-    return config;
+    config
 }
 
 #[tauri::command]
@@ -368,13 +378,15 @@ async fn close_window(app_handle: tauri::AppHandle) {
 async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
     if let Some(data_dir) = app_handle.path_resolver().app_data_dir() {
         let icon_path_buf = create_icon(
-            512,
-            512,
-            notification.red,
-            notification.green,
-            notification.blue,
-            1_f32,
-            false,
+            PomodorolmIcon {
+                width: 512,
+                height: 512,
+                red: notification.red,
+                green: notification.green,
+                blue: notification.blue,
+                fill_percentage: 1_f32,
+                paused: false,
+            },
             format!("{}/temp_icon_notification.png", data_dir.to_string_lossy()).as_str(),
         );
 
