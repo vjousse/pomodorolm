@@ -1,8 +1,18 @@
-# Warning
+# Screenshot
 
-_This is still a work in progress, expect some production ready releases soon_
+![Screenshot of the app](screenshot.png)
 
 # Installation
+
+## Archlinux
+
+    yay -S pomodorolm
+
+## Windows, Mac OS X, Debian, AppImage
+
+Download the install file for your OS from the latest release on https://github.com/vjousse/pomodorolm/releases/
+
+# Dev
 
 You will need to [install rust](https://www.rust-lang.org/tools/install) first.
 
@@ -15,10 +25,6 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first.
 # Running only the webapp
 
     npm run dev
-
-# Screenshot
-
-![Screenshot of the app](screenshot.png)
 
 # Credits
 
