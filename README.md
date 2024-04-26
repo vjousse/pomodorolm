@@ -6,7 +6,7 @@
 
 ## Archlinux
 
-    yay -S pomodorolm
+    yay -S pomodorolm-bin
 
 ## Windows, Mac OS X, Debian, AppImage
 
