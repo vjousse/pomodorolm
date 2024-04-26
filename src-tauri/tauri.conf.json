@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "tauri-pomodorolm",
-    "version": "0.0.1"
+    "version": "0.0.1-alpha"
   },
   "tauri": {
     "allowlist": {
@@ -21,9 +21,7 @@
       },
       "fs": {
         "readFile": true,
-        "scope": [
-          "$RESOURCE/*"
-        ]
+        "scope": ["$RESOURCE/*"]
       }
     },
     "systemTray": {
@@ -54,9 +52,7 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [
-        "audio/*"
-      ],
+      "resources": ["audio/*"],
       "shortDescription": "",
       "targets": "all",
       "windows": {
