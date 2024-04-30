@@ -21,9 +21,10 @@
       },
       "fs": {
         "readFile": true,
-        "scope": [
-          "$RESOURCE/*"
-        ]
+        "scope": ["$RESOURCE/*"]
+      },
+      "window": {
+        "startDragging": true
       }
     },
     "systemTray": {
@@ -54,9 +55,7 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [
-        "audio/*"
-      ],
+      "resources": ["audio/*"],
       "shortDescription": "",
       "targets": "all",
       "windows": {

@@ -1056,7 +1056,7 @@ timerView model =
 
 navView : Model -> Html Msg
 navView model =
-    nav [ class "titlebar", attribute "data-tauri-drag-region" "" ]
+    nav [ class "titlebar" ]
         [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick ToggleDrawer ]
             [ div
                 [ class "menu-wrapper"
@@ -1072,7 +1072,7 @@ navView model =
                 , div [ class "menu-line" ] []
                 ]
             ]
-        , h1 [ class "title" ] [ text "Pomodorolm" ]
+        , h1 [ class "title", attribute "data-tauri-drag-region" "" ] [ text "Pomodorolm" ]
         , div [ class "icon-group" ]
             [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px", onClick MinimizeWindow ]
                 [ svg
