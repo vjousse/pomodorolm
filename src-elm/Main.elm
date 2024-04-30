@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Browser
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
-import Html.Attributes exposing (class, href, id, style, target, title, type_, value)
+import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -1056,7 +1056,7 @@ timerView model =
 
 navView : Model -> Html Msg
 navView model =
-    nav [ class "titlebar" ]
+    nav [ class "titlebar", attribute "data-tauri-drag-region" "" ]
         [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick ToggleDrawer ]
             [ div
                 [ class "menu-wrapper"
