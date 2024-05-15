@@ -23,6 +23,8 @@ tempfile = "3.10.1"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 rodio = "0.17.3"
 toml = "0.8.12"
+tokio = { version = "1.37.0", features = ["full"] }
+futures = "0.3.30"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

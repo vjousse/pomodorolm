@@ -4,9 +4,10 @@ import Browser
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
+import Json.Decode
+import Json.Encode
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Time
 
 
 main : Program Flags Model Msg
@@ -60,6 +61,46 @@ type alias Config =
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
     }
+
+
+configDecoder : Json.Decode.Decoder Config
+configDecoder =
+    let
+        fieldSet0 =
+            Json.Decode.map8 Config
+                (Json.Decode.field "always_on_top" Json.Decode.bool)
+                (Json.Decode.field "auto_start_break_timer" Json.Decode.bool)
+                (Json.Decode.field "auto_start_work_timer" Json.Decode.bool)
+                (Json.Decode.field "desktop_notifications" Json.Decode.bool)
+                (Json.Decode.field "long_break_duration" Json.Decode.int)
+                (Json.Decode.field "max_round_number" Json.Decode.int)
+                (Json.Decode.field "minimize_to_tray" Json.Decode.bool)
+                (Json.Decode.field "minimize_to_tray_on_close" Json.Decode.bool)
+    in
+    Json.Decode.map5 (<|)
+        fieldSet0
+        (Json.Decode.field "pomodoro_duration" Json.Decode.int)
+        (Json.Decode.field "short_break_duration" Json.Decode.int)
+        (Json.Decode.field "tick_sounds_during_break" Json.Decode.bool)
+        (Json.Decode.field "tick_sounds_during_work" Json.Decode.bool)
+
+
+encodedConfig : Config -> Json.Encode.Value
+encodedConfig config =
+    Json.Encode.object
+        [ ( "always_on_top", Json.Encode.bool config.alwaysOnTop )
+        , ( "auto_start_break_timer", Json.Encode.bool config.autoStartBreakTimer )
+        , ( "auto_start_work_timer", Json.Encode.bool config.autoStartWorkTimer )
+        , ( "desktop_notifications", Json.Encode.bool config.desktopNotifications )
+        , ( "long_break_duration", Json.Encode.int config.longBreakDuration )
+        , ( "max_round_number", Json.Encode.int config.maxRoundNumber )
+        , ( "minimize_to_tray", Json.Encode.bool config.minimizeToTray )
+        , ( "minimize_to_tray_on_close", Json.Encode.bool config.minimizeToTrayOnClose )
+        , ( "pomodoro_duration", Json.Encode.int config.pomodoroDuration )
+        , ( "short_break_duration", Json.Encode.int config.shortBreakDuration )
+        , ( "tick_sounds_during_break", Json.Encode.bool config.tickSoundsDuringBreak )
+        , ( "tick_sounds_during_work", Json.Encode.bool config.tickSoundsDuringWork )
+        ]
 
 
 type alias CurrentState =
@@ -203,7 +244,7 @@ init flags =
       , volume = 1
       , volumeSliderHidden = True
       }
-    , updateCurrentState { color = green, percentage = 1, paused = False }
+    , Cmd.batch [ updateCurrentState { color = green, percentage = 1, paused = False }, loadRustConfig () ]
     )
 
 
@@ -219,12 +260,14 @@ type Msg
     | ChangeSettingTab SettingTab
     | ChangeSettingConfig Setting
     | HideVolumeBar
+    | LoadConfig Config
     | MinimizeWindow
+    | NoOp
     | Reset
     | ResetSettings
     | SkipCurrentRound
     | ShowVolumeBar
-    | Tick Time.Posix
+    | Tick String
     | ToggleDrawer
     | ToggleMute
     | ToggleStatus
@@ -343,8 +386,33 @@ update msg model =
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
+        LoadConfig config ->
+            let
+                _ =
+                    Debug.log "LOAD CONFIG" config
+            in
+            ( { model
+                | config = config
+                , sessionStatus = Stopped
+                , currentTime =
+                    case model.currentSessionType of
+                        Pomodoro ->
+                            config.pomodoroDuration
+
+                        ShortBreak ->
+                            config.shortBreakDuration
+
+                        LongBreak ->
+                            config.longBreakDuration
+              }
+            , Cmd.none
+            )
+
         MinimizeWindow ->
             ( model, minimizeWindow () )
+
+        NoOp ->
+            ( model, Cmd.none )
 
         Reset ->
             ( { model
@@ -1547,9 +1615,29 @@ view model =
 -- SUBSCRIPTIONS
 
 
+mapLoadConfig : Json.Decode.Value -> Msg
+mapLoadConfig modelJson =
+    case Json.Decode.decodeValue configDecoder modelJson of
+        Ok model ->
+            LoadConfig model
+
+        Err _ ->
+            --@FIX: don't fail silently
+            NoOp
+
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Time.every 1000 Tick
+    Sub.batch
+        [ tick Tick
+        , loadConfig mapLoadConfig
+        ]
+
+
+port tick : (String -> msg) -> Sub msg
+
+
+port loadConfig : (Json.Decode.Value -> msg) -> Sub msg
 
 
 
@@ -1563,6 +1651,9 @@ port setVolume : Float -> Cmd msg
 
 
 port closeWindow : () -> Cmd msg
+
+
+port loadRustConfig : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg

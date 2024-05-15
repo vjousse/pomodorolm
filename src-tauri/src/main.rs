@@ -10,11 +10,14 @@ use tauri::Manager;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 use tauri_plugin_log::LogTarget;
 
+use futures::{stream, StreamExt};
 use rodio::{source::Source, Decoder, OutputStream};
 use std::fs;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::BufReader;
+use std::time::Duration;
+use tokio::time;
 
 pub struct ConfigState(Mutex<Config>);
 
@@ -72,7 +75,8 @@ impl Default for Config {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // @TODO: replace strings with enums using https://crates.io/crates/strum_macros
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
     let hide = CustomMenuItem::new("toggle_visibility".to_string(), "Hide");
@@ -113,6 +117,7 @@ fn main() {
             }
         })
         .setup(|app| {
+            let app_handle = app.handle();
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
                 let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
 
@@ -148,6 +153,18 @@ fn main() {
 
                 app.manage(ConfigState(Mutex::new(config)));
             }
+            let interval = time::interval(Duration::from_millis(1000));
+
+            tauri::async_runtime::spawn(async move {
+                let forever = stream::unfold(interval, |mut interval| async {
+                    interval.tick().await;
+
+                    app_handle.emit_all("tick-event", "").unwrap();
+                    Some(((), interval))
+                });
+                forever.for_each(|_| async {}).await;
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
