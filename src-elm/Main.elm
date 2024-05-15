@@ -387,10 +387,6 @@ update msg model =
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
         LoadConfig config ->
-            let
-                _ =
-                    Debug.log "LOAD CONFIG" config
-            in
             ( { model
                 | config = config
                 , sessionStatus = Stopped
