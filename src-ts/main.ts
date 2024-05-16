@@ -20,6 +20,7 @@ type ElmState = {
   color: Color;
   percentage: number;
   paused: boolean;
+  playTick: boolean;
 };
 
 type Notification = {
@@ -98,7 +99,7 @@ const app = Elm.Main.init({
 
 app.ports.playSound.subscribe(function (soundElementId: string) {
   info("Playing sound");
-  invoke("play_sound", { soundId: soundElementId });
+  invoke("play_sound_command", { soundId: soundElementId });
 });
 
 app.ports.minimizeWindow.subscribe(function () {
@@ -139,6 +140,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
 });
 
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
+  invoke("update_play_tick", { playTick: state.playTick });
   invoke("change_icon", {
     red: state.color.r,
     green: state.color.g,

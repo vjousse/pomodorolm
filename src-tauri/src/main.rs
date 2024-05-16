@@ -19,7 +19,13 @@ use std::io::BufReader;
 use std::time::Duration;
 use tokio::time;
 
-pub struct ConfigState(Mutex<Config>);
+pub struct AppState(Mutex<App>);
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+struct App {
+    play_tick: bool,
+    config: Config,
+}
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 struct Config {
@@ -118,16 +124,9 @@ async fn main() {
         })
         .setup(|app| {
             let app_handle = app.handle();
+
             if let Some(config_dir) = app.path_resolver().app_config_dir() {
                 let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
-
-                println!("Config file path: {}", config_file_path);
-
-                let resource_path = app.path_resolver().resolve_resource("audio/");
-                let data_path = app.path_resolver().app_data_dir();
-
-                println!("Resource audio path: {:#?}", resource_path);
-                println!("Data path: {:#?}", data_path);
 
                 let config = if fs::metadata(config_file_path).is_err() {
                     let mut file = OpenOptions::new()
@@ -151,8 +150,13 @@ async fn main() {
                     config
                 };
 
-                app.manage(ConfigState(Mutex::new(config)));
+                app.manage(AppState(Mutex::new(App {
+                    play_tick: false,
+                    config,
+                })));
             }
+
+            // Send a tick event to the frontend every second
             let interval = time::interval(Duration::from_millis(1000));
 
             tauri::async_runtime::spawn(async move {
@@ -160,6 +164,26 @@ async fn main() {
                     interval.tick().await;
 
                     app_handle.emit_all("tick-event", "").unwrap();
+
+                    let sound_file: Option<&str> = get_sound_file("audio-tick");
+
+                    let state: tauri::State<AppState> = app_handle.state();
+
+                    let state_guard = state.0.lock().unwrap();
+                    let play_tick: bool = state_guard.play_tick;
+
+                    if let Some(file) = sound_file {
+                        let resource_path = app_handle
+                            .path_resolver()
+                            .resolve_resource(format!("audio/{}", file))
+                            .expect("failed to resolve resource");
+                        tauri::async_runtime::spawn_blocking(move || {
+                            if play_tick {
+                                play_sound_file(&resource_path);
+                            }
+                        });
+                    }
+
                     Some(((), interval))
                 });
                 forever.for_each(|_| async {}).await;
@@ -173,8 +197,9 @@ async fn main() {
             load_config,
             minimize_window,
             notify,
-            play_sound,
-            update_config
+            play_sound_command,
+            update_config,
+            update_play_tick
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -302,10 +327,23 @@ async fn change_icon(
 }
 
 #[tauri::command]
-fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle, config: Config) {
+fn update_play_tick(state: tauri::State<AppState>, play_tick: bool) {
     let mut state_guard = state.0.lock().unwrap();
 
-    *state_guard = config;
+    *state_guard = App {
+        play_tick,
+        config: state_guard.config,
+    };
+}
+
+#[tauri::command]
+fn update_config(state: tauri::State<AppState>, app_handle: tauri::AppHandle, config: Config) {
+    let mut state_guard = state.0.lock().unwrap();
+
+    *state_guard = App {
+        play_tick: state_guard.play_tick,
+        config,
+    };
 
     if let Some(config_dir) = app_handle.path_resolver().app_config_dir() {
         let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
@@ -328,7 +366,7 @@ fn update_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle,
 }
 
 #[tauri::command]
-fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -> Config {
+fn load_config(state: tauri::State<AppState>, app_handle: tauri::AppHandle) -> Config {
     let mut state_guard = state.0.lock().unwrap();
 
     let config_dir = app_handle
@@ -339,20 +377,41 @@ fn load_config(state: tauri::State<ConfigState>, app_handle: tauri::AppHandle) -
     let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
     let toml_str = fs::read_to_string(config_file_path).expect("Unable to open config file");
     let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
-    *state_guard = config;
+    *state_guard = App {
+        play_tick: state_guard.play_tick,
+        config,
+    };
 
     config
 }
 
-#[tauri::command]
-async fn play_sound(app_handle: tauri::AppHandle, sound_id: String) {
-    let sound_file: Option<&str> = match sound_id.as_str() {
+fn get_sound_file(sound_id: &str) -> Option<&str> {
+    match sound_id {
         "audio-long-break" => Some("alert-long-break.mp3"),
         "audio-short-break" => Some("alert-short-break.mp3"),
         "audio-work" => Some("alert-work.mp3"),
         "audio-tick" => Some("tick.mp3"),
         _ => None,
-    };
+    }
+}
+
+fn play_sound_file(resource_path: &PathBuf) {
+    // Get a output stream handle to the default physical sound device
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    // Load a sound from a file, using a path relative to Cargo.toml
+    let file = BufReader::new(File::open(resource_path).unwrap());
+    // Decode that sound file into a source
+    let source = Decoder::new(file).unwrap();
+    // Play the sound directly on the device
+    let _ = stream_handle.play_raw(source.convert_samples());
+    // The sound plays in a separate audio thread,
+    // so we need to keep this thread alive while it's playing.
+    std::thread::sleep(std::time::Duration::from_secs(2));
+}
+
+#[tauri::command]
+async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
+    let sound_file: Option<&str> = get_sound_file(sound_id.as_str());
 
     if let Some(file) = sound_file {
         let resource_path = app_handle
@@ -360,18 +419,7 @@ async fn play_sound(app_handle: tauri::AppHandle, sound_id: String) {
             .resolve_resource(format!("audio/{}", file))
             .expect("failed to resolve resource");
 
-        // Get a output stream handle to the default physical sound device
-        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-        // Load a sound from a file, using a path relative to Cargo.toml
-        let file = BufReader::new(File::open(resource_path).unwrap());
-        // Decode that sound file into a source
-        let source = Decoder::new(file).unwrap();
-        // Play the sound directly on the device
-        let _ = stream_handle.play_raw(source.convert_samples());
-
-        // The sound plays in a separate audio thread,
-        // so we need to keep this thread alive while it's playing.
-        std::thread::sleep(std::time::Duration::from_secs(2));
+        play_sound_file(&resource_path);
     }
 }
 
@@ -406,8 +454,6 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
             },
             format!("{}/temp_icon_notification.png", data_dir.to_string_lossy()).as_str(),
         );
-
-        println!("PATH BUF {:#?}", icon_path_buf);
 
         // shows a notification with the given title and body
         let _ = Notification::new(&app_handle.config().tauri.bundle.identifier)

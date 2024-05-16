@@ -29,6 +29,7 @@ type alias Model =
     , currentColor : Color
     , currentRoundNumber : Int
     , currentSessionType : SessionType
+    , currentState : CurrentState
     , currentTime : Seconds
     , drawerOpen : Bool
     , endColor : Color
@@ -104,7 +105,7 @@ encodedConfig config =
 
 
 type alias CurrentState =
-    { color : Color, percentage : Float, paused : Bool }
+    { color : Color, percentage : Float, paused : Bool, playTick : Bool }
 
 
 type SessionType
@@ -215,6 +216,14 @@ pink =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
+    let
+        currentState =
+            { color = green
+            , percentage = 1
+            , paused = False
+            , playTick = False
+            }
+    in
     ( { config =
             { alwaysOnTop = flags.alwaysOnTop
             , autoStartWorkTimer = flags.autoStartWorkTimer
@@ -232,6 +241,7 @@ init flags =
       , currentColor = green
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
+      , currentState = currentState
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
       , endColor = red
@@ -244,7 +254,10 @@ init flags =
       , volume = 1
       , volumeSliderHidden = True
       }
-    , Cmd.batch [ updateCurrentState { color = green, percentage = 1, paused = False }, loadRustConfig () ]
+    , Cmd.batch
+        [ updateCurrentState currentState
+        , loadRustConfig ()
+        ]
     )
 
 
@@ -374,8 +387,17 @@ update msg model =
 
                         MinimizeToTrayOnClose ->
                             { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
+
+                nextModel =
+                    { model | config = newSettingsConfig }
+
+                oldState =
+                    nextModel.currentState
+
+                currentState =
+                    { oldState | playTick = shouldPlayTick model }
             in
-            ( { model | config = newSettingsConfig }, updateConfig newSettingsConfig )
+            ( { nextModel | currentState = currentState }, Cmd.batch [ updateConfig newSettingsConfig, updateCurrentState currentState ] )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -411,6 +433,19 @@ update msg model =
             ( model, Cmd.none )
 
         Reset ->
+            let
+                currentState =
+                    { color = colorForSessionType model.currentSessionType
+                    , percentage = 100
+                    , paused =
+                        if model.sessionStatus == Paused then
+                            True
+
+                        else
+                            False
+                    , playTick = False
+                    }
+            in
             ( { model
                 | sessionStatus = Stopped
                 , currentTime =
@@ -424,16 +459,7 @@ update msg model =
                         LongBreak ->
                             model.config.longBreakDuration
               }
-            , updateCurrentState
-                { color = colorForSessionType model.currentSessionType
-                , percentage = 100
-                , paused =
-                    if model.sessionStatus == Paused then
-                        True
-
-                    else
-                        False
-                }
+            , updateCurrentState currentState
             )
 
         ResetSettings ->
@@ -448,48 +474,51 @@ update msg model =
                         , longBreakDuration = defaults.longBreakDuration
                         , maxRoundNumber = defaults.maxRoundNumber
                     }
+
+                oldState =
+                    model.currentState
+
+                currentState =
+                    { oldState | playTick = False }
             in
             ( { model
                 | config = newConfig
                 , currentTime = defaults.pomodoroDuration
                 , currentSessionType = Pomodoro
+                , currentState = currentState
                 , sessionStatus = Stopped
               }
-            , Cmd.none
+            , updateCurrentState currentState
             )
 
         SkipCurrentRound ->
             let
                 nextRoundInfo =
                     getNextRoundInfo model
-            in
-            ( { model
-                | currentRoundNumber = nextRoundInfo.nextRoundNumber
-                , currentSessionType = nextRoundInfo.nextSessionType
-                , currentTime = nextRoundInfo.nextTime
-                , sessionStatus =
-                    case nextRoundInfo.nextSessionType of
-                        Pomodoro ->
-                            if model.config.autoStartWorkTimer then
-                                Running
 
-                            else
-                                Stopped
+                nextModel =
+                    { model
+                        | currentRoundNumber = nextRoundInfo.nextRoundNumber
+                        , currentSessionType = nextRoundInfo.nextSessionType
+                        , currentTime = nextRoundInfo.nextTime
+                        , sessionStatus =
+                            case nextRoundInfo.nextSessionType of
+                                Pomodoro ->
+                                    if model.config.autoStartWorkTimer then
+                                        Running
 
-                        _ ->
-                            if model.config.autoStartBreakTimer then
-                                Running
+                                    else
+                                        Stopped
 
-                            else
-                                Stopped
-              }
-            , Cmd.batch
-                [ if model.muted then
-                    Cmd.none
+                                _ ->
+                                    if model.config.autoStartBreakTimer then
+                                        Running
 
-                  else
-                    playSound nextRoundInfo.htmlIdOfAudioToPlay
-                , updateCurrentState
+                                    else
+                                        Stopped
+                    }
+
+                currentState =
                     { color = colorForSessionType nextRoundInfo.nextSessionType
                     , percentage = 100
                     , paused =
@@ -498,7 +527,17 @@ update msg model =
 
                         else
                             False
+                    , playTick = shouldPlayTick nextModel
                     }
+            in
+            ( { nextModel | currentState = currentState }
+            , Cmd.batch
+                [ if model.muted then
+                    Cmd.none
+
+                  else
+                    playSound nextRoundInfo.htmlIdOfAudioToPlay
+                , updateCurrentState currentState
                 , if model.config.desktopNotifications then
                     notify nextRoundInfo.notification
 
@@ -524,24 +563,14 @@ update msg model =
 
                     percent =
                         1 * toFloat newTime / toFloat maxTime
-                in
-                ( { model | currentTime = newTime, currentColor = currentColor }
-                , Cmd.batch
-                    [ case model.currentSessionType of
-                        Pomodoro ->
-                            if model.config.tickSoundsDuringWork && not model.muted then
-                                playSound "audio-tick"
 
-                            else
-                                Cmd.none
+                    nextModel =
+                        { model
+                            | currentTime = newTime
+                            , currentColor = currentColor
+                        }
 
-                        _ ->
-                            if model.config.tickSoundsDuringBreak && not model.muted then
-                                playSound "audio-tick"
-
-                            else
-                                Cmd.none
-                    , updateCurrentState
+                    currentState =
                         { color = currentColor
                         , percentage = percent
                         , paused =
@@ -550,19 +579,55 @@ update msg model =
 
                             else
                                 False
+                        , playTick = shouldPlayTick nextModel
                         }
-                    ]
+                in
+                ( { model
+                    | currentTime = newTime
+                    , currentColor = currentColor
+                    , currentState = currentState
+                  }
+                , updateCurrentState currentState
                 )
 
             else if model.currentTime == 0 then
                 let
                     nextRoundInfo =
                         getNextRoundInfo model
+
+                    nextModel =
+                        { model
+                            | currentRoundNumber = nextRoundInfo.nextRoundNumber
+                            , currentSessionType = nextRoundInfo.nextSessionType
+                            , currentTime = nextRoundInfo.nextTime
+                            , sessionStatus =
+                                case nextRoundInfo.nextSessionType of
+                                    Pomodoro ->
+                                        if model.config.autoStartWorkTimer then
+                                            Running
+
+                                        else
+                                            Stopped
+
+                                    _ ->
+                                        if model.config.autoStartBreakTimer then
+                                            Running
+
+                                        else
+                                            Stopped
+                        }
+
+                    oldState =
+                        nextModel.currentState
+
+                    currentState =
+                        { oldState | playTick = shouldPlayTick nextModel }
                 in
-                ( { model
+                ( { nextModel
                     | currentRoundNumber = nextRoundInfo.nextRoundNumber
                     , currentSessionType = nextRoundInfo.nextSessionType
                     , currentTime = nextRoundInfo.nextTime
+                    , currentState = currentState
                     , sessionStatus =
                         case nextRoundInfo.nextSessionType of
                             Pomodoro ->
@@ -579,11 +644,14 @@ update msg model =
                                 else
                                     Stopped
                   }
-                , if model.muted then
+                , if nextModel.muted then
                     Cmd.none
 
                   else
-                    playSound nextRoundInfo.htmlIdOfAudioToPlay
+                    Cmd.batch
+                        [ playSound nextRoundInfo.htmlIdOfAudioToPlay
+                        , updateCurrentState currentState
+                        ]
                 )
 
             else
@@ -638,29 +706,54 @@ update msg model =
 
                     else
                         0
+
+                nextModel =
+                    { model | muted = not model.muted, volume = newVolume }
+
+                oldState =
+                    model.currentState
+
+                currentState =
+                    { oldState
+                        | playTick = shouldPlayTick nextModel
+                    }
             in
-            ( { model | muted = not model.muted, volume = newVolume }
-            , setVolume newVolume
+            ( { nextModel | currentState = currentState }
+            , Cmd.batch [ setVolume newVolume, updateCurrentState currentState ]
             )
 
         ToggleStatus ->
             case model.sessionStatus of
                 Running ->
-                    ( { model | sessionStatus = Paused }
-                    , updateCurrentState
-                        { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
-                        , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
-                        , paused = True
-                        }
+                    let
+                        nextModel =
+                            { model | sessionStatus = Paused }
+
+                        currentState =
+                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                            , paused = True
+                            , playTick = shouldPlayTick nextModel
+                            }
+                    in
+                    ( { nextModel | currentState = currentState }
+                    , updateCurrentState currentState
                     )
 
                 _ ->
-                    ( { model | sessionStatus = Running }
-                    , updateCurrentState
-                        { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
-                        , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
-                        , paused = False
-                        }
+                    let
+                        nextModel =
+                            { model | sessionStatus = Running }
+
+                        currentState =
+                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                            , paused = False
+                            , playTick = shouldPlayTick nextModel
+                            }
+                    in
+                    ( { nextModel | currentState = currentState }
+                    , updateCurrentState currentState
                     )
 
         UpdateSetting settingType v ->
@@ -791,6 +884,30 @@ update msg model =
               }
             , setVolume newVolume
             )
+
+
+shouldPlayTick : Model -> Bool
+shouldPlayTick model =
+    -- If it's muted, don't play anything
+    if model.muted then
+        False
+
+    else if model.currentTime > 0 && model.sessionStatus == Running then
+        case ( model.currentSessionType, model.config.tickSoundsDuringWork, model.config.tickSoundsDuringBreak ) of
+            ( Pomodoro, True, _ ) ->
+                True
+
+            ( ShortBreak, _, True ) ->
+                True
+
+            ( LongBreak, _, True ) ->
+                True
+
+            _ ->
+                False
+
+    else
+        False
 
 
 colorForSessionType : SessionType -> Color
@@ -1641,6 +1758,9 @@ port loadConfig : (Json.Decode.Value -> msg) -> Sub msg
 
 
 port playSound : String -> Cmd msg
+
+
+port playTick : Bool -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg

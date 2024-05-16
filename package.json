@@ -18,7 +18,8 @@
     "elm-tooling": "^1.15.0",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
-    "vite-plugin-elm": "^3.0.0"
+    "vite-plugin-elm": "^3.0.0",
+    "vite-plugin-top-level-await": "^1.4.1"
   },
   "dependencies": {
     "@tauri-apps/api": "^1.5.3",
