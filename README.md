@@ -18,13 +18,21 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first.
 
     npm i
 
-# Running the app
+## Running the app
 
     npm run tauri dev
 
-# Running only the webapp
+## Running only the webapp
 
     npm run dev
+
+# Build
+
+Build using `docker-compose` (to maximize compatibily, normal build is failing on Archlinux for example):
+
+    docker-compose up
+
+Build files will be placed in the `target/` directory.
 
 # Credits
 
