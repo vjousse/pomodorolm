@@ -403,7 +403,13 @@ update msg model =
             ( { model | settingTab = settingTab }, Cmd.none )
 
         CloseWindow ->
-            ( model, closeWindow () )
+            ( model
+            , if model.config.minimizeToTrayOnClose then
+                hideWindow ()
+
+              else
+                closeWindow ()
+            )
 
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
@@ -427,7 +433,13 @@ update msg model =
             )
 
         MinimizeWindow ->
-            ( model, minimizeWindow () )
+            ( model
+            , if model.config.minimizeToTray then
+                hideWindow ()
+
+              else
+                minimizeWindow ()
+            )
 
         NoOp ->
             ( model, Cmd.none )
@@ -1773,6 +1785,9 @@ port loadRustConfig : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg
+
+
+port hideWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
