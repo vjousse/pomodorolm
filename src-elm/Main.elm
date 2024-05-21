@@ -25,7 +25,8 @@ type alias Seconds =
 
 
 type alias Model =
-    { config : Config
+    { appVersion : String
+    , config : Config
     , currentColor : Color
     , currentRoundNumber : Int
     , currentSessionType : SessionType
@@ -166,6 +167,7 @@ type alias Defaults =
 
 type alias Flags =
     { alwaysOnTop : Bool
+    , appVersion : String
     , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
     , desktopNotifications : Bool
@@ -224,7 +226,8 @@ init flags =
             , playTick = False
             }
     in
-    ( { config =
+    ( { appVersion = flags.appVersion
+      , config =
             { alwaysOnTop = flags.alwaysOnTop
             , autoStartWorkTimer = flags.autoStartWorkTimer
             , autoStartBreakTimer = flags.autoStartBreakTimer
@@ -1565,13 +1568,22 @@ settingsSettingView model =
         ]
 
 
-aboutSettingView : Html Msg
-aboutSettingView =
+aboutSettingView : String -> Html Msg
+aboutSettingView appVersion =
     div [ class "container", id "about" ]
         [ p [ class "drawer-heading" ] [ text "About" ]
         , section []
             [ h2 [] [ text "Pomodrolm" ]
-            , p [ class "label" ] [ text "Version: dev" ]
+            , p [ class "label" ]
+                [ text <| "Version: " ++ appVersion ++ " "
+                , a
+                    [ href <| "https://github.com/vjousse/pomodorolm/releases/tag/app-v" ++ appVersion
+                    , class "label"
+                    , class "link"
+                    , target "_blank"
+                    ]
+                    [ text "(release notes)" ]
+                ]
             , p [ class "label" ]
                 [ a
                     [ href "https://github.com/vjousse/pomodorolm"
@@ -1598,7 +1610,7 @@ drawerView model =
                 settingsSettingView model
 
             AboutTab ->
-                aboutSettingView
+                aboutSettingView model.appVersion
         , div
             [ class "drawer-menu"
             ]
