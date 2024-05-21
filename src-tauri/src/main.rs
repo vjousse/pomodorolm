@@ -102,7 +102,16 @@ async fn main() {
         )
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| {
-            if let SystemTrayEvent::MenuItemClick { id, .. } = event {
+            match event {
+              // show window with id "main" when the tray is left clicked
+              // not supported on Linux
+              // https://github.com/tauri-apps/tauri/issues/7283
+              SystemTrayEvent::LeftClick { .. } => {
+                let window = app.get_window("main").unwrap();
+                window.show().unwrap();
+                window.set_focus().unwrap();
+              },
+              SystemTrayEvent::MenuItemClick { id, .. } => {
                 let item_handle = app.tray_handle().get_item(&id);
                 match id.as_str() {
                     "quit" => {
@@ -120,6 +129,9 @@ async fn main() {
                     }
                     _ => {}
                 }
+
+              },
+              _ => {}
             }
         })
         .setup(|app| {
@@ -194,6 +206,7 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
+            hide_window,
             load_config,
             minimize_window,
             notify,
@@ -425,6 +438,17 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
 
 #[tauri::command]
 async fn minimize_window(app_handle: tauri::AppHandle) {
+    let window = app_handle.get_window("main").expect("window not found");
+
+    let item_handle = app_handle.tray_handle().get_item("toggle_visibility");
+    item_handle.set_title("Show").unwrap();
+
+    window.minimize().expect("failed to hide window");
+}
+
+
+#[tauri::command]
+async fn hide_window(app_handle: tauri::AppHandle) {
     let window = app_handle.get_window("main").expect("window not found");
 
     let item_handle = app_handle.tray_handle().get_item("toggle_visibility");

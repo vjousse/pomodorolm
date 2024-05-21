@@ -102,6 +102,10 @@ app.ports.playSound.subscribe(function (soundElementId: string) {
   invoke("play_sound_command", { soundId: soundElementId });
 });
 
+app.ports.hideWindow.subscribe(function () {
+  invoke("hide_window");
+});
+
 app.ports.minimizeWindow.subscribe(function () {
   invoke("minimize_window");
 });

@@ -405,7 +405,7 @@ update msg model =
         CloseWindow ->
             ( model
             , if model.config.minimizeToTrayOnClose then
-                minimizeWindow ()
+                hideWindow ()
 
               else
                 closeWindow ()
@@ -433,7 +433,13 @@ update msg model =
             )
 
         MinimizeWindow ->
-            ( model, minimizeWindow () )
+            ( model
+            , if model.config.minimizeToTray then
+                hideWindow ()
+
+              else
+                minimizeWindow ()
+            )
 
         NoOp ->
             ( model, Cmd.none )
@@ -1779,6 +1785,9 @@ port loadRustConfig : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg
+
+
+port hideWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
