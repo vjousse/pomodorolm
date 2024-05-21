@@ -403,7 +403,13 @@ update msg model =
             ( { model | settingTab = settingTab }, Cmd.none )
 
         CloseWindow ->
-            ( model, closeWindow () )
+            ( model
+            , if model.config.minimizeToTrayOnClose then
+                minimizeWindow ()
+
+              else
+                closeWindow ()
+            )
 
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
