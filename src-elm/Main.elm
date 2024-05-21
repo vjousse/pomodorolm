@@ -606,6 +606,7 @@ update msg model =
                 )
 
             else if model.currentTime == 0 then
+                -- Time = 0, we are at the end of the current round
                 let
                     nextRoundInfo =
                         getNextRoundInfo model
@@ -659,14 +660,19 @@ update msg model =
                                 else
                                     Stopped
                   }
-                , if nextModel.muted then
-                    Cmd.none
+                , Cmd.batch
+                    [ updateCurrentState currentState
+                    , if nextModel.muted then
+                        Cmd.none
 
-                  else
-                    Cmd.batch
-                        [ playSound nextRoundInfo.htmlIdOfAudioToPlay
-                        , updateCurrentState currentState
-                        ]
+                      else
+                        playSound nextRoundInfo.htmlIdOfAudioToPlay
+                    , if model.config.desktopNotifications then
+                        notify nextRoundInfo.notification
+
+                      else
+                        Cmd.none
+                    ]
                 )
 
             else
