@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api";
 import { listen } from "@tauri-apps/api/event";
 
 import { attachConsole, info } from "tauri-plugin-log-api";
+import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
 attachConsole();
@@ -83,6 +84,7 @@ const app = Elm.Main.init({
   node: root,
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
+    appVersion: await getVersion(),
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
