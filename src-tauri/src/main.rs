@@ -103,35 +103,34 @@ async fn main() {
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| {
             match event {
-              // show window with id "main" when the tray is left clicked
-              // not supported on Linux
-              // https://github.com/tauri-apps/tauri/issues/7283
-              SystemTrayEvent::LeftClick { .. } => {
-                let window = app.get_window("main").unwrap();
-                window.show().unwrap();
-                window.set_focus().unwrap();
-              },
-              SystemTrayEvent::MenuItemClick { id, .. } => {
-                let item_handle = app.tray_handle().get_item(&id);
-                match id.as_str() {
-                    "quit" => {
-                        std::process::exit(0);
-                    }
-                    "toggle_visibility" => {
-                        let window = app.get_window("main").unwrap();
-                        if window.is_visible().unwrap() {
-                            window.hide().unwrap();
-                            item_handle.set_title("Show").unwrap();
-                        } else {
-                            window.show().unwrap();
-                            item_handle.set_title("Hide").unwrap();
-                        }
-                    }
-                    _ => {}
+                // show window with id "main" when the tray is left clicked
+                // not supported on Linux
+                // https://github.com/tauri-apps/tauri/issues/7283
+                SystemTrayEvent::LeftClick { .. } => {
+                    let window = app.get_window("main").unwrap();
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
                 }
-
-              },
-              _ => {}
+                SystemTrayEvent::MenuItemClick { id, .. } => {
+                    let item_handle = app.tray_handle().get_item(&id);
+                    match id.as_str() {
+                        "quit" => {
+                            std::process::exit(0);
+                        }
+                        "toggle_visibility" => {
+                            let window = app.get_window("main").unwrap();
+                            if window.is_visible().unwrap() {
+                                window.hide().unwrap();
+                                item_handle.set_title("Show").unwrap();
+                            } else {
+                                window.show().unwrap();
+                                item_handle.set_title("Hide").unwrap();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         })
         .setup(|app| {
@@ -413,6 +412,7 @@ fn play_sound_file(resource_path: &PathBuf) {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     // Load a sound from a file, using a path relative to Cargo.toml
     let file = BufReader::new(File::open(resource_path).unwrap());
+
     // Decode that sound file into a source
     let source = Decoder::new(file).unwrap();
     // Play the sound directly on the device
@@ -445,7 +445,6 @@ async fn minimize_window(app_handle: tauri::AppHandle) {
 
     window.minimize().expect("failed to hide window");
 }
-
 
 #[tauri::command]
 async fn hide_window(app_handle: tauri::AppHandle) {
