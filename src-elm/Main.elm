@@ -633,11 +633,17 @@ update msg model =
                                             Stopped
                         }
 
-                    oldState =
-                        nextModel.currentState
-
                     currentState =
-                        { oldState | playTick = shouldPlayTick nextModel }
+                        { color = colorForSessionType nextRoundInfo.nextSessionType
+                        , percentage = 100
+                        , paused =
+                            if nextModel.sessionStatus == Paused then
+                                True
+
+                            else
+                                False
+                        , playTick = shouldPlayTick nextModel
+                        }
                 in
                 ( { nextModel
                     | currentRoundNumber = nextRoundInfo.nextRoundNumber
