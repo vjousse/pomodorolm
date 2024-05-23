@@ -51,8 +51,8 @@ type alias Color =
 
 type alias Config =
     { alwaysOnTop : Bool
-    , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
+    , autoStartWorkTimer : Bool
     , desktopNotifications : Bool
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
@@ -60,8 +60,8 @@ type alias Config =
     , minimizeToTrayOnClose : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
-    , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
+    , tickSoundsDuringWork : Bool
     }
 
 
