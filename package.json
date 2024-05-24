@@ -10,7 +10,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.5.11",
+    "@tauri-apps/cli": ">=2.0.0-beta.0",
     "@types/node": "^20.11.30",
     "elm": "^0.19.1-5",
     "elm-debug-transformer": "^1.2.1",
@@ -22,7 +22,8 @@
     "vite-plugin-top-level-await": "^1.4.1"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1.5.3",
-    "tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log"
+    "@tauri-apps/api": ">=2.0.0-beta.0",
+    "@tauri-apps/plugin-log": "^2.0.0-beta.4",
+    "@tauri-apps/plugin-shell": ">=2.0.0-beta.0"
   }
 }
