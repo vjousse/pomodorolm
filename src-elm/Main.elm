@@ -1151,7 +1151,7 @@ footerView model =
                     , SvgAttr.y "0px"
                     , SvgAttr.viewBox "0 0 8 12"
                     , SvgAttr.xmlSpace "preserve"
-                    , SvgAttr.height "15px"
+                    , SvgAttr.height "5vw"
                     , SvgAttr.class "icon--skip"
                     ]
                     [ Svg.polygon
