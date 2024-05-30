@@ -93,6 +93,7 @@ pub fn run() {
 pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             if app.notification().permission_state()? == PermissionState::Unknown {
                 app.notification().request_permission()?;
