@@ -24,6 +24,8 @@
 - [x] **Multi-platform**: Linux, Mac, Windows
 - [x] **Resizable window** with automatic scaling
 - [x] **Always on top** (optional)
+- [x] Fully compatible with **HiDPI/4K screens**
+- [x] Linux: **Wayland** and **X11** support
 - [ ] Mini mode
 - [ ] Terminal User Interface
 - [ ] Mobile version
