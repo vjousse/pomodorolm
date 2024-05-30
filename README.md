@@ -10,7 +10,7 @@
 
 ---
 
-![Screenshot of the app](screenshot.png)
+![Screenshot of the app](screenshot.png?)
 
 # 🌟 Features
 
