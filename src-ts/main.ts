@@ -2,10 +2,10 @@ import "../main.css";
 
 import { Elm } from "../src-elm/Main.elm";
 
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-import { attachConsole, info } from "tauri-plugin-log-api";
+import { info, attachConsole } from "@tauri-apps/plugin-log";
 import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
