@@ -51,7 +51,7 @@
         "center": true,
         "fullscreen": false,
         "height": 478,
-        "resizable": false,
+        "resizable": true,
         "title": "Pomodorolm",
         "width": 360,
         "decorations": false
@@ -66,4 +66,3 @@
     }
   }
 }
-

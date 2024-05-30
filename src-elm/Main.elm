@@ -1020,8 +1020,8 @@ dialView sessionType currentTime maxTime maxStrokeDasharray =
             , SvgAttr.y "0px"
             , SvgAttr.viewBox "0 0 230 230"
             , SvgAttr.xmlSpace "preserve"
-            , SvgAttr.width "220"
-            , SvgAttr.height "220"
+            , SvgAttr.width "60vw"
+            , SvgAttr.height "60vw"
             , SvgAttr.class "dial-fill"
             , SvgAttr.style <| "stroke: " ++ color ++ ";"
             ]
@@ -1044,8 +1044,8 @@ dialView sessionType currentTime maxTime maxStrokeDasharray =
             , SvgAttr.y "0px"
             , SvgAttr.viewBox "0 0 230 230"
             , SvgAttr.xmlSpace "preserve"
-            , SvgAttr.width "220"
-            , SvgAttr.height "220"
+            , SvgAttr.width "60vw"
+            , SvgAttr.height "60vw"
             , SvgAttr.class "dial-bg"
             ]
             [ path
@@ -1072,7 +1072,7 @@ playPauseView sessionStatus =
                 , SvgAttr.y "0px"
                 , SvgAttr.viewBox "0 0 10.9 18"
                 , SvgAttr.xmlSpace "preserve"
-                , SvgAttr.height "15px"
+                , SvgAttr.height "4vw"
                 , SvgAttr.class "icon--pause"
                 ]
                 [ Svg.line
@@ -1110,7 +1110,7 @@ playPauseView sessionStatus =
                 , SvgAttr.y "0px"
                 , SvgAttr.viewBox "0 0 7.6 15"
                 , SvgAttr.xmlSpace "preserve"
-                , SvgAttr.height "15px"
+                , SvgAttr.height "4vw"
                 , SvgAttr.class "icon--start"
                 ]
                 [ Svg.polygon
@@ -1151,7 +1151,7 @@ footerView model =
                     , SvgAttr.y "0px"
                     , SvgAttr.viewBox "0 0 8 12"
                     , SvgAttr.xmlSpace "preserve"
-                    , SvgAttr.height "15px"
+                    , SvgAttr.height "5vw"
                     , SvgAttr.class "icon--skip"
                     ]
                     [ Svg.polygon
@@ -1178,7 +1178,7 @@ footerView model =
                         , SvgAttr.y "0px"
                         , SvgAttr.viewBox "0 0 12.3 12"
                         , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.height "15px"
+                        , SvgAttr.height "4vw"
                         , SvgAttr.class "icon--mute"
                         , SvgAttr.baseProfile "tiny"
                         ]
@@ -1197,7 +1197,7 @@ footerView model =
                         , SvgAttr.y "0px"
                         , SvgAttr.viewBox "-467 269 24 24"
                         , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.height "20px"
+                        , SvgAttr.height "5vw"
                         , SvgAttr.class "icon--muted"
                         ]
                         [ path
@@ -1282,7 +1282,7 @@ navView model =
             ]
         , h1 [ class "title", attribute "data-tauri-drag-region" "" ] [ text "Pomodorolm" ]
         , div [ class "icon-group" ]
-            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "18px", onClick MinimizeWindow ]
+            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "5vw", onClick MinimizeWindow ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -1291,8 +1291,8 @@ navView model =
                     , SvgAttr.y "0px"
                     , SvgAttr.viewBox "0 0 14 2"
                     , SvgAttr.xmlSpace "preserve"
-                    , SvgAttr.width "15px"
-                    , SvgAttr.height "20px"
+                    , SvgAttr.width "4.2vw"
+                    , SvgAttr.height "5.5vw"
                     , SvgAttr.class "icon icon--minimize"
                     ]
                     [ Svg.line
@@ -1311,7 +1311,7 @@ navView model =
                 ]
             , div
                 [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--right"
-                , style "padding-right" "18px"
+                , style "padding-right" "4vw"
                 , onClick CloseWindow
                 ]
                 [ svg
@@ -1322,7 +1322,7 @@ navView model =
                     , SvgAttr.y "0px"
                     , SvgAttr.viewBox "0 0 12.6 12.6"
                     , SvgAttr.xmlSpace "preserve"
-                    , SvgAttr.height "15px"
+                    , SvgAttr.height "4.2vw"
                     , SvgAttr.class "icon icon--close"
                     ]
                     [ Svg.line
@@ -1651,7 +1651,7 @@ drawerView model =
                             , SvgAttr.x "0px"
                             , SvgAttr.y "0px"
                             , SvgAttr.viewBox "0 0 20 20"
-                            , SvgAttr.width "18"
+                            , SvgAttr.width "5vw"
                             , SvgAttr.xmlSpace "preserve"
                             , SvgAttr.class "icon"
                             ]
@@ -1693,7 +1693,7 @@ drawerView model =
                         , SvgAttr.x "0px"
                         , SvgAttr.y "0px"
                         , SvgAttr.viewBox "0 0 19.5 20"
-                        , SvgAttr.width "18"
+                        , SvgAttr.width "5vw"
                         , SvgAttr.xmlSpace "preserve"
                         , SvgAttr.class "icon"
                         ]
@@ -1725,8 +1725,8 @@ drawerView model =
                         ]
                         [ svg
                             [ SvgAttr.id "about-icon"
-                            , SvgAttr.width "24"
-                            , SvgAttr.height "24"
+                            , SvgAttr.width "6.6vw"
+                            , SvgAttr.height "6.6vw"
                             , SvgAttr.viewBox "0 0 24 24"
                             , SvgAttr.class "icon"
                             ]
