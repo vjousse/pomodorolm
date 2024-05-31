@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use image::{ImageBuffer, Rgba};
-use rodio::{source::Source, Decoder, OutputStream};
+use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -358,16 +358,12 @@ async fn change_icon(
 
 #[tauri::command]
 async fn update_play_tick(state: tauri::State<'_, AppState>, play_tick: bool) -> Result<(), ()> {
-    println!("Update play TICK to {}", play_tick);
     let mut state_guard = state.0.lock().await;
 
-    println!("Old config {:?}", state_guard.config);
     *state_guard = App {
         play_tick,
         config: state_guard.config,
     };
-
-    println!("New config {:?}", state_guard.config);
 
     Ok(())
 }
@@ -441,16 +437,15 @@ fn get_sound_file(sound_id: &str) -> Option<&str> {
 fn play_sound_file(resource_path: &str) {
     // Get a output stream handle to the default physical sound device
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&stream_handle).unwrap();
+
     // Load a sound from a file, using a path relative to Cargo.toml
     let file = BufReader::new(File::open(resource_path).unwrap());
 
     // Decode that sound file into a source
     let source = Decoder::new(file).unwrap();
-    // Play the sound directly on the device
-    let _ = stream_handle.play_raw(source.convert_samples());
-    // The sound plays in a separate audio thread,
-    // so we need to keep this thread alive while it's playing.
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    sink.append(source);
+    sink.sleep_until_end();
 }
 
 #[tauri::command]
