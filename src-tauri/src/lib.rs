@@ -249,7 +249,7 @@ fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
     let start_angle = 0.0; // Start from the top center
     let end_angle = 360.0 * icon.fill_percentage; // End at the specified percentage of the circle
 
-    // Define the width of the white border circle
+    // Define the width of the border circle
     let border_thickness = outer_radius * 0.05; // Adjust as needed
 
     let adjusted_outer_radius = outer_radius - outer_radius * 0.20;
@@ -257,7 +257,7 @@ fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
     let inner_border_radius_squared =
         (adjusted_outer_radius - border_thickness) * (adjusted_outer_radius - border_thickness);
 
-    // Draw the thin white border circle
+    // Draw the thin border circle
     for y in 0..icon.height {
         for x in 0..icon.width {
             let dx = x as f32 - center_x;
@@ -268,7 +268,7 @@ fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
             if distance_squared <= adjusted_outer_radius_squared
                 && distance_squared >= inner_border_radius_squared
             {
-                imgbuf.put_pixel(x, y, Rgba([255, 255, 255, 255])); // White color
+                imgbuf.put_pixel(x, y, Rgba([192, 201, 218, 255])); // Gray color
             }
         }
     }
