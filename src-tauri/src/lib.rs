@@ -3,6 +3,7 @@
 
 use image::{ImageBuffer, Rgba};
 use rodio::{Decoder, OutputStream, Sink};
+use serde::ser::Error;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -235,7 +236,8 @@ async fn tick(app_handle: AppHandle, path: String) {
 
         tauri::async_runtime::spawn_blocking(move || {
             if play_tick {
-                play_sound_file(&new_path);
+                // Fail silently if we can't play sound file
+                let _ = play_sound_file(&new_path);
             }
         });
     }
@@ -459,18 +461,19 @@ fn get_sound_file(sound_id: &str) -> Option<&str> {
     }
 }
 
-fn play_sound_file(resource_path: &str) {
+fn play_sound_file(resource_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Get a output stream handle to the default physical sound device
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&stream_handle).unwrap();
+    let (_stream, stream_handle) = OutputStream::try_default()?;
+    let sink = Sink::try_new(&stream_handle)?;
 
     // Load a sound from a file, using a path relative to Cargo.toml
-    let file = BufReader::new(File::open(resource_path).unwrap());
+    let file = BufReader::new(File::open(resource_path)?);
 
     // Decode that sound file into a source
-    let source = Decoder::new(file).unwrap();
+    let source = Decoder::new(file)?;
     sink.append(source);
     sink.sleep_until_end();
+    Ok(())
 }
 
 #[tauri::command]
@@ -483,7 +486,8 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
         .unwrap();
     let path = resource_path.to_string_lossy();
 
-    play_sound_file(&path);
+    // Fail silently if we can't play sound file
+    let _ = play_sound_file(&path);
 }
 
 #[tauri::command]
