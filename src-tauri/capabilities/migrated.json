@@ -13,6 +13,8 @@
     "resources:default",
     "shell:allow-open",
     "tray:default",
-    "window:default"
+    "window:default",
+    "window:allow-start-dragging",
+    "window:allow-start-resize-dragging"
   ]
 }
