@@ -1,17 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use image::{ImageBuffer, Rgba};
-use rodio::{Decoder, OutputStream, Sink};
-use serde::ser::Error;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::BufReader;
+use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{io::Write, path::Path, path::PathBuf};
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::TrayIconEvent;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
@@ -25,6 +20,9 @@ pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
+
+mod icon;
+mod sound;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
@@ -55,16 +53,6 @@ struct ElmNotification {
     red: u8,
     green: u8,
     blue: u8,
-}
-
-struct PomodorolmIcon {
-    width: u32,
-    height: u32,
-    red: u8,
-    green: u8,
-    blue: u8,
-    fill_percentage: f32,
-    paused: bool,
 }
 
 impl Default for Config {
@@ -160,7 +148,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
-                fs::create_dir_all(&app.path().app_config_dir()?)?;
+                fs::create_dir_all(app.path().app_config_dir()?)?;
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -190,7 +178,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
             app.manage(MenuState(std::sync::Mutex::new(toggle_visibility)));
 
-            let sound_file = get_sound_file("audio-tick").unwrap();
+            let sound_file = sound::get_sound_file("audio-tick").unwrap();
 
             let path = &app.path();
 
@@ -237,118 +225,10 @@ async fn tick(app_handle: AppHandle, path: String) {
         tauri::async_runtime::spawn_blocking(move || {
             if play_tick {
                 // Fail silently if we can't play sound file
-                let _ = play_sound_file(&new_path);
+                let _ = sound::play_sound_file(&new_path);
             }
         });
     }
-}
-
-fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
-    // Create a new ImageBuffer with RGBA colors
-    let mut imgbuf = ImageBuffer::<Rgba<u8>, _>::new(icon.width, icon.height);
-
-    let center_x = icon.width as f32 / 2.0;
-    let center_y = icon.height as f32 / 2.0;
-    let outer_radius = icon.width as f32 / 2.0;
-    let inner_radius = outer_radius * 0.40; // 40% of the outer radius
-
-    let start_angle = 0.0; // Start from the top center
-    let end_angle = 360.0 * icon.fill_percentage; // End at the specified percentage of the circle
-
-    // Define the width of the border circle
-    let border_thickness = outer_radius * 0.05; // Adjust as needed
-
-    let adjusted_outer_radius = outer_radius - outer_radius * 0.20;
-    let adjusted_outer_radius_squared = adjusted_outer_radius * adjusted_outer_radius;
-    let inner_border_radius_squared =
-        (adjusted_outer_radius - border_thickness) * (adjusted_outer_radius - border_thickness);
-
-    // Draw the thin border circle
-    for y in 0..icon.height {
-        for x in 0..icon.width {
-            let dx = x as f32 - center_x;
-            let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
-            let distance_squared = dx * dx + dy * dy;
-
-            // Check if the pixel is within the border ring
-            if distance_squared <= adjusted_outer_radius_squared
-                && distance_squared >= inner_border_radius_squared
-            {
-                imgbuf.put_pixel(x, y, Rgba([192, 201, 218, 255])); // Gray color
-            }
-        }
-    }
-
-    if icon.paused {
-        // Define parameters for the pause icon
-        let icon_width = (icon.width as f32 * 0.3) as i32; // Width of the pause bars
-        let icon_height = (icon.height as f32 * 0.6) as i32; // Height of the pause bars
-        let bar_thickness = (icon.width as f32 * 0.15) as i32; // Thickness of the pause bars
-        let bar_spacing = (icon.width as f32 * 0.01) as i32; // Spacing between the pause bars
-                                                             //
-                                                             // Calculate positions for the pause bars
-        let first_bar_x = (icon.width as i32 - bar_spacing - icon_width) / 2;
-        let second_bar_x = first_bar_x + bar_spacing + icon_width;
-
-        let bar_y = (icon.height as i32 - icon_height) / 2;
-
-        // Draw the first pause bar
-        for y in bar_y..bar_y + icon_height {
-            for x in first_bar_x..first_bar_x + bar_thickness {
-                imgbuf.put_pixel(
-                    x as u32,
-                    y as u32,
-                    Rgba([icon.red, icon.green, icon.blue, 255]),
-                );
-                // Fill with white
-            }
-        }
-
-        // Draw the second pause bar
-        for y in bar_y..bar_y + icon_height {
-            for x in second_bar_x..second_bar_x + bar_thickness {
-                imgbuf.put_pixel(
-                    x as u32,
-                    y as u32,
-                    Rgba([icon.red, icon.green, icon.blue, 255]),
-                );
-                // Fill with white
-            }
-        }
-    } else {
-        // Draw the circle
-        for y in 0..icon.height {
-            for x in 0..icon.width {
-                // Calculate the distance of the current pixel from the center of the outer circle
-                let dx = x as f32 - center_x;
-                let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
-                let distance_squared = dx * dx + dy * dy;
-
-                // Check if the pixel is within the outer circle
-                if distance_squared <= outer_radius * outer_radius {
-                    // Calculate the angle of the current pixel relative to the center of the circle
-                    let pixel_angle = (dx.atan2(dy).to_degrees() + 360.0) % 360.0;
-
-                    // Check if the pixel angle is within the specified range and outside the inner circle
-                    if pixel_angle >= start_angle
-                        && pixel_angle <= end_angle
-                        && distance_squared >= inner_radius * inner_radius
-                    {
-                        imgbuf.put_pixel(x, y, Rgba([icon.red, icon.green, icon.blue, 255]));
-                        // Fill with red
-                    }
-                }
-            }
-        }
-    }
-
-    // Create a temporary file path
-    let temp_path = Path::new(path_name);
-
-    // Save the DynamicImage to the temporary file
-    imgbuf.save(temp_path).expect("Failed to save image");
-
-    temp_path.to_path_buf()
 }
 
 #[tauri::command]
@@ -366,8 +246,8 @@ async fn change_icon(
 
     let data_dir = app_handle.path().app_data_dir().unwrap();
 
-    let icon_path_buf = create_icon(
-        PomodorolmIcon {
+    let icon_path_buf = icon::create_icon(
+        icon::PomodorolmIcon {
             width,
             height,
             red,
@@ -451,34 +331,9 @@ async fn load_config(
     Ok(config)
 }
 
-fn get_sound_file(sound_id: &str) -> Option<&str> {
-    match sound_id {
-        "audio-long-break" => Some("alert-long-break.mp3"),
-        "audio-short-break" => Some("alert-short-break.mp3"),
-        "audio-work" => Some("alert-work.mp3"),
-        "audio-tick" => Some("tick.mp3"),
-        _ => None,
-    }
-}
-
-fn play_sound_file(resource_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Get a output stream handle to the default physical sound device
-    let (_stream, stream_handle) = OutputStream::try_default()?;
-    let sink = Sink::try_new(&stream_handle)?;
-
-    // Load a sound from a file, using a path relative to Cargo.toml
-    let file = BufReader::new(File::open(resource_path)?);
-
-    // Decode that sound file into a source
-    let source = Decoder::new(file)?;
-    sink.append(source);
-    sink.sleep_until_end();
-    Ok(())
-}
-
 #[tauri::command]
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    let sound_file = get_sound_file(sound_id.as_str()).unwrap();
+    let sound_file = sound::get_sound_file(sound_id.as_str()).unwrap();
 
     let resource_path = app_handle
         .path()
@@ -487,7 +342,7 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
     let path = resource_path.to_string_lossy();
 
     // Fail silently if we can't play sound file
-    let _ = play_sound_file(&path);
+    let _ = sound::play_sound_file(&path);
 }
 
 #[tauri::command]
@@ -530,8 +385,8 @@ async fn close_window(app_handle: tauri::AppHandle) {
 #[tauri::command]
 async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
     let data_dir = app_handle.path().app_data_dir().unwrap();
-    let icon_path_buf = create_icon(
-        PomodorolmIcon {
+    let icon_path_buf = icon::create_icon(
+        icon::PomodorolmIcon {
             width: 512,
             height: 512,
             red: notification.red,
