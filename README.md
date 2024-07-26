@@ -56,9 +56,17 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first.
 
 # 🔨 Build
 
-Build using `docker-compose` (to maximize compatibily, normal build is failing on Archlinux for example):
+If you're using Linux be sure to set the `NO_STRIP` env var to `true` (see https://github.com/tauri-apps/tauri/issues/8929 ) if the build is failing.
 
-    docker-compose up
+    NO_STRIP=true npm run tauri build -- --target x86_64-unknown-linux-gnu
+
+If the build is still failing try to understand why using:
+
+    NO_STRIP=true npm run tauri build -- --target x86_64-unknown-linux-gnu --verbose
+
+You can also try to build using `docker-compose` (to maximize compatibily, normal build is failing on Archlinux for example):
+
+    docker-compose run --rm --build build-linux
 
 Build files will be placed in the `target/` directory.
 
