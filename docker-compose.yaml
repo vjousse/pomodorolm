@@ -6,8 +6,12 @@ services:
       - ./target:/app/src-tauri/target
     working_dir: /app
     platform: linux/amd64
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
     environment:
       TAURI_PRIVATE_KEY: ${TAURI_PRIVATE_KEY}
       TAURI_KEY_PASSWORD: ${TAURI_KEY_PASSWORD}
       APPLE_SIGNING_IDENTITY: ${APPLE_SIGNING_IDENTITY}
-    command: "npm run tauri build -- --target x86_64-unknown-linux-gnu"
+      NO_STRIP: true
+    command: "npm run tauri build -- --target x86_64-unknown-linux-gnu --verbose --bundles deb,rpm"
+    #command: "/bin/bash"
