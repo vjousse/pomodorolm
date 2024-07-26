@@ -18,9 +18,9 @@ use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
+use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
-
 mod icon;
 mod sound;
 
