@@ -44,7 +44,7 @@ Download the install file for your OS from the latest release on https://github.
 
 You will need to [install rust](https://www.rust-lang.org/tools/install) first.
 
-    npm i
+    npm ci
 
 ## Running the app
 
