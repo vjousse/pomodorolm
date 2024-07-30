@@ -78,7 +78,7 @@ If you run into this error, it is likely because you're using nvidia drivers und
 
 You can try to run `pomodorolm` using this command:
 
-    `WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm`
+    WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm
 
 Thanks to @Bad3r for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
 
