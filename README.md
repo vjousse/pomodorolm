@@ -70,6 +70,18 @@ You can also try to build using `docker-compose` (to maximize compatibily, norma
 
 Build files will be placed in the `target/` directory.
 
+# 💀 Troubleshooting
+
+## `Failed to create GBM buffer of size…`
+
+If you run into this error, it is likely because you're using nvidia drivers under Linux. They are several bug reports in Webkit, cf this issue for wails: https://github.com/wailsapp/wails/issues/2977#issuecomment-1791041741.
+
+You can try to run `pomodorolm` using this command:
+
+    `WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm`
+
+Thanks to @Bad3r for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
+
 # 💯 Credits
 
-Thanks to https://github.com/Splode/pomotroid for the original design and ideas
+Thanks to https://github.com/Splode/pomotroid for the original design and ideas.
