@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Browser
+import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
@@ -8,6 +9,7 @@ import Json.Decode
 import Json.Encode
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
+import Themes exposing (Theme(..), getThemeColors, pomotroid)
 
 
 main : Program Flags Model Msg
@@ -27,26 +29,23 @@ type alias Seconds =
 type alias Model =
     { appVersion : String
     , config : Config
-    , currentColor : Color
+    , currentColor : RGB
     , currentRoundNumber : Int
     , currentSessionType : SessionType
     , currentState : CurrentState
     , currentTime : Seconds
     , drawerOpen : Bool
-    , endColor : Color
-    , initialColor : Color
-    , middleColor : Color
+    , endColor : RGB
+    , initialColor : RGB
+    , middleColor : RGB
     , muted : Bool
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
     , strokeDasharray : Float
+    , theme : Theme
     , volume : Float
     , volumeSliderHidden : Bool
     }
-
-
-type alias Color =
-    { r : Int, g : Int, b : Int }
 
 
 type alias Config =
@@ -106,7 +105,7 @@ encodedConfig config =
 
 
 type alias CurrentState =
-    { color : Color, percentage : Float, paused : Bool, playTick : Bool }
+    { color : String, percentage : Float, paused : Bool, playTick : Bool }
 
 
 type SessionType
@@ -191,40 +190,43 @@ defaults =
     }
 
 
-green : Color
+green : RGB
 green =
-    { r = 5, g = 236, b = 140 }
+    RGB 5 236 141
 
 
-orange : Color
+orange : RGB
 orange =
-    { r = 255, g = 127, b = 14 }
+    RGB 255 127 14
 
 
-red : Color
+red : RGB
 red =
-    { r = 255, g = 78, b = 77 }
+    RGB 255 79 77
 
 
-blue : Color
+blue : RGB
 blue =
-    { r = 11, g = 189, b = 219 }
+    RGB 11 189 219
 
 
-pink : Color
+pink : RGB
 pink =
-    { r = 255, g = 137, b = 167 }
+    RGB 255 137 167
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         currentState =
-            { color = green
+            { color = fromRGBToCSSHex green
             , percentage = 1
             , paused = False
             , playTick = False
             }
+
+        theme =
+            Pomotroid pomotroid
     in
     ( { appVersion = flags.appVersion
       , config =
@@ -254,6 +256,7 @@ init flags =
       , sessionStatus = Stopped
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
+      , theme = theme
       , volume = 1
       , volumeSliderHidden = True
       }
@@ -297,8 +300,10 @@ getNextRoundInfo model =
         getNotification : String -> String -> String -> Seconds -> SessionType -> Notification
         getNotification title body name duration sessionType =
             let
-                color =
-                    computeCurrentColor 1 1 sessionType
+                ( r, g, b ) =
+                    case computeCurrentColor 1 1 sessionType model.theme of
+                        RGB red_ green_ blue_ ->
+                            ( red_, green_, blue_ )
 
                 minutes =
                     (duration |> toFloat) / 60 |> round
@@ -317,9 +322,9 @@ getNextRoundInfo model =
                     ++ " "
                     ++ body
             , name = name
-            , red = color.r
-            , green = color.g
-            , blue = color.b
+            , red = r
+            , green = g
+            , blue = b
             }
     in
     case model.currentSessionType of
@@ -450,7 +455,7 @@ update msg model =
         Reset ->
             let
                 currentState =
-                    { color = colorForSessionType model.currentSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -534,7 +539,7 @@ update msg model =
                     }
 
                 currentState =
-                    { color = colorForSessionType nextRoundInfo.nextSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -574,7 +579,7 @@ update msg model =
                         getCurrentMaxTime model
 
                     currentColor =
-                        computeCurrentColor newTime maxTime model.currentSessionType
+                        computeCurrentColor newTime maxTime model.currentSessionType model.theme
 
                     percent =
                         1 * toFloat newTime / toFloat maxTime
@@ -586,7 +591,7 @@ update msg model =
                         }
 
                     currentState =
-                        { color = currentColor
+                        { color = fromRGBToCSSHex currentColor
                         , percentage = percent
                         , paused =
                             if model.sessionStatus == Paused then
@@ -634,7 +639,7 @@ update msg model =
                         }
 
                     currentState =
-                        { color = colorForSessionType nextRoundInfo.nextSessionType
+                        { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType
                         , percentage = 100
                         , paused =
                             if nextModel.sessionStatus == Paused then
@@ -757,7 +762,13 @@ update msg model =
                             { model | sessionStatus = Paused }
 
                         currentState =
-                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            { color =
+                                fromRGBToCSSHex <|
+                                    computeCurrentColor
+                                        model.currentTime
+                                        (getCurrentMaxTime model)
+                                        model.currentSessionType
+                                        model.theme
                             , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = True
                             , playTick = shouldPlayTick nextModel
@@ -773,7 +784,12 @@ update msg model =
                             { model | sessionStatus = Running }
 
                         currentState =
-                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            { color =
+                                fromRGBToCSSHex <|
+                                    computeCurrentColor model.currentTime
+                                        (getCurrentMaxTime model)
+                                        model.currentSessionType
+                                        model.theme
                             , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = False
                             , playTick = shouldPlayTick nextModel
@@ -937,7 +953,7 @@ shouldPlayTick model =
         False
 
 
-colorForSessionType : SessionType -> Color
+colorForSessionType : SessionType -> RGB
 colorForSessionType sessionType =
     case sessionType of
         Pomodoro ->
@@ -950,28 +966,46 @@ colorForSessionType sessionType =
             blue
 
 
-computeCurrentColor : Seconds -> Seconds -> SessionType -> Color
-computeCurrentColor currentTime maxTime sessionType =
+computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
+computeCurrentColor currentTime maxTime sessionType theme =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
 
         relativePercent =
             1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
+
+        themeColors =
+            getThemeColors theme
     in
     case sessionType of
         Pomodoro ->
+            let
+                ( startRed, startGreen, startBlue ) =
+                    case fromCSSHexToRGB themeColors.focusRound of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( middleRed, middleGreen, middleBlue ) =
+                    case fromCSSHexToRGB themeColors.focusRoundMiddle of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( endRed, endGreen, endBlue ) =
+                    case fromCSSHexToRGB themeColors.focusRoundEnd of
+                        RGB r g b ->
+                            ( r, g, b )
+            in
             if percent > 0.5 then
-                { r = toFloat orange.r + (relativePercent * toFloat (green.r - orange.r)) |> round
-                , g = toFloat orange.g + (relativePercent * toFloat (green.g - orange.g)) |> round
-                , b = toFloat orange.b + (relativePercent * toFloat (green.b - orange.b)) |> round
-                }
+                RGB
+                    (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
+                    (toFloat middleGreen + (relativePercent * toFloat (startGreen - middleGreen)) |> round)
+                    (toFloat middleBlue + (relativePercent * toFloat (startBlue - middleBlue)) |> round)
 
             else
-                { r = toFloat red.r + ((1 + relativePercent) * toFloat (orange.r - red.r)) |> round
-                , g = toFloat red.g + ((1 + relativePercent) * toFloat (orange.g - red.g)) |> round
-                , b = toFloat red.b + ((1 + relativePercent) * toFloat (orange.b - red.b)) |> round
-                }
+                RGB (toFloat endRed + ((1 + relativePercent) * toFloat (middleRed - endRed)) |> round)
+                    (toFloat endGreen + ((1 + relativePercent) * toFloat (middleGreen - endGreen)) |> round)
+                    (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
 
         s ->
             colorForSessionType s
@@ -982,8 +1016,8 @@ secondsToString seconds =
     (String.padLeft 2 '0' <| String.fromInt (seconds // 60)) ++ ":" ++ (String.padLeft 2 '0' <| String.fromInt (modBy 60 seconds))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray =
+dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> Html Msg
+dialView sessionType currentTime maxTime maxStrokeDasharray theme =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
@@ -991,11 +1025,11 @@ dialView sessionType currentTime maxTime maxStrokeDasharray =
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * percent
 
-        colorToHtmlRgbString c =
-            "rgb(" ++ String.fromInt c.r ++ ", " ++ String.fromInt c.g ++ ", " ++ String.fromInt c.b ++ ")"
+        colorToHtmlRgbString (RGB r g b) =
+            "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
 
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType
+            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -1256,7 +1290,7 @@ getCurrentMaxTime model =
 timerView : Model -> Html Msg
 timerView model =
     div [ class "timer-wrapper" ]
-        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray
+        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray model.theme
         , playPauseView model.sessionStatus
         , footerView model
         ]
