@@ -2,51 +2,51 @@ import "../main.css";
 
 import { Elm } from "../src-elm/Main.elm";
 
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-
-import { info, attachConsole } from "@tauri-apps/plugin-log";
-import { getVersion } from "@tauri-apps/api/app";
+// import { invoke } from "@tauri-apps/api/core";
+// import { listen } from "@tauri-apps/api/event";
+//
+// import { info, attachConsole } from "@tauri-apps/plugin-log";
+// import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
-attachConsole();
+// attachConsole();
 
-type Color = {
-  r: number;
-  g: number;
-  b: number;
-};
+// type Color = {
+//   r: number;
+//   g: number;
+//   b: number;
+// };
 
-type ElmState = {
-  color: Color;
-  percentage: number;
-  paused: boolean;
-  playTick: boolean;
-};
-
-type Notification = {
-  body: string;
-  title: string;
-  name: string;
-  red: number;
-  green: number;
-  blue: number;
-};
-
-type ElmConfig = {
-  alwaysOnTop: boolean;
-  autoStartWorkTimer: boolean;
-  autoStartBreakTimer: boolean;
-  desktopNotifications: boolean;
-  longBreakDuration: number;
-  maxRoundNumber: number;
-  minimizeToTray: boolean;
-  minimizeToTrayOnClose: boolean;
-  pomodoroDuration: number;
-  shortBreakDuration: number;
-  tickSoundsDuringWork: boolean;
-  tickSoundsDuringBreak: boolean;
-};
+// type ElmState = {
+//   color: Color;
+//   percentage: number;
+//   paused: boolean;
+//   playTick: boolean;
+// };
+//
+// type Notification = {
+//   body: string;
+//   title: string;
+//   name: string;
+//   red: number;
+//   green: number;
+//   blue: number;
+// };
+//
+// type ElmConfig = {
+//   alwaysOnTop: boolean;
+//   autoStartWorkTimer: boolean;
+//   autoStartBreakTimer: boolean;
+//   desktopNotifications: boolean;
+//   longBreakDuration: number;
+//   maxRoundNumber: number;
+//   minimizeToTray: boolean;
+//   minimizeToTrayOnClose: boolean;
+//   pomodoroDuration: number;
+//   shortBreakDuration: number;
+//   tickSoundsDuringWork: boolean;
+//   tickSoundsDuringBreak: boolean;
+// };
 
 type RustConfig = {
   always_on_top: boolean;
@@ -80,11 +80,13 @@ let rustConfig: RustConfig = {
   tick_sounds_during_break: true,
 };
 
-const app = Elm.Main.init({
+//const app = Elm.Main.init({
+Elm.Main.init({
   node: root,
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
-    appVersion: await getVersion(),
+    // appVersion: await getVersion(),
+    appVersion: "myVersion",
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
@@ -99,63 +101,63 @@ const app = Elm.Main.init({
   },
 });
 
-app.ports.playSound.subscribe(function (soundElementId: string) {
-  info("Playing sound");
-  invoke("play_sound_command", { soundId: soundElementId });
-});
-
-app.ports.hideWindow.subscribe(function () {
-  invoke("hide_window");
-});
-
-app.ports.minimizeWindow.subscribe(function () {
-  invoke("minimize_window");
-});
-
-app.ports.closeWindow.subscribe(function () {
-  invoke("close_window");
-});
-
-app.ports.loadRustConfig.subscribe(function () {
-  invoke("load_config").then((config) => {
-    app.ports.loadConfig.send(config);
-  });
-});
-
-app.ports.notify.subscribe(function (notification: Notification) {
-  invoke("notify", { notification: notification });
-});
-
-app.ports.updateConfig.subscribe(function (config: ElmConfig) {
-  invoke("update_config", {
-    config: {
-      always_on_top: config.alwaysOnTop,
-      auto_start_work_timer: config.autoStartWorkTimer,
-      auto_start_break_timer: config.autoStartBreakTimer,
-      desktop_notifications: config.desktopNotifications,
-      long_break_duration: config.longBreakDuration,
-      max_round_number: config.maxRoundNumber,
-      minimize_to_tray: config.minimizeToTray,
-      minimize_to_tray_on_close: config.minimizeToTrayOnClose,
-      pomodoro_duration: config.pomodoroDuration,
-      short_break_duration: config.shortBreakDuration,
-      tick_sounds_during_work: config.tickSoundsDuringWork,
-      tick_sounds_during_break: config.tickSoundsDuringBreak,
-    },
-  });
-});
-
-app.ports.updateCurrentState.subscribe(function (state: ElmState) {
-  invoke("update_play_tick", { playTick: state.playTick });
-  invoke("change_icon", {
-    red: state.color.r,
-    green: state.color.g,
-    blue: state.color.b,
-    fillPercentage: state.percentage,
-    paused: state.paused,
-  });
-});
-
-await listen("tick-event", () => {
-  app.ports.tick.send("");
-});
+// app.ports.playSound.subscribe(function (soundElementId: string) {
+//   info("Playing sound");
+//   invoke("play_sound_command", { soundId: soundElementId });
+// });
+//
+// app.ports.hideWindow.subscribe(function () {
+//   invoke("hide_window");
+// });
+//
+// app.ports.minimizeWindow.subscribe(function () {
+//   invoke("minimize_window");
+// });
+//
+// app.ports.closeWindow.subscribe(function () {
+//   invoke("close_window");
+// });
+//
+// app.ports.loadRustConfig.subscribe(function () {
+//   invoke("load_config").then((config) => {
+//     app.ports.loadConfig.send(config);
+//   });
+// });
+//
+// app.ports.notify.subscribe(function (notification: Notification) {
+//   invoke("notify", { notification: notification });
+// });
+//
+// app.ports.updateConfig.subscribe(function (config: ElmConfig) {
+//   invoke("update_config", {
+//     config: {
+//       always_on_top: config.alwaysOnTop,
+//       auto_start_work_timer: config.autoStartWorkTimer,
+//       auto_start_break_timer: config.autoStartBreakTimer,
+//       desktop_notifications: config.desktopNotifications,
+//       long_break_duration: config.longBreakDuration,
+//       max_round_number: config.maxRoundNumber,
+//       minimize_to_tray: config.minimizeToTray,
+//       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
+//       pomodoro_duration: config.pomodoroDuration,
+//       short_break_duration: config.shortBreakDuration,
+//       tick_sounds_during_work: config.tickSoundsDuringWork,
+//       tick_sounds_during_break: config.tickSoundsDuringBreak,
+//     },
+//   });
+// });
+//
+// app.ports.updateCurrentState.subscribe(function (state: ElmState) {
+//   invoke("update_play_tick", { playTick: state.playTick });
+//   invoke("change_icon", {
+//     red: state.color.r,
+//     green: state.color.g,
+//     blue: state.color.b,
+//     fillPercentage: state.percentage,
+//     paused: state.paused,
+//   });
+// });
+//
+// await listen("tick-event", () => {
+//   app.ports.tick.send("");
+// });

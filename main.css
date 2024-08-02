@@ -83,7 +83,6 @@ body {
   margin-bottom: 5vw;
   position: relative;
   text-align: center;
-  height: 13.9vw;
   display: flex;
   -webkit-app-region: drag;
 }
@@ -139,6 +138,7 @@ body {
 .timer-wrapper {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .dial-bg {
