@@ -386,7 +386,19 @@ update msg model =
             ( { model | settingTab = settingTab }, Cmd.none )
 
         ChangeTheme theme ->
-            ( { model | theme = theme }, setThemeColors <| getThemeColors theme )
+            let
+                currentState =
+                    model.currentState
+
+                newState =
+                    { currentState | color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType theme }
+            in
+            ( { model | theme = theme, currentState = newState }
+            , Cmd.batch
+                [ setThemeColors <| getThemeColors theme
+                , updateCurrentState newState
+                ]
+            )
 
         CloseWindow ->
             ( model

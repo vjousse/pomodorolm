@@ -13,6 +13,19 @@ type RGB
     = RGB Int Int Int
 
 
+toStringWithZeroPadding : Int -> String
+toStringWithZeroPadding num =
+    let
+        stringValue =
+            Hex.toString num
+    in
+    if String.length stringValue < 2 then
+        "0" ++ stringValue
+
+    else
+        stringValue
+
+
 fromCSSHexToRGB : String -> RGB
 fromCSSHexToRGB hexcode =
     RGB (getRed hexcode) (getGreen hexcode) (getBlue hexcode)
@@ -20,7 +33,7 @@ fromCSSHexToRGB hexcode =
 
 fromRGBToCSSHex : RGB -> String
 fromRGBToCSSHex (RGB r g b) =
-    "#" ++ Hex.toString r ++ Hex.toString g ++ Hex.toString b
+    "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
 
 
 getRed : String -> Int
