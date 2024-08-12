@@ -63,6 +63,9 @@ themeFromString string =
         "pomotroid" ->
             Pomotroid
 
+        "tokyo night storm" ->
+            TokyoNightStorm
+
         _ ->
             Pomotroid
 
