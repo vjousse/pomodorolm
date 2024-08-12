@@ -2,7 +2,7 @@
 name = "pomodorolm"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["Vincent Jousse"]
 license = ""
 repository = ""
 edition = "2021"

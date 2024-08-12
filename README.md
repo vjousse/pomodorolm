@@ -17,6 +17,7 @@
 - [x] **Customize round numbers, focus and break times**
 - [x] **Auto-start round** (optional)
 - [x] **Desktop notifications** (optional)
+- [x] **Theming support**
 - [x] **Color gradiant** depending on the remaining time
 - [x] **Tray icon** with color gradiant
 - [x] **Minimize to tray** (optional)

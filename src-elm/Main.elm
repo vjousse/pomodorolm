@@ -9,7 +9,7 @@ import Json.Decode
 import Json.Encode
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Themes exposing (Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName)
+import Themes exposing (Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName, themeFromString)
 
 
 main : Program Flags Model Msg
@@ -56,6 +56,7 @@ type alias Config =
     , minimizeToTrayOnClose : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
+    , theme : String
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
     }
@@ -75,10 +76,11 @@ configDecoder =
                 (Json.Decode.field "minimize_to_tray" Json.Decode.bool)
                 (Json.Decode.field "minimize_to_tray_on_close" Json.Decode.bool)
     in
-    Json.Decode.map5 (<|)
+    Json.Decode.map6 (<|)
         fieldSet0
         (Json.Decode.field "pomodoro_duration" Json.Decode.int)
         (Json.Decode.field "short_break_duration" Json.Decode.int)
+        (Json.Decode.field "theme" Json.Decode.string)
         (Json.Decode.field "tick_sounds_during_break" Json.Decode.bool)
         (Json.Decode.field "tick_sounds_during_work" Json.Decode.bool)
 
@@ -174,6 +176,7 @@ type alias Flags =
     , minimizeToTrayOnClose : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
+    , theme : String
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
     }
@@ -216,6 +219,7 @@ init flags =
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
             , pomodoroDuration = flags.pomodoroDuration
             , shortBreakDuration = flags.shortBreakDuration
+            , theme = flags.theme
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             }
@@ -243,9 +247,9 @@ init flags =
 
 type SettingType
     = FocusTime
-    | ShortBreakTime
     | LongBreakTime
     | Rounds
+    | ShortBreakTime
 
 
 type Msg
@@ -265,8 +269,8 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | ToggleStatus
-    | UpdateVolume String
     | UpdateSetting SettingType String
+    | UpdateVolume String
 
 
 getNextRoundInfo : Model -> NextRoundInfo
@@ -392,10 +396,23 @@ update msg model =
 
                 newState =
                     { currentState | color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType theme }
+
+                config =
+                    model.config
+
+                newConfig =
+                    { config
+                        | theme = getThemeName theme |> String.toLower
+                    }
             in
-            ( { model | theme = theme, currentState = newState }
+            ( { model
+                | config = newConfig
+                , currentState = newState
+                , theme = theme
+              }
             , Cmd.batch
                 [ setThemeColors <| getThemeColors theme
+                , updateConfig newConfig
                 , updateCurrentState newState
                 ]
             )
@@ -413,22 +430,27 @@ update msg model =
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
         LoadConfig config ->
-            ( { model
-                | config = config
-                , sessionStatus = Stopped
-                , currentTime =
-                    case model.currentSessionType of
-                        Pomodoro ->
-                            config.pomodoroDuration
+            let
+                theme =
+                    themeFromString config.theme
 
-                        ShortBreak ->
-                            config.shortBreakDuration
+                newModel =
+                    { model
+                        | config = config
+                        , sessionStatus = Stopped
+                        , currentTime =
+                            case model.currentSessionType of
+                                Pomodoro ->
+                                    config.pomodoroDuration
 
-                        LongBreak ->
-                            config.longBreakDuration
-              }
-            , Cmd.none
-            )
+                                ShortBreak ->
+                                    config.shortBreakDuration
+
+                                LongBreak ->
+                                    config.longBreakDuration
+                    }
+            in
+            update (ChangeTheme theme) newModel
 
         MinimizeWindow ->
             ( model
@@ -831,31 +853,6 @@ update msg model =
                     , updateConfig newConfig
                     )
 
-                ShortBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | shortBreakDuration = newValue }
-                        , currentTime =
-                            if model.currentSessionType == ShortBreak then
-                                if newValue == 0 then
-                                    60
-
-                                else
-                                    newValue
-
-                            else
-                                model.currentTime
-                      }
-                    , Cmd.none
-                    )
-
                 LongBreakTime ->
                     let
                         newValue =
@@ -892,6 +889,31 @@ update msg model =
                     in
                     ( { model
                         | config = { config | maxRoundNumber = newValue }
+                      }
+                    , Cmd.none
+                    )
+
+                ShortBreakTime ->
+                    let
+                        newValue =
+                            if value > 90 then
+                                90 * 60
+
+                            else
+                                value * 60
+                    in
+                    ( { model
+                        | config = { config | shortBreakDuration = newValue }
+                        , currentTime =
+                            if model.currentSessionType == ShortBreak then
+                                if newValue == 0 then
+                                    60
+
+                                else
+                                    newValue
+
+                            else
+                                model.currentTime
                       }
                     , Cmd.none
                     )

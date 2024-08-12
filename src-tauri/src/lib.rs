@@ -18,6 +18,7 @@ use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
+use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
@@ -30,7 +31,7 @@ struct App {
     config: Config,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Config {
     always_on_top: bool,
     auto_start_work_timer: bool,
@@ -42,8 +43,14 @@ struct Config {
     minimize_to_tray_on_close: bool,
     pomodoro_duration: u16,
     short_break_duration: u16,
+    #[serde(default = "default_theme")]
+    theme: String,
     tick_sounds_during_work: bool,
     tick_sounds_during_break: bool,
+}
+
+fn default_theme() -> String {
+    "pomotroid".to_string()
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,6 +75,7 @@ impl Default for Config {
             minimize_to_tray_on_close: true,
             pomodoro_duration: 25 * 60,
             short_break_duration: 5 * 60,
+            theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
         }
@@ -77,6 +85,16 @@ impl Default for Config {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     run_app(tauri::Builder::default())
+}
+
+fn get_config_file_path<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve("pomodorolm/config.toml", BaseDirectory::Config)
+}
+
+fn get_config_dir<R: Runtime>(app: &mut tauri::App<R>) -> Result<PathBuf, tauri::Error> {
+    app.path().resolve("pomodorolm", BaseDirectory::Config)
 }
 
 pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
@@ -139,16 +157,14 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 })
                 .build(app);
 
-            let config_file_path = &app
-                .path()
-                .resolve("config.toml", BaseDirectory::AppConfig)?;
+            let config_file_path = get_config_file_path(app.path())?;
 
-            let metadata = fs::metadata(config_file_path);
+            let metadata = fs::metadata(&config_file_path);
 
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
-                fs::create_dir_all(app.path().app_config_dir()?)?;
+                let _ = fs::create_dir_all(get_config_dir(app)?);
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -270,7 +286,7 @@ async fn update_play_tick(state: tauri::State<'_, AppState>, play_tick: bool) ->
 
     *state_guard = App {
         play_tick,
-        config: state_guard.config,
+        config: state_guard.config.clone(),
     };
 
     Ok(())
@@ -286,11 +302,13 @@ async fn update_config(
 
     *state_guard = App {
         play_tick: state_guard.play_tick,
-        config,
+        config: config.clone(),
     };
 
-    let config_dir = app_handle.path().app_config_dir().unwrap();
-    let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+    let config_file_path = get_config_file_path(app_handle.path())
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
 
     let file = OpenOptions::new()
         .read(true)
@@ -317,15 +335,17 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
-    let config_dir = app_handle.path().app_config_dir().unwrap();
+    let config_file_path = get_config_file_path(app_handle.path())
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
 
-    let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
-    let toml_str = fs::read_to_string(config_file_path)
-        .expect(&format!("Unable to open config file {}", config_file_path)[..]);
+    let toml_str = fs::read_to_string(&config_file_path)
+        .expect(&format!("Unable to open config file {}", config_file_path));
     let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
     *state_guard = App {
         play_tick: state_guard.play_tick,
-        config,
+        config: config.clone(),
     };
 
     Ok(config)

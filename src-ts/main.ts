@@ -59,6 +59,7 @@ type ElmConfig = {
   minimizeToTrayOnClose: boolean;
   pomodoroDuration: number;
   shortBreakDuration: number;
+  theme: string;
   tickSoundsDuringWork: boolean;
   tickSoundsDuringBreak: boolean;
 };
@@ -74,6 +75,7 @@ type RustConfig = {
   minimize_to_tray_on_close: boolean;
   pomodoro_duration: number;
   short_break_duration: number;
+  theme: string;
   tick_sounds_during_work: boolean;
   tick_sounds_during_break: boolean;
 };
@@ -91,6 +93,7 @@ let rustConfig: RustConfig = {
   minimize_to_tray_on_close: true,
   pomodoro_duration: 1500,
   short_break_duration: 300,
+  theme: "pomotroid",
   tick_sounds_during_work: true,
   tick_sounds_during_break: true,
 };
@@ -109,6 +112,7 @@ const app = Elm.Main.init({
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
     pomodoroDuration: rustConfig.pomodoro_duration,
     shortBreakDuration: rustConfig.short_break_duration,
+    theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
     tickSoundsDuringBreak: rustConfig.tick_sounds_during_break,
   },
@@ -154,6 +158,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
       pomodoro_duration: config.pomodoroDuration,
       short_break_duration: config.shortBreakDuration,
+      theme: config.theme,
       tick_sounds_during_work: config.tickSoundsDuringWork,
       tick_sounds_during_break: config.tickSoundsDuringBreak,
     },

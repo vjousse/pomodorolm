@@ -1,4 +1,4 @@
-module Themes exposing (RGBColor(..), Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName, nord, pomotroid)
+module Themes exposing (RGBColor(..), Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName, nord, pomotroid, themeFromString)
 
 
 type RGBColor
@@ -45,6 +45,19 @@ getThemeName theme =
 
         Pomotroid ->
             "Pomotroid"
+
+
+themeFromString : String -> Theme
+themeFromString string =
+    case String.toLower string of
+        "nord" ->
+            Nord
+
+        "pomotroid" ->
+            Pomotroid
+
+        _ ->
+            Pomotroid
 
 
 allThemes : List Theme
