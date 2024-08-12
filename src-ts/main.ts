@@ -17,14 +17,8 @@ declare global {
   }
 }
 
-type Color = {
-  r: number;
-  g: number;
-  b: number;
-};
-
 type ElmState = {
-  color: Color;
+  color: string;
   percentage: number;
   paused: boolean;
   playTick: boolean;
@@ -169,16 +163,15 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   invoke("update_play_tick", { playTick: state.playTick });
   invoke("change_icon", {
-    red: state.color.r,
-    green: state.color.g,
-    blue: state.color.b,
+    red: hexToRgb(state.color)?.r,
+    green: hexToRgb(state.color)?.g,
+    blue: hexToRgb(state.color)?.b,
     fillPercentage: state.percentage,
     paused: state.paused,
   });
 });
 
 app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
-  console.log(themeColors);
   let mainHtmlElement = document.documentElement;
   mainHtmlElement.style.setProperty(
     "--color-long-round",
@@ -222,6 +215,17 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 await listen("tick-event", () => {
   app.ports.tick.send("");
 });
+
+function hexToRgb(hex: string) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
 
 async function getAppVersion() {
   if (window.__TAURI_INTERNALS__ === undefined) {
