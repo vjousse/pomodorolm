@@ -25,6 +25,8 @@ use tokio_stream::wrappers::IntervalStream;
 mod icon;
 mod sound;
 
+const CONFIG_DIR_NAME: &str = "pomodorolm";
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
     play_tick: bool,
@@ -51,6 +53,36 @@ struct Config {
 
 fn default_theme() -> String {
     "pomotroid".to_string()
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Colors {
+    #[serde(rename = "--color-accent")]
+    accent: String,
+    #[serde(rename = "--color-background")]
+    background: String,
+    #[serde(rename = "--color-background-light")]
+    background_light: String,
+    #[serde(rename = "--color-background-lightest")]
+    background_lightest: String,
+    #[serde(rename = "--color-focus-round")]
+    focus_round: String,
+    #[serde(rename = "--color-foreground")]
+    foreground: String,
+    #[serde(rename = "--color-foreground-darker")]
+    foreground_darker: String,
+    #[serde(rename = "--color-foreground-darkest")]
+    foreground_darkest: String,
+    #[serde(rename = "--color-long-round")]
+    long_round: String,
+    #[serde(rename = "--color-short-round")]
+    short_round: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Theme {
+    colors: Colors,
+    name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,11 +122,25 @@ pub fn run() {
 fn get_config_file_path<R: Runtime>(
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
-    path.resolve("pomodorolm/config.toml", BaseDirectory::Config)
+    path.resolve(
+        format!("{}/config.toml", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    )
 }
 
-fn get_config_dir<R: Runtime>(app: &mut tauri::App<R>) -> Result<PathBuf, tauri::Error> {
-    app.path().resolve("pomodorolm", BaseDirectory::Config)
+fn get_config_dir<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve(format!("{}/", CONFIG_DIR_NAME), BaseDirectory::Config)
+}
+
+fn get_config_theme_dir<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve(
+        format!("{}/themes/", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    )
 }
 
 pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
@@ -160,11 +206,12 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let config_file_path = get_config_file_path(app.path())?;
 
             let metadata = fs::metadata(&config_file_path);
+            let _ = fs::create_dir_all(get_config_theme_dir(app.path())?);
 
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
-                let _ = fs::create_dir_all(get_config_dir(app)?);
+                let _ = fs::create_dir_all(get_config_dir(app.path())?);
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -222,6 +269,37 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn load_themes(app_handle: AppHandle) {
+    let mut themes_paths: Vec<PathBuf> = vec![];
+    let mut themes: Vec<Theme> = vec![];
+    let themes_path = app_handle
+        .path()
+        .resolve("themes/", BaseDirectory::Resource)
+        .unwrap();
+    let paths = fs::read_dir(themes_path).unwrap();
+
+    for path in paths {
+        let path_buf = path.unwrap().path();
+        themes_paths.push(path_buf);
+    }
+
+    let config_themes_path = get_config_theme_dir(app_handle.path()).unwrap();
+    let paths = fs::read_dir(config_themes_path).unwrap();
+
+    for path in paths {
+        let path_buf = path.unwrap().path();
+        themes_paths.push(path_buf);
+    }
+    for path in themes_paths {
+        println!("Reading JSON {}", path.display());
+        let file = fs::File::open(path).expect("file should open read only");
+        let theme: Theme = serde_json::from_reader(file).expect("JSON was not well-formatted");
+        println!("{:?}", theme);
+        themes.push(theme);
+    }
+    let _ = app_handle.emit("themes", &themes).unwrap();
 }
 
 async fn tick(app_handle: AppHandle, path: String) {
@@ -347,6 +425,8 @@ async fn load_config(
         play_tick: state_guard.play_tick,
         config: config.clone(),
     };
+
+    let _ = load_themes(app_handle.clone());
 
     Ok(config)
 }

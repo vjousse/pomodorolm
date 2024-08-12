@@ -32,7 +32,7 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": ["audio/*"],
+    "resources": ["audio/*", "themes/*"],
     "shortDescription": "",
     "linux": {
       "deb": {
