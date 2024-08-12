@@ -9,6 +9,7 @@ type RGBColor
 type Theme
     = Nord
     | Pomotroid
+    | TokyoNightStorm
 
 
 type alias ThemeColors =
@@ -36,6 +37,9 @@ getThemeColors theme =
         Pomotroid ->
             pomotroid
 
+        TokyoNightStorm ->
+            tokyoNightStorm
+
 
 getThemeName : Theme -> String
 getThemeName theme =
@@ -45,6 +49,9 @@ getThemeName theme =
 
         Pomotroid ->
             "Pomotroid"
+
+        TokyoNightStorm ->
+            "Tokyo Night Storm"
 
 
 themeFromString : String -> Theme
@@ -75,6 +82,9 @@ next list =
             Pomotroid :: list |> next
 
         Just Pomotroid ->
+            TokyoNightStorm :: list |> next
+
+        Just TokyoNightStorm ->
             list
 
 
@@ -109,4 +119,21 @@ nord =
     , foregroundDarker = "#8fbcbb"
     , foregroundDarkest = "#88c0d0"
     , accent = "#a3be8c"
+    }
+
+
+tokyoNightStorm : ThemeColors
+tokyoNightStorm =
+    { longRound = "#7AA2F7"
+    , shortRound = "#ff757f"
+    , focusRound = "#4fd6be"
+    , focusRoundMiddle = "#ff9e64"
+    , focusRoundEnd = "#ff757f"
+    , background = "#24283b"
+    , backgroundLight = "#1b1e2e"
+    , backgroundLightest = "#9AA5CE"
+    , foreground = "#c0caf5"
+    , foregroundDarker = "#9AA5CE"
+    , foregroundDarkest = "#89DDFF"
+    , accent = "#9D7CD8"
     }
