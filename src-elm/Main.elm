@@ -9,7 +9,7 @@ import Json.Decode
 import Json.Encode
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Themes exposing (Theme(..), getThemeColors, pomotroid)
+import Themes exposing (Theme(..), ThemeColors, getThemeColors)
 
 
 main : Program Flags Model Msg
@@ -35,9 +35,6 @@ type alias Model =
     , currentState : CurrentState
     , currentTime : Seconds
     , drawerOpen : Bool
-    , endColor : RGB
-    , initialColor : RGB
-    , middleColor : RGB
     , muted : Bool
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
@@ -190,43 +187,21 @@ defaults =
     }
 
 
-green : RGB
-green =
-    RGB 5 236 141
-
-
-orange : RGB
-orange =
-    RGB 255 127 14
-
-
-red : RGB
-red =
-    RGB 255 79 77
-
-
-blue : RGB
-blue =
-    RGB 11 189 219
-
-
-pink : RGB
-pink =
-    RGB 255 137 167
-
-
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
+        theme =
+            Nord
+
+        themeColors =
+            getThemeColors theme
+
         currentState =
-            { color = fromRGBToCSSHex green
+            { color = themeColors.focusRound
             , percentage = 1
             , paused = False
             , playTick = False
             }
-
-        theme =
-            Pomotroid pomotroid
     in
     ( { appVersion = flags.appVersion
       , config =
@@ -243,15 +218,12 @@ init flags =
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             }
-      , currentColor = green
+      , currentColor = fromCSSHexToRGB themeColors.focusRound
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
       , currentState = currentState
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
-      , endColor = red
-      , initialColor = green
-      , middleColor = orange
       , muted = False
       , sessionStatus = Stopped
       , settingTab = TimerTab
@@ -263,6 +235,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , loadRustConfig ()
+        , setThemeColors <| getThemeColors theme
         ]
     )
 
@@ -455,7 +428,7 @@ update msg model =
         Reset ->
             let
                 currentState =
-                    { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType model.theme
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -539,7 +512,7 @@ update msg model =
                     }
 
                 currentState =
-                    { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -639,7 +612,7 @@ update msg model =
                         }
 
                     currentState =
-                        { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType
+                        { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                         , percentage = 100
                         , paused =
                             if nextModel.sessionStatus == Paused then
@@ -953,17 +926,21 @@ shouldPlayTick model =
         False
 
 
-colorForSessionType : SessionType -> RGB
-colorForSessionType sessionType =
+colorForSessionType : SessionType -> Theme -> RGB
+colorForSessionType sessionType theme =
+    let
+        themeColors =
+            getThemeColors theme
+    in
     case sessionType of
         Pomodoro ->
-            green
+            fromCSSHexToRGB <| themeColors.focusRound
 
         ShortBreak ->
-            pink
+            fromCSSHexToRGB <| themeColors.shortRound
 
         LongBreak ->
-            blue
+            fromCSSHexToRGB <| themeColors.longRound
 
 
 computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
@@ -1008,7 +985,7 @@ computeCurrentColor currentTime maxTime sessionType theme =
                     (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
 
         s ->
-            colorForSessionType s
+            colorForSessionType s theme
 
 
 secondsToString : Seconds -> String
@@ -1855,3 +1832,6 @@ port notify : Notification -> Cmd msg
 
 
 port updateConfig : Config -> Cmd msg
+
+
+port setThemeColors : ThemeColors -> Cmd msg

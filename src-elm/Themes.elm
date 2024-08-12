@@ -7,8 +7,8 @@ type RGBColor
 
 
 type Theme
-    = Nord ThemeColors
-    | Pomotroid ThemeColors
+    = Nord
+    | Pomotroid
 
 
 type alias ThemeColors =
@@ -30,17 +30,17 @@ type alias ThemeColors =
 getThemeColors : Theme -> ThemeColors
 getThemeColors theme =
     case theme of
-        Nord t ->
-            t
+        Nord ->
+            nord
 
-        Pomotroid t ->
-            t
+        Pomotroid ->
+            pomotroid
 
 
 pomotroid : ThemeColors
 pomotroid =
     { longRound = "#0bbddb"
-    , shortRound = "#05ec8c"
+    , shortRound = "#ff4e4d"
     , focusRound = "#05ec8c"
     , focusRoundMiddle = "#ff7f0e"
     , focusRoundEnd = "#ff4e4d"
@@ -59,8 +59,8 @@ nord =
     { longRound = "#5e81ac"
     , shortRound = "#8fbcbb"
     , focusRound = "#b48ead"
-    , focusRoundMiddle = "#ff7f0e"
-    , focusRoundEnd = "#ff4e4d"
+    , focusRoundMiddle = "#a2a5b4"
+    , focusRoundEnd = "#8fbcbb"
     , background = "#2e3440"
     , backgroundLight = "#3b4252"
     , backgroundLightest = "#616e88"

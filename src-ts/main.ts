@@ -11,6 +11,12 @@ import { getVersion } from "@tauri-apps/api/app";
 // Display logs in the webview inspector
 attachConsole();
 
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__: any;
+  }
+}
+
 type Color = {
   r: number;
   g: number;
@@ -31,6 +37,21 @@ type Notification = {
   red: number;
   green: number;
   blue: number;
+};
+
+type ThemeColors = {
+  longRound: string;
+  shortRound: string;
+  focusRound: string;
+  focusRoundMiddle: string;
+  focusRoundEnd: string;
+  background: string;
+  backgroundLight: string;
+  backgroundLightest: string;
+  foreground: string;
+  foregroundDarker: string;
+  foregroundDarkest: string;
+  accent: string;
 };
 
 type ElmConfig = {
@@ -84,7 +105,7 @@ const app = Elm.Main.init({
   node: root,
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
-    appVersion: await getVersion(),
+    appVersion: await getAppVersion(),
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
@@ -156,6 +177,56 @@ app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   });
 });
 
+app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
+  console.log(themeColors);
+  let mainHtmlElement = document.documentElement;
+  mainHtmlElement.style.setProperty(
+    "--color-long-round",
+    themeColors.longRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-short-round",
+    themeColors.shortRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-focus-round",
+    themeColors.focusRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background",
+    themeColors.background
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background-light",
+    themeColors.backgroundLight
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background-lightest",
+    themeColors.backgroundLightest
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground",
+    themeColors.foreground
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground-darker",
+    themeColors.foregroundDarker
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground-darkest",
+    themeColors.foregroundDarkest
+  );
+  mainHtmlElement.style.setProperty("--color-accent", themeColors.accent);
+});
+
 await listen("tick-event", () => {
   app.ports.tick.send("");
 });
+
+async function getAppVersion() {
+  if (window.__TAURI_INTERNALS__ === undefined) {
+    return "unknown";
+  } else {
+    return await getVersion();
+  }
+}
