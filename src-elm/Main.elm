@@ -9,7 +9,7 @@ import Json.Decode
 import Json.Encode
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Themes exposing (Theme(..), ThemeColors, getThemeColors)
+import Themes exposing (Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName)
 
 
 main : Program Flags Model Msg
@@ -119,6 +119,7 @@ type SessionStatus
 
 type SettingTab
     = TimerTab
+    | ThemeTab
     | SettingsTab
     | AboutTab
 
@@ -191,7 +192,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         theme =
-            Nord
+            Pomotroid
 
         themeColors =
             getThemeColors theme
@@ -251,6 +252,7 @@ type Msg
     = CloseWindow
     | ChangeSettingTab SettingTab
     | ChangeSettingConfig Setting
+    | ChangeTheme Theme
     | HideVolumeBar
     | LoadConfig Config
     | MinimizeWindow
@@ -382,6 +384,9 @@ update msg model =
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
+
+        ChangeTheme theme ->
+            ( { model | theme = theme }, setThemeColors <| getThemeColors theme )
 
         CloseWindow ->
             ( model
@@ -1620,12 +1625,55 @@ aboutSettingView appVersion =
         ]
 
 
+themeSettingView : Model -> Html Msg
+themeSettingView model =
+    div [ class "container", id "theme" ]
+        (p [ class "drawer-heading" ] [ text "Themes" ]
+            :: (allThemes
+                    |> List.map
+                        (\t ->
+                            let
+                                name =
+                                    getThemeName t
+
+                                colors =
+                                    getThemeColors t
+                            in
+                            div
+                                [ class "setting-wrapper"
+                                , style "color" colors.foreground
+                                , style "background-color" colors.background
+                                , style "border-color" colors.accent
+                                , onClick <| ChangeTheme t
+                                ]
+                                [ p
+                                    [ class "setting-title"
+                                    ]
+                                    [ text name ]
+                                , if t == model.theme then
+                                    svg
+                                        [ SvgAttr.viewBox "0 0 24 24"
+                                        , SvgAttr.width "5vw"
+                                        ]
+                                        [ path [ SvgAttr.fill colors.accent, SvgAttr.d "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" ] [] ]
+
+                                  else
+                                    text ""
+                                ]
+                        )
+               )
+        )
+
+
 drawerView : Model -> Html Msg
 drawerView model =
     div
         [ id "drawer"
         ]
         [ case model.settingTab of
+            ThemeTab ->
+                themeSettingView model
+
             TimerTab ->
                 timerSettingView model
 
@@ -1711,6 +1759,40 @@ drawerView model =
                         [ path
                             [ SvgAttr.fill "var(--color-background-lightest)"
                             , SvgAttr.d "M17.2,11c0-0.3,0.1-0.6,0.1-1s0-0.7-0.1-1l2.1-1.6c0.2-0.1,0.2-0.4,0.1-0.6l-2-3.5C17.3,3.1,17,3,16.8,3.1\n          l-2.5,1c-0.5-0.4-1.1-0.7-1.7-1l-0.4-2.7C12.2,0.2,12,0,11.7,0h-4C7.5,0,7.3,0.2,7.2,0.4L6.9,3.1c-0.6,0.3-1.2,0.6-1.7,1l-2.5-1\n          C2.4,3,2.2,3.1,2.1,3.3l-2,3.5C-0.1,6.9,0,7.2,0.2,7.4L2.3,9c0,0.3-0.1,0.6-0.1,1s0,0.7,0.1,1l-2.1,1.6C0,12.8-0.1,13,0.1,13.3\n          l2,3.5c0.1,0.2,0.4,0.3,0.6,0.2l2.5-1c0.5,0.4,1.1,0.7,1.7,1l0.4,2.6c0,0.2,0.2,0.4,0.5,0.4h4c0.3,0,0.5-0.2,0.5-0.4l0.4-2.6\n          c0.6-0.3,1.2-0.6,1.7-1l2.5,1c0.2,0.1,0.5,0,0.6-0.2l2-3.5c0.1-0.2,0.1-0.5-0.1-0.6L17.2,11z M9.7,13.5c-1.9,0-3.5-1.6-3.5-3.5\n          s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S11.7,13.5,9.7,13.5z"
+                            ]
+                            []
+                        ]
+                    ]
+                ]
+            , div
+                [ title "Options"
+                , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == ThemeTab then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab ThemeTab
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ svg
+                        [ SvgAttr.version "1.2"
+                        , SvgAttr.baseProfile "tiny"
+                        , SvgAttr.id "theme-icon"
+                        , SvgAttr.x "0px"
+                        , SvgAttr.y "0px"
+                        , SvgAttr.viewBox "0 0 19.5 20"
+                        , SvgAttr.width "5vw"
+                        , SvgAttr.xmlSpace "preserve"
+                        , SvgAttr.class "icon"
+                        ]
+                        [ path
+                            [ SvgAttr.fill "var(--color-background-lightest)"
+                            , SvgAttr.d "M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
                             ]
                             []
                         ]
