@@ -18,6 +18,7 @@ use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
+use hex_color::HexColor;
 use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
@@ -57,6 +58,94 @@ fn default_theme() -> String {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct Colors {
+    accent: String,
+    background: String,
+    background_light: String,
+    background_lightest: String,
+    focus_round: String,
+    focus_round_middle: String,
+    focus_round_end: String,
+    foreground: String,
+    foreground_darker: String,
+    foreground_darkest: String,
+    long_round: String,
+    short_round: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Theme {
+    colors: Colors,
+    name: String,
+}
+
+impl From<JsonTheme> for Theme {
+    fn from(json_theme: JsonTheme) -> Self {
+        let short_round_color = HexColor::parse(json_theme.colors.short_round.as_str());
+        let focus_round_color = HexColor::parse(json_theme.colors.focus_round.as_str());
+
+        let (focus_round_middle, focus_round_end) =
+            if short_round_color.is_err() || focus_round_color.is_err() {
+                (
+                    json_theme.colors.focus_round.clone(),
+                    json_theme.colors.focus_round.clone(),
+                )
+            } else {
+                match (short_round_color, focus_round_color) {
+                    (
+                        Ok(HexColor {
+                            r: r1,
+                            g: g1,
+                            b: b1,
+                            a: _a1,
+                        }),
+                        Ok(HexColor {
+                            r: r2,
+                            g: g2,
+                            b: b2,
+                            a: _a2,
+                        }),
+                    ) => {
+                        // Middle of the 2 colors
+                        let t = 0.5;
+                        // Compute the middle gradient color
+                        let r = ((1.0 - t) * r1 as f32 + t * r2 as f32).round() as u8;
+                        let g = ((1.0 - t) * g1 as f32 + t * g2 as f32).round() as u8;
+                        let b = ((1.0 - t) * b1 as f32 + t * b2 as f32).round() as u8;
+                        // RGB to hex
+                        (
+                            format!("#{:02X}{:02X}{:02X}", r, g, b),
+                            json_theme.colors.short_round.clone(),
+                        )
+                    }
+                    _ => (
+                        json_theme.colors.focus_round.clone(),
+                        json_theme.colors.focus_round.clone(),
+                    ),
+                }
+            };
+
+        Theme {
+            colors: Colors {
+                accent: json_theme.colors.accent,
+                background: json_theme.colors.background,
+                background_light: json_theme.colors.background_light,
+                background_lightest: json_theme.colors.background_lightest,
+                focus_round: json_theme.colors.focus_round,
+                focus_round_middle,
+                focus_round_end,
+                foreground: json_theme.colors.foreground,
+                foreground_darker: json_theme.colors.foreground_darker,
+                foreground_darkest: json_theme.colors.foreground_darkest,
+                long_round: json_theme.colors.long_round,
+                short_round: json_theme.colors.short_round,
+            },
+            name: json_theme.name,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct JsonColors {
     #[serde(rename = "--color-accent")]
     accent: String,
     #[serde(rename = "--color-background")]
@@ -67,6 +156,10 @@ struct Colors {
     background_lightest: String,
     #[serde(rename = "--color-focus-round")]
     focus_round: String,
+    #[serde(rename = "--color-focus-round-middle")]
+    focus_round_middle: Option<String>,
+    #[serde(rename = "--color-focus-round-end")]
+    focus_round_end: Option<String>,
     #[serde(rename = "--color-foreground")]
     foreground: String,
     #[serde(rename = "--color-foreground-darker")]
@@ -80,8 +173,8 @@ struct Colors {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct Theme {
-    colors: Colors,
+struct JsonTheme {
+    colors: JsonColors,
     name: String,
 }
 
@@ -295,10 +388,10 @@ fn load_themes(app_handle: AppHandle) {
     for path in themes_paths {
         println!("Reading JSON {}", path.display());
         let file = fs::File::open(path).expect("file should open read only");
-        let theme: Theme = serde_json::from_reader(file).expect("JSON was not well-formatted");
-        println!("{:?}", theme);
-        themes.push(theme);
+        let theme: JsonTheme = serde_json::from_reader(file).expect("JSON was not well-formatted");
+        themes.push(Theme::from(theme));
     }
+    println!("{:?}", themes);
     let _ = app_handle.emit("themes", &themes).unwrap();
 }
 
