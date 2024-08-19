@@ -80,49 +80,50 @@ struct Theme {
 
 impl From<JsonTheme> for Theme {
     fn from(json_theme: JsonTheme) -> Self {
-        let short_round_color = HexColor::parse(json_theme.colors.short_round.as_str());
-        let focus_round_color = HexColor::parse(json_theme.colors.focus_round.as_str());
-
-        let (focus_round_middle, focus_round_end) =
-            if short_round_color.is_err() || focus_round_color.is_err() {
+        let (focus_round_middle, focus_round_end) = match (
+            json_theme.colors.focus_round_middle,
+            json_theme.colors.focus_round_end,
+        ) {
+            (Some(middle), Some(end)) => (middle, end),
+            _ => match (
+                HexColor::parse(json_theme.colors.short_round.as_str()),
+                HexColor::parse(json_theme.colors.focus_round.as_str()),
+            ) {
+                // If middle or end are not provided, try to compute the middle color ourself
+                // It will be the middle gradient between the focus round color and the short round
+                // color
                 (
-                    json_theme.colors.focus_round.clone(),
-                    json_theme.colors.focus_round.clone(),
-                )
-            } else {
-                match (short_round_color, focus_round_color) {
+                    Ok(HexColor {
+                        r: r1,
+                        g: g1,
+                        b: b1,
+                        a: _a1,
+                    }),
+                    Ok(HexColor {
+                        r: r2,
+                        g: g2,
+                        b: b2,
+                        a: _a2,
+                    }),
+                ) => {
+                    // Middle of the 2 colors
+                    let t = 0.5;
+                    // Compute the middle gradient color
+                    let r = ((1.0 - t) * r1 as f32 + t * r2 as f32).round() as u8;
+                    let g = ((1.0 - t) * g1 as f32 + t * g2 as f32).round() as u8;
+                    let b = ((1.0 - t) * b1 as f32 + t * b2 as f32).round() as u8;
+                    // RGB to hex
                     (
-                        Ok(HexColor {
-                            r: r1,
-                            g: g1,
-                            b: b1,
-                            a: _a1,
-                        }),
-                        Ok(HexColor {
-                            r: r2,
-                            g: g2,
-                            b: b2,
-                            a: _a2,
-                        }),
-                    ) => {
-                        // Middle of the 2 colors
-                        let t = 0.5;
-                        // Compute the middle gradient color
-                        let r = ((1.0 - t) * r1 as f32 + t * r2 as f32).round() as u8;
-                        let g = ((1.0 - t) * g1 as f32 + t * g2 as f32).round() as u8;
-                        let b = ((1.0 - t) * b1 as f32 + t * b2 as f32).round() as u8;
-                        // RGB to hex
-                        (
-                            format!("#{:02X}{:02X}{:02X}", r, g, b),
-                            json_theme.colors.short_round.clone(),
-                        )
-                    }
-                    _ => (
-                        json_theme.colors.focus_round.clone(),
-                        json_theme.colors.focus_round.clone(),
-                    ),
+                        format!("#{:02X}{:02X}{:02X}", r, g, b),
+                        json_theme.colors.short_round.clone(),
+                    )
                 }
-            };
+                _ => (
+                    json_theme.colors.focus_round.clone(),
+                    json_theme.colors.focus_round.clone(),
+                ),
+            },
+        };
 
         Theme {
             colors: Colors {

@@ -221,9 +221,8 @@ await listen("tick-event", () => {
   app.ports.tick.send("");
 });
 
-await listen("themes", (themes) => {
-  console.log("This is the THEME event");
-  console.log(themes);
+await listen("themes", (themesEvent) => {
+  app.ports.loadThemes.send(themesEvent.payload);
 });
 
 function hexToRgb(hex: string) {

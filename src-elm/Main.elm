@@ -5,11 +5,13 @@ import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
-import Json.Decode
+import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipe
 import Json.Encode
+import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Themes exposing (Theme(..), ThemeColors, allThemes, getThemeColors, getThemeName, themeFromString)
+import Themes exposing (Theme, ThemeColors, pomotroidTheme)
 
 
 main : Program Flags Model Msg
@@ -40,6 +42,7 @@ type alias Model =
     , settingTab : SettingTab
     , strokeDasharray : Float
     , theme : Theme
+    , themes : ListWithCurrent Theme
     , volume : Float
     , volumeSliderHidden : Bool
     }
@@ -62,27 +65,56 @@ type alias Config =
     }
 
 
-configDecoder : Json.Decode.Decoder Config
+themeColorsDecoder : Decode.Decoder ThemeColors
+themeColorsDecoder =
+    Decode.succeed ThemeColors
+        |> Pipe.required "accent" Decode.string
+        |> Pipe.required "background" Decode.string
+        |> Pipe.required "background_light" Decode.string
+        |> Pipe.required "background_lightest" Decode.string
+        |> Pipe.required "focus_round" Decode.string
+        |> Pipe.required "focus_round_end" Decode.string
+        |> Pipe.required "focus_round_middle" Decode.string
+        |> Pipe.required "foreground" Decode.string
+        |> Pipe.required "foreground_darker" Decode.string
+        |> Pipe.required "foreground_darkest" Decode.string
+        |> Pipe.required "long_round" Decode.string
+        |> Pipe.required "short_round" Decode.string
+
+
+themeDecoder : Decode.Decoder Theme
+themeDecoder =
+    Decode.succeed Theme
+        |> Pipe.required "colors" themeColorsDecoder
+        |> Pipe.required "name" Decode.string
+
+
+themesDecoder : Decode.Decoder (List Theme)
+themesDecoder =
+    Decode.list themeDecoder
+
+
+configDecoder : Decode.Decoder Config
 configDecoder =
     let
         fieldSet0 =
-            Json.Decode.map8 Config
-                (Json.Decode.field "always_on_top" Json.Decode.bool)
-                (Json.Decode.field "auto_start_break_timer" Json.Decode.bool)
-                (Json.Decode.field "auto_start_work_timer" Json.Decode.bool)
-                (Json.Decode.field "desktop_notifications" Json.Decode.bool)
-                (Json.Decode.field "long_break_duration" Json.Decode.int)
-                (Json.Decode.field "max_round_number" Json.Decode.int)
-                (Json.Decode.field "minimize_to_tray" Json.Decode.bool)
-                (Json.Decode.field "minimize_to_tray_on_close" Json.Decode.bool)
+            Decode.map8 Config
+                (Decode.field "always_on_top" Decode.bool)
+                (Decode.field "auto_start_break_timer" Decode.bool)
+                (Decode.field "auto_start_work_timer" Decode.bool)
+                (Decode.field "desktop_notifications" Decode.bool)
+                (Decode.field "long_break_duration" Decode.int)
+                (Decode.field "max_round_number" Decode.int)
+                (Decode.field "minimize_to_tray" Decode.bool)
+                (Decode.field "minimize_to_tray_on_close" Decode.bool)
     in
-    Json.Decode.map6 (<|)
+    Decode.map6 (<|)
         fieldSet0
-        (Json.Decode.field "pomodoro_duration" Json.Decode.int)
-        (Json.Decode.field "short_break_duration" Json.Decode.int)
-        (Json.Decode.field "theme" Json.Decode.string)
-        (Json.Decode.field "tick_sounds_during_break" Json.Decode.bool)
-        (Json.Decode.field "tick_sounds_during_work" Json.Decode.bool)
+        (Decode.field "pomodoro_duration" Decode.int)
+        (Decode.field "short_break_duration" Decode.int)
+        (Decode.field "theme" Decode.string)
+        (Decode.field "tick_sounds_during_break" Decode.bool)
+        (Decode.field "tick_sounds_during_work" Decode.bool)
 
 
 encodedConfig : Config -> Json.Encode.Value
@@ -195,13 +227,10 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         theme =
-            Pomotroid
-
-        themeColors =
-            getThemeColors theme
+            pomotroidTheme
 
         currentState =
-            { color = themeColors.focusRound
+            { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
             , playTick = False
@@ -223,7 +252,7 @@ init flags =
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             }
-      , currentColor = fromCSSHexToRGB themeColors.focusRound
+      , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
       , currentState = currentState
@@ -234,13 +263,14 @@ init flags =
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
       , theme = theme
+      , themes = ListWithCurrent.fromList [ theme ]
       , volume = 1
       , volumeSliderHidden = True
       }
     , Cmd.batch
         [ updateCurrentState currentState
         , loadRustConfig ()
-        , setThemeColors <| getThemeColors theme
+        , setThemeColors <| theme.colors
         ]
     )
 
@@ -259,6 +289,7 @@ type Msg
     | ChangeTheme Theme
     | HideVolumeBar
     | LoadConfig Config
+    | LoadThemes (List Theme)
     | MinimizeWindow
     | NoOp
     | Reset
@@ -343,7 +374,7 @@ getNextRoundInfo model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case Debug.log "MSG" msg of
         ChangeSettingConfig settingConfig ->
             let
                 settingsConfig =
@@ -402,7 +433,7 @@ update msg model =
 
                 newConfig =
                     { config
-                        | theme = getThemeName theme |> String.toLower
+                        | theme = theme.name |> String.toLower
                     }
             in
             ( { model
@@ -411,7 +442,7 @@ update msg model =
                 , theme = theme
               }
             , Cmd.batch
-                [ setThemeColors <| getThemeColors theme
+                [ setThemeColors theme.colors
                 , updateConfig newConfig
                 , updateCurrentState newState
                 ]
@@ -431,13 +462,15 @@ update msg model =
 
         LoadConfig config ->
             let
-                theme =
-                    themeFromString config.theme
+                newThemes =
+                    model.themes
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
 
                 newModel =
                     { model
                         | config = config
                         , sessionStatus = Stopped
+                        , themes = newThemes
                         , currentTime =
                             case model.currentSessionType of
                                 Pomodoro ->
@@ -450,7 +483,32 @@ update msg model =
                                     config.longBreakDuration
                     }
             in
-            update (ChangeTheme theme) newModel
+            case newThemes |> ListWithCurrent.getCurrent of
+                Just currentTheme ->
+                    update (ChangeTheme currentTheme) newModel
+
+                _ ->
+                    ( newModel, Cmd.none )
+
+        LoadThemes themes ->
+            let
+                newThemes =
+                    themes
+                        |> List.sortBy .name
+                        |> ListWithCurrent.fromList
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == model.config.theme)
+
+                newModel =
+                    { model
+                        | themes = newThemes
+                    }
+            in
+            case newThemes |> ListWithCurrent.getCurrent of
+                Just currentTheme ->
+                    update (ChangeTheme currentTheme) newModel
+
+                _ ->
+                    ( newModel, Cmd.none )
 
         MinimizeWindow ->
             ( model
@@ -967,19 +1025,15 @@ shouldPlayTick model =
 
 colorForSessionType : SessionType -> Theme -> RGB
 colorForSessionType sessionType theme =
-    let
-        themeColors =
-            getThemeColors theme
-    in
     case sessionType of
         Pomodoro ->
-            fromCSSHexToRGB <| themeColors.focusRound
+            fromCSSHexToRGB <| theme.colors.focusRound
 
         ShortBreak ->
-            fromCSSHexToRGB <| themeColors.shortRound
+            fromCSSHexToRGB <| theme.colors.shortRound
 
         LongBreak ->
-            fromCSSHexToRGB <| themeColors.longRound
+            fromCSSHexToRGB <| theme.colors.longRound
 
 
 computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
@@ -990,25 +1044,22 @@ computeCurrentColor currentTime maxTime sessionType theme =
 
         relativePercent =
             1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
-
-        themeColors =
-            getThemeColors theme
     in
     case sessionType of
         Pomodoro ->
             let
                 ( startRed, startGreen, startBlue ) =
-                    case fromCSSHexToRGB themeColors.focusRound of
+                    case fromCSSHexToRGB theme.colors.focusRound of
                         RGB r g b ->
                             ( r, g, b )
 
                 ( middleRed, middleGreen, middleBlue ) =
-                    case fromCSSHexToRGB themeColors.focusRoundMiddle of
+                    case fromCSSHexToRGB theme.colors.focusRoundMiddle of
                         RGB r g b ->
                             ( r, g, b )
 
                 ( endRed, endGreen, endBlue ) =
-                    case fromCSSHexToRGB themeColors.focusRoundEnd of
+                    case fromCSSHexToRGB theme.colors.focusRoundEnd of
                         RGB r g b ->
                             ( r, g, b )
             in
@@ -1663,25 +1714,26 @@ themeSettingView : Model -> Html Msg
 themeSettingView model =
     div [ class "container", id "theme" ]
         (p [ class "drawer-heading" ] [ text "Themes" ]
-            :: (allThemes
+            :: (model.themes
+                    |> ListWithCurrent.toList
                     |> List.map
                         (\t ->
                             let
                                 name =
-                                    getThemeName t
+                                    t.name
 
                                 colors =
-                                    getThemeColors t
+                                    t.colors
                             in
                             div
                                 [ class "setting-wrapper"
-                                , style "color" colors.foreground
                                 , style "background-color" colors.background
                                 , style "border-color" colors.accent
                                 , onClick <| ChangeTheme t
                                 ]
                                 [ p
                                     [ class "setting-title"
+                                    , style "color" colors.foreground
                                     ]
                                     [ text name ]
                                 , if t == model.theme then
@@ -1891,13 +1943,24 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapLoadConfig : Json.Decode.Value -> Msg
+mapLoadConfig : Decode.Value -> Msg
 mapLoadConfig modelJson =
-    case Json.Decode.decodeValue configDecoder modelJson of
+    case Decode.decodeValue configDecoder modelJson of
         Ok model ->
             LoadConfig model
 
         Err _ ->
+            --@FIX: don't fail silently
+            NoOp
+
+
+mapLoadThemes : Decode.Value -> Msg
+mapLoadThemes modelJson =
+    case Decode.decodeValue themesDecoder modelJson of
+        Ok themes ->
+            LoadThemes themes
+
+        Err e ->
             --@FIX: don't fail silently
             NoOp
 
@@ -1907,13 +1970,17 @@ subscriptions _ =
     Sub.batch
         [ tick Tick
         , loadConfig mapLoadConfig
+        , loadThemes mapLoadThemes
         ]
 
 
 port tick : (String -> msg) -> Sub msg
 
 
-port loadConfig : (Json.Decode.Value -> msg) -> Sub msg
+port loadConfig : (Decode.Value -> msg) -> Sub msg
+
+
+port loadThemes : (Decode.Value -> msg) -> Sub msg
 
 
 
