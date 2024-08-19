@@ -93,7 +93,7 @@ let rustConfig: RustConfig = {
   minimize_to_tray_on_close: true,
   pomodoro_duration: 1500,
   short_break_duration: 300,
-  theme: "pomotroid",
+  theme: "pomodorolm",
   tick_sounds_during_work: true,
   tick_sounds_during_break: true,
 };

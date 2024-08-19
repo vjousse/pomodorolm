@@ -1,4 +1,4 @@
-module Themes exposing (RGBColor(..), Theme, ThemeColors, pomotroidTheme)
+module Themes exposing (RGBColor(..), Theme, ThemeColors, pomodorolmTheme)
 
 
 type RGBColor
@@ -28,8 +28,8 @@ type alias ThemeColors =
     }
 
 
-pomotroidTheme : Theme
-pomotroidTheme =
+pomodorolmTheme : Theme
+pomodorolmTheme =
     { colors =
         { longRound = "#0bbddb"
         , shortRound = "#ff4e4d"
@@ -44,5 +44,5 @@ pomotroidTheme =
         , foregroundDarkest = "#dbe1ef"
         , accent = "#05ec8c"
         }
-    , name = "Pomotroid"
+    , name = "Pomodorolm"
     }

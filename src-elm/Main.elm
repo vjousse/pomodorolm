@@ -11,7 +11,7 @@ import Json.Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Themes exposing (Theme, ThemeColors, pomotroidTheme)
+import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 
 
 main : Program Flags Model Msg
@@ -227,7 +227,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         theme =
-            pomotroidTheme
+            pomodorolmTheme
 
         currentState =
             { color = theme.colors.focusRound
@@ -462,9 +462,23 @@ update msg model =
 
         LoadConfig config ->
             let
-                newThemes =
+                updatedThemes =
                     model.themes
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
+
+                newThemes =
+                    case ListWithCurrent.getCurrent updatedThemes of
+                        Just theme ->
+                            -- We found a theme with the same name than in the config: everything's fine
+                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
+                                updatedThemes
+
+                            else
+                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+
+                        Nothing ->
+                            updatedThemes
 
                 newModel =
                     { model
@@ -492,11 +506,25 @@ update msg model =
 
         LoadThemes themes ->
             let
-                newThemes =
+                loadedThemes =
                     themes
                         |> List.sortBy .name
                         |> ListWithCurrent.fromList
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == model.config.theme)
+
+                newThemes =
+                    case Debug.log "Current" (ListWithCurrent.getCurrent loadedThemes) of
+                        Just theme ->
+                            -- We found a theme with the same name than in the config: everything's fine
+                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
+                                loadedThemes
+
+                            else
+                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                loadedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+
+                        Nothing ->
+                            loadedThemes
 
                 newModel =
                     { model
@@ -1960,7 +1988,7 @@ mapLoadThemes modelJson =
         Ok themes ->
             LoadThemes themes
 
-        Err e ->
+        Err _ ->
             --@FIX: don't fail silently
             NoOp
 
