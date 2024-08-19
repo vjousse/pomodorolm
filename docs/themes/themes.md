@@ -35,13 +35,14 @@ These themes are available by default.
 Creating custom themes is simple. Themes are defined by a `json` file containing a **theme name** and several color values. Use the [theme template file](./theme-template.json) as a starting point.
 
 ```json
-// theme-template.json
 {
   "name": "Theme Name",
   "colors": {
     "--color-long-round": "",
     "--color-short-round": "",
     "--color-focus-round": "",
+    "--color-focus-round-middle": "",
+    "--color-focus-round-end": "",
     "--color-background": "",
     "--color-background-light": "",
     "--color-background-lightest": "",
@@ -53,12 +54,14 @@ Creating custom themes is simple. Themes are defined by a `json` file containing
 }
 ```
 
-To add your custom theme, copy your theme definition to the `themes` directory in the `appData` directory. The location of the `appData` depends on the operating system.
+`--color-focus-round-middle` and `--color-focus-round-end` are optional. You can use theme to customize the color of the gradiant during the focus round. If none are provided, a gradiant will be automatically computed from the `--color-focus-round` color to the `--color-short-round` color.
+
+To add your custom theme, copy your theme definition to the `pomodorolm/themes` directory in the `appData` directory. The location of the `appData` depends on the operating system.
 
 - `%APPDATA%` on **Windows**
 - `$XDG_CONFIG_HOME` or `~/.config` on **Linux**
 - `~/Library/Application Support` on **macOS**
 
-For example, add the theme file to the following directory on Windows: `C:\Users\{User}\AppData\Roaming\pomotroid\themes`
+For example, add the theme file to the following directory on Windows: `C:\Users\{User}\AppData\Roaming\pomodorolm\themes`
 
 Restart the application to see your new theme available as an option.
