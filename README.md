@@ -17,7 +17,8 @@
 - [x] **Customize round numbers, focus and break times**
 - [x] **Auto-start round** (optional)
 - [x] **Desktop notifications** (optional)
-- [x] **Theming support**
+- [x] **Built-in [themes](#-themes)**
+- [x] **Custom [themes](#-themes)**
 - [x] **Color gradiant** depending on the remaining time
 - [x] **Tray icon** with color gradiant
 - [x] **Minimize to tray** (optional)
@@ -40,6 +41,14 @@
 ## Windows, Mac OS X, Debian, AppImage
 
 Download the install file for your OS from the latest release on https://github.com/vjousse/pomodorolm/releases/
+
+# 🎨 Themes
+
+Pomodorolm provides many themes. It's also theme-able, allowing you to customize its appearance.
+
+![Screenshots of Pomotroid using various themes](./.github/images/pomotroid_themes-preview--914x219.png)
+
+Visit the [theme documentation](./docs/themes/themes.md) to view the full list of official themes and for instruction on creating your own.
 
 # 💻 Dev
 
