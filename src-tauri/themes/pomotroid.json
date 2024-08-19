@@ -2,8 +2,10 @@
   "name": "Pomotroid",
   "colors": {
     "--color-long-round": "#0bbddb",
-    "--color-short-round": "#05ec8c",
-    "--color-focus-round": "#ff4e4d",
+    "--color-short-round": "#ff4e4d",
+    "--color-focus-round": "#05ec8c",
+    "--color-focus-round-middle": "#ff7f0e",
+    "--color-focus-round-end": "#ff4e4d",
     "--color-background": "#2f384b",
     "--color-background-light": "#3d4457",
     "--color-background-lightest": "#9ca5b5",
