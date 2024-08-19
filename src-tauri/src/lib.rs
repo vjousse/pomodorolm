@@ -387,12 +387,14 @@ fn load_themes(app_handle: AppHandle) {
         themes_paths.push(path_buf);
     }
     for path in themes_paths {
-        println!("Reading JSON {}", path.display());
-        let file = fs::File::open(path).expect("file should open read only");
-        let theme: JsonTheme = serde_json::from_reader(file).expect("JSON was not well-formatted");
-        themes.push(Theme::from(theme));
+        let file = fs::File::open(path.clone()).expect("file should open read only");
+        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
+
+        match loaded_theme {
+            Ok(theme) => themes.push(Theme::from(theme)),
+            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+        }
     }
-    println!("{:?}", themes);
     let _ = app_handle.emit("themes", &themes).unwrap();
 }
 
