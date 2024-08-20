@@ -1,13 +1,17 @@
 port module Main exposing (..)
 
 import Browser
+import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
-import Json.Decode
+import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipe
 import Json.Encode
+import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
+import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 
 
 main : Program Flags Model Msg
@@ -27,26 +31,21 @@ type alias Seconds =
 type alias Model =
     { appVersion : String
     , config : Config
-    , currentColor : Color
+    , currentColor : RGB
     , currentRoundNumber : Int
     , currentSessionType : SessionType
     , currentState : CurrentState
     , currentTime : Seconds
     , drawerOpen : Bool
-    , endColor : Color
-    , initialColor : Color
-    , middleColor : Color
     , muted : Bool
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
     , strokeDasharray : Float
+    , theme : Theme
+    , themes : ListWithCurrent Theme
     , volume : Float
     , volumeSliderHidden : Bool
     }
-
-
-type alias Color =
-    { r : Int, g : Int, b : Int }
 
 
 type alias Config =
@@ -60,31 +59,62 @@ type alias Config =
     , minimizeToTrayOnClose : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
+    , theme : String
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
     }
 
 
-configDecoder : Json.Decode.Decoder Config
+themeColorsDecoder : Decode.Decoder ThemeColors
+themeColorsDecoder =
+    Decode.succeed ThemeColors
+        |> Pipe.required "accent" Decode.string
+        |> Pipe.required "background" Decode.string
+        |> Pipe.required "background_light" Decode.string
+        |> Pipe.required "background_lightest" Decode.string
+        |> Pipe.required "focus_round" Decode.string
+        |> Pipe.required "focus_round_end" Decode.string
+        |> Pipe.required "focus_round_middle" Decode.string
+        |> Pipe.required "foreground" Decode.string
+        |> Pipe.required "foreground_darker" Decode.string
+        |> Pipe.required "foreground_darkest" Decode.string
+        |> Pipe.required "long_round" Decode.string
+        |> Pipe.required "short_round" Decode.string
+
+
+themeDecoder : Decode.Decoder Theme
+themeDecoder =
+    Decode.succeed Theme
+        |> Pipe.required "colors" themeColorsDecoder
+        |> Pipe.required "name" Decode.string
+
+
+themesDecoder : Decode.Decoder (List Theme)
+themesDecoder =
+    Decode.list themeDecoder
+
+
+configDecoder : Decode.Decoder Config
 configDecoder =
     let
         fieldSet0 =
-            Json.Decode.map8 Config
-                (Json.Decode.field "always_on_top" Json.Decode.bool)
-                (Json.Decode.field "auto_start_break_timer" Json.Decode.bool)
-                (Json.Decode.field "auto_start_work_timer" Json.Decode.bool)
-                (Json.Decode.field "desktop_notifications" Json.Decode.bool)
-                (Json.Decode.field "long_break_duration" Json.Decode.int)
-                (Json.Decode.field "max_round_number" Json.Decode.int)
-                (Json.Decode.field "minimize_to_tray" Json.Decode.bool)
-                (Json.Decode.field "minimize_to_tray_on_close" Json.Decode.bool)
+            Decode.map8 Config
+                (Decode.field "always_on_top" Decode.bool)
+                (Decode.field "auto_start_break_timer" Decode.bool)
+                (Decode.field "auto_start_work_timer" Decode.bool)
+                (Decode.field "desktop_notifications" Decode.bool)
+                (Decode.field "long_break_duration" Decode.int)
+                (Decode.field "max_round_number" Decode.int)
+                (Decode.field "minimize_to_tray" Decode.bool)
+                (Decode.field "minimize_to_tray_on_close" Decode.bool)
     in
-    Json.Decode.map5 (<|)
+    Decode.map6 (<|)
         fieldSet0
-        (Json.Decode.field "pomodoro_duration" Json.Decode.int)
-        (Json.Decode.field "short_break_duration" Json.Decode.int)
-        (Json.Decode.field "tick_sounds_during_break" Json.Decode.bool)
-        (Json.Decode.field "tick_sounds_during_work" Json.Decode.bool)
+        (Decode.field "pomodoro_duration" Decode.int)
+        (Decode.field "short_break_duration" Decode.int)
+        (Decode.field "theme" Decode.string)
+        (Decode.field "tick_sounds_during_break" Decode.bool)
+        (Decode.field "tick_sounds_during_work" Decode.bool)
 
 
 encodedConfig : Config -> Json.Encode.Value
@@ -106,7 +136,7 @@ encodedConfig config =
 
 
 type alias CurrentState =
-    { color : Color, percentage : Float, paused : Bool, playTick : Bool }
+    { color : String, percentage : Float, paused : Bool, playTick : Bool }
 
 
 type SessionType
@@ -123,6 +153,7 @@ type SessionStatus
 
 type SettingTab
     = TimerTab
+    | ThemeTab
     | SettingsTab
     | AboutTab
 
@@ -177,6 +208,7 @@ type alias Flags =
     , minimizeToTrayOnClose : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
+    , theme : String
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
     }
@@ -191,36 +223,14 @@ defaults =
     }
 
 
-green : Color
-green =
-    { r = 5, g = 236, b = 140 }
-
-
-orange : Color
-orange =
-    { r = 255, g = 127, b = 14 }
-
-
-red : Color
-red =
-    { r = 255, g = 78, b = 77 }
-
-
-blue : Color
-blue =
-    { r = 11, g = 189, b = 219 }
-
-
-pink : Color
-pink =
-    { r = 255, g = 137, b = 167 }
-
-
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
+        theme =
+            pomodorolmTheme
+
         currentState =
-            { color = green
+            { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
             , playTick = False
@@ -238,45 +248,48 @@ init flags =
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
             , pomodoroDuration = flags.pomodoroDuration
             , shortBreakDuration = flags.shortBreakDuration
+            , theme = flags.theme
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             }
-      , currentColor = green
+      , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentRoundNumber = 1
       , currentSessionType = Pomodoro
       , currentState = currentState
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
-      , endColor = red
-      , initialColor = green
-      , middleColor = orange
       , muted = False
       , sessionStatus = Stopped
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
+      , theme = theme
+      , themes = ListWithCurrent.fromList [ theme ]
       , volume = 1
       , volumeSliderHidden = True
       }
     , Cmd.batch
         [ updateCurrentState currentState
         , loadRustConfig ()
+        , setThemeColors <| theme.colors
         ]
     )
 
 
 type SettingType
     = FocusTime
-    | ShortBreakTime
     | LongBreakTime
     | Rounds
+    | ShortBreakTime
 
 
 type Msg
     = CloseWindow
     | ChangeSettingTab SettingTab
     | ChangeSettingConfig Setting
+    | ChangeTheme Theme
     | HideVolumeBar
     | LoadConfig Config
+    | LoadThemes (List Theme)
     | MinimizeWindow
     | NoOp
     | Reset
@@ -287,8 +300,8 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | ToggleStatus
-    | UpdateVolume String
     | UpdateSetting SettingType String
+    | UpdateVolume String
 
 
 getNextRoundInfo : Model -> NextRoundInfo
@@ -297,8 +310,10 @@ getNextRoundInfo model =
         getNotification : String -> String -> String -> Seconds -> SessionType -> Notification
         getNotification title body name duration sessionType =
             let
-                color =
-                    computeCurrentColor 1 1 sessionType
+                ( r, g, b ) =
+                    case computeCurrentColor 1 1 sessionType model.theme of
+                        RGB red_ green_ blue_ ->
+                            ( red_, green_, blue_ )
 
                 minutes =
                     (duration |> toFloat) / 60 |> round
@@ -317,9 +332,9 @@ getNextRoundInfo model =
                     ++ " "
                     ++ body
             , name = name
-            , red = color.r
-            , green = color.g
-            , blue = color.b
+            , red = r
+            , green = g
+            , blue = b
             }
     in
     case model.currentSessionType of
@@ -359,7 +374,7 @@ getNextRoundInfo model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case Debug.log "MSG" msg of
         ChangeSettingConfig settingConfig ->
             let
                 settingsConfig =
@@ -405,6 +420,34 @@ update msg model =
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
 
+        ChangeTheme theme ->
+            let
+                currentState =
+                    model.currentState
+
+                newState =
+                    { currentState | color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType theme }
+
+                config =
+                    model.config
+
+                newConfig =
+                    { config
+                        | theme = theme.name |> String.toLower
+                    }
+            in
+            ( { model
+                | config = newConfig
+                , currentState = newState
+                , theme = theme
+              }
+            , Cmd.batch
+                [ setThemeColors theme.colors
+                , updateConfig newConfig
+                , updateCurrentState newState
+                ]
+            )
+
         CloseWindow ->
             ( model
             , if model.config.minimizeToTrayOnClose then
@@ -418,22 +461,82 @@ update msg model =
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
         LoadConfig config ->
-            ( { model
-                | config = config
-                , sessionStatus = Stopped
-                , currentTime =
-                    case model.currentSessionType of
-                        Pomodoro ->
-                            config.pomodoroDuration
+            let
+                updatedThemes =
+                    model.themes
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
 
-                        ShortBreak ->
-                            config.shortBreakDuration
+                newThemes =
+                    case ListWithCurrent.getCurrent updatedThemes of
+                        Just theme ->
+                            -- We found a theme with the same name than in the config: everything's fine
+                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
+                                updatedThemes
 
-                        LongBreak ->
-                            config.longBreakDuration
-              }
-            , Cmd.none
-            )
+                            else
+                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+
+                        Nothing ->
+                            updatedThemes
+
+                newModel =
+                    { model
+                        | config = config
+                        , sessionStatus = Stopped
+                        , themes = newThemes
+                        , currentTime =
+                            case model.currentSessionType of
+                                Pomodoro ->
+                                    config.pomodoroDuration
+
+                                ShortBreak ->
+                                    config.shortBreakDuration
+
+                                LongBreak ->
+                                    config.longBreakDuration
+                    }
+            in
+            case newThemes |> ListWithCurrent.getCurrent of
+                Just currentTheme ->
+                    update (ChangeTheme currentTheme) newModel
+
+                _ ->
+                    ( newModel, Cmd.none )
+
+        LoadThemes themes ->
+            let
+                loadedThemes =
+                    themes
+                        |> List.sortBy .name
+                        |> ListWithCurrent.fromList
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == model.config.theme)
+
+                newThemes =
+                    case Debug.log "Current" (ListWithCurrent.getCurrent loadedThemes) of
+                        Just theme ->
+                            -- We found a theme with the same name than in the config: everything's fine
+                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
+                                loadedThemes
+
+                            else
+                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                loadedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+
+                        Nothing ->
+                            loadedThemes
+
+                newModel =
+                    { model
+                        | themes = newThemes
+                    }
+            in
+            case newThemes |> ListWithCurrent.getCurrent of
+                Just currentTheme ->
+                    update (ChangeTheme currentTheme) newModel
+
+                _ ->
+                    ( newModel, Cmd.none )
 
         MinimizeWindow ->
             ( model
@@ -450,7 +553,7 @@ update msg model =
         Reset ->
             let
                 currentState =
-                    { color = colorForSessionType model.currentSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType model.theme
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -534,7 +637,7 @@ update msg model =
                     }
 
                 currentState =
-                    { color = colorForSessionType nextRoundInfo.nextSessionType
+                    { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                     , percentage = 100
                     , paused =
                         if model.sessionStatus == Paused then
@@ -574,7 +677,7 @@ update msg model =
                         getCurrentMaxTime model
 
                     currentColor =
-                        computeCurrentColor newTime maxTime model.currentSessionType
+                        computeCurrentColor newTime maxTime model.currentSessionType model.theme
 
                     percent =
                         1 * toFloat newTime / toFloat maxTime
@@ -586,7 +689,7 @@ update msg model =
                         }
 
                     currentState =
-                        { color = currentColor
+                        { color = fromRGBToCSSHex currentColor
                         , percentage = percent
                         , paused =
                             if model.sessionStatus == Paused then
@@ -634,7 +737,7 @@ update msg model =
                         }
 
                     currentState =
-                        { color = colorForSessionType nextRoundInfo.nextSessionType
+                        { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                         , percentage = 100
                         , paused =
                             if nextModel.sessionStatus == Paused then
@@ -757,7 +860,13 @@ update msg model =
                             { model | sessionStatus = Paused }
 
                         currentState =
-                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            { color =
+                                fromRGBToCSSHex <|
+                                    computeCurrentColor
+                                        model.currentTime
+                                        (getCurrentMaxTime model)
+                                        model.currentSessionType
+                                        model.theme
                             , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = True
                             , playTick = shouldPlayTick nextModel
@@ -773,7 +882,12 @@ update msg model =
                             { model | sessionStatus = Running }
 
                         currentState =
-                            { color = computeCurrentColor model.currentTime (getCurrentMaxTime model) model.currentSessionType
+                            { color =
+                                fromRGBToCSSHex <|
+                                    computeCurrentColor model.currentTime
+                                        (getCurrentMaxTime model)
+                                        model.currentSessionType
+                                        model.theme
                             , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = False
                             , playTick = shouldPlayTick nextModel
@@ -825,31 +939,6 @@ update msg model =
                     , updateConfig newConfig
                     )
 
-                ShortBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | shortBreakDuration = newValue }
-                        , currentTime =
-                            if model.currentSessionType == ShortBreak then
-                                if newValue == 0 then
-                                    60
-
-                                else
-                                    newValue
-
-                            else
-                                model.currentTime
-                      }
-                    , Cmd.none
-                    )
-
                 LongBreakTime ->
                     let
                         newValue =
@@ -886,6 +975,31 @@ update msg model =
                     in
                     ( { model
                         | config = { config | maxRoundNumber = newValue }
+                      }
+                    , Cmd.none
+                    )
+
+                ShortBreakTime ->
+                    let
+                        newValue =
+                            if value > 90 then
+                                90 * 60
+
+                            else
+                                value * 60
+                    in
+                    ( { model
+                        | config = { config | shortBreakDuration = newValue }
+                        , currentTime =
+                            if model.currentSessionType == ShortBreak then
+                                if newValue == 0 then
+                                    60
+
+                                else
+                                    newValue
+
+                            else
+                                model.currentTime
                       }
                     , Cmd.none
                     )
@@ -937,21 +1051,21 @@ shouldPlayTick model =
         False
 
 
-colorForSessionType : SessionType -> Color
-colorForSessionType sessionType =
+colorForSessionType : SessionType -> Theme -> RGB
+colorForSessionType sessionType theme =
     case sessionType of
         Pomodoro ->
-            green
+            fromCSSHexToRGB <| theme.colors.focusRound
 
         ShortBreak ->
-            pink
+            fromCSSHexToRGB <| theme.colors.shortRound
 
         LongBreak ->
-            blue
+            fromCSSHexToRGB <| theme.colors.longRound
 
 
-computeCurrentColor : Seconds -> Seconds -> SessionType -> Color
-computeCurrentColor currentTime maxTime sessionType =
+computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
+computeCurrentColor currentTime maxTime sessionType theme =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
@@ -961,20 +1075,35 @@ computeCurrentColor currentTime maxTime sessionType =
     in
     case sessionType of
         Pomodoro ->
+            let
+                ( startRed, startGreen, startBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRound of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( middleRed, middleGreen, middleBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRoundMiddle of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( endRed, endGreen, endBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRoundEnd of
+                        RGB r g b ->
+                            ( r, g, b )
+            in
             if percent > 0.5 then
-                { r = toFloat orange.r + (relativePercent * toFloat (green.r - orange.r)) |> round
-                , g = toFloat orange.g + (relativePercent * toFloat (green.g - orange.g)) |> round
-                , b = toFloat orange.b + (relativePercent * toFloat (green.b - orange.b)) |> round
-                }
+                RGB
+                    (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
+                    (toFloat middleGreen + (relativePercent * toFloat (startGreen - middleGreen)) |> round)
+                    (toFloat middleBlue + (relativePercent * toFloat (startBlue - middleBlue)) |> round)
 
             else
-                { r = toFloat red.r + ((1 + relativePercent) * toFloat (orange.r - red.r)) |> round
-                , g = toFloat red.g + ((1 + relativePercent) * toFloat (orange.g - red.g)) |> round
-                , b = toFloat red.b + ((1 + relativePercent) * toFloat (orange.b - red.b)) |> round
-                }
+                RGB (toFloat endRed + ((1 + relativePercent) * toFloat (middleRed - endRed)) |> round)
+                    (toFloat endGreen + ((1 + relativePercent) * toFloat (middleGreen - endGreen)) |> round)
+                    (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
 
         s ->
-            colorForSessionType s
+            colorForSessionType s theme
 
 
 secondsToString : Seconds -> String
@@ -982,8 +1111,8 @@ secondsToString seconds =
     (String.padLeft 2 '0' <| String.fromInt (seconds // 60)) ++ ":" ++ (String.padLeft 2 '0' <| String.fromInt (modBy 60 seconds))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray =
+dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> Html Msg
+dialView sessionType currentTime maxTime maxStrokeDasharray theme =
     let
         percent =
             1 * toFloat currentTime / toFloat maxTime
@@ -991,11 +1120,11 @@ dialView sessionType currentTime maxTime maxStrokeDasharray =
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * percent
 
-        colorToHtmlRgbString c =
-            "rgb(" ++ String.fromInt c.r ++ ", " ++ String.fromInt c.g ++ ", " ++ String.fromInt c.b ++ ")"
+        colorToHtmlRgbString (RGB r g b) =
+            "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
 
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType
+            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -1256,7 +1385,7 @@ getCurrentMaxTime model =
 timerView : Model -> Html Msg
 timerView model =
     div [ class "timer-wrapper" ]
-        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray
+        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray model.theme
         , playPauseView model.sessionStatus
         , footerView model
         ]
@@ -1609,12 +1738,56 @@ aboutSettingView appVersion =
         ]
 
 
+themeSettingView : Model -> Html Msg
+themeSettingView model =
+    div [ class "container", id "theme" ]
+        (p [ class "drawer-heading" ] [ text "Themes" ]
+            :: (model.themes
+                    |> ListWithCurrent.toList
+                    |> List.map
+                        (\t ->
+                            let
+                                name =
+                                    t.name
+
+                                colors =
+                                    t.colors
+                            in
+                            div
+                                [ class "setting-wrapper"
+                                , style "background-color" colors.background
+                                , style "border-color" colors.accent
+                                , onClick <| ChangeTheme t
+                                ]
+                                [ p
+                                    [ class "setting-title"
+                                    , style "color" colors.foreground
+                                    ]
+                                    [ text name ]
+                                , if t == model.theme then
+                                    svg
+                                        [ SvgAttr.viewBox "0 0 24 24"
+                                        , SvgAttr.width "5vw"
+                                        ]
+                                        [ path [ SvgAttr.fill colors.accent, SvgAttr.d "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" ] [] ]
+
+                                  else
+                                    text ""
+                                ]
+                        )
+               )
+        )
+
+
 drawerView : Model -> Html Msg
 drawerView model =
     div
         [ id "drawer"
         ]
         [ case model.settingTab of
+            ThemeTab ->
+                themeSettingView model
+
             TimerTab ->
                 timerSettingView model
 
@@ -1706,6 +1879,40 @@ drawerView model =
                     ]
                 ]
             , div
+                [ title "Options"
+                , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == ThemeTab then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab ThemeTab
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ svg
+                        [ SvgAttr.version "1.2"
+                        , SvgAttr.baseProfile "tiny"
+                        , SvgAttr.id "theme-icon"
+                        , SvgAttr.x "0px"
+                        , SvgAttr.y "0px"
+                        , SvgAttr.viewBox "0 0 19.5 20"
+                        , SvgAttr.width "5vw"
+                        , SvgAttr.xmlSpace "preserve"
+                        , SvgAttr.class "icon"
+                        ]
+                        [ path
+                            [ SvgAttr.fill "var(--color-background-lightest)"
+                            , SvgAttr.d "M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                            ]
+                            []
+                        ]
+                    ]
+                ]
+            , div
                 [ title "About"
                 , class "drawer-menu-wrapper"
                 , class
@@ -1764,11 +1971,22 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapLoadConfig : Json.Decode.Value -> Msg
+mapLoadConfig : Decode.Value -> Msg
 mapLoadConfig modelJson =
-    case Json.Decode.decodeValue configDecoder modelJson of
+    case Decode.decodeValue configDecoder modelJson of
         Ok model ->
             LoadConfig model
+
+        Err _ ->
+            --@FIX: don't fail silently
+            NoOp
+
+
+mapLoadThemes : Decode.Value -> Msg
+mapLoadThemes modelJson =
+    case Decode.decodeValue themesDecoder modelJson of
+        Ok themes ->
+            LoadThemes themes
 
         Err _ ->
             --@FIX: don't fail silently
@@ -1780,13 +1998,17 @@ subscriptions _ =
     Sub.batch
         [ tick Tick
         , loadConfig mapLoadConfig
+        , loadThemes mapLoadThemes
         ]
 
 
 port tick : (String -> msg) -> Sub msg
 
 
-port loadConfig : (Json.Decode.Value -> msg) -> Sub msg
+port loadConfig : (Decode.Value -> msg) -> Sub msg
+
+
+port loadThemes : (Decode.Value -> msg) -> Sub msg
 
 
 
@@ -1821,3 +2043,6 @@ port notify : Notification -> Cmd msg
 
 
 port updateConfig : Config -> Cmd msg
+
+
+port setThemeColors : ThemeColors -> Cmd msg

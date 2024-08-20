@@ -18,11 +18,15 @@ use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
+use hex_color::HexColor;
+use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 mod icon;
 mod sound;
+
+const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
@@ -30,7 +34,7 @@ struct App {
     config: Config,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Config {
     always_on_top: bool,
     auto_start_work_timer: bool,
@@ -42,8 +46,137 @@ struct Config {
     minimize_to_tray_on_close: bool,
     pomodoro_duration: u16,
     short_break_duration: u16,
+    #[serde(default = "default_theme")]
+    theme: String,
     tick_sounds_during_work: bool,
     tick_sounds_during_break: bool,
+}
+
+fn default_theme() -> String {
+    "pomotroid".to_string()
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Colors {
+    accent: String,
+    background: String,
+    background_light: String,
+    background_lightest: String,
+    focus_round: String,
+    focus_round_middle: String,
+    focus_round_end: String,
+    foreground: String,
+    foreground_darker: String,
+    foreground_darkest: String,
+    long_round: String,
+    short_round: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Theme {
+    colors: Colors,
+    name: String,
+}
+
+impl From<JsonTheme> for Theme {
+    fn from(json_theme: JsonTheme) -> Self {
+        let (focus_round_middle, focus_round_end) = match (
+            json_theme.colors.focus_round_middle,
+            json_theme.colors.focus_round_end,
+        ) {
+            (Some(middle), Some(end)) => (middle, end),
+            _ => match (
+                HexColor::parse(json_theme.colors.short_round.as_str()),
+                HexColor::parse(json_theme.colors.focus_round.as_str()),
+            ) {
+                // If middle or end are not provided, try to compute the middle color ourself
+                // It will be the middle gradient between the focus round color and the short round
+                // color
+                (
+                    Ok(HexColor {
+                        r: r1,
+                        g: g1,
+                        b: b1,
+                        a: _a1,
+                    }),
+                    Ok(HexColor {
+                        r: r2,
+                        g: g2,
+                        b: b2,
+                        a: _a2,
+                    }),
+                ) => {
+                    // Middle of the 2 colors
+                    let t = 0.5;
+                    // Compute the middle gradient color
+                    let r = ((1.0 - t) * r1 as f32 + t * r2 as f32).round() as u8;
+                    let g = ((1.0 - t) * g1 as f32 + t * g2 as f32).round() as u8;
+                    let b = ((1.0 - t) * b1 as f32 + t * b2 as f32).round() as u8;
+                    // RGB to hex
+                    (
+                        format!("#{:02X}{:02X}{:02X}", r, g, b),
+                        json_theme.colors.short_round.clone(),
+                    )
+                }
+                _ => (
+                    json_theme.colors.focus_round.clone(),
+                    json_theme.colors.focus_round.clone(),
+                ),
+            },
+        };
+
+        Theme {
+            colors: Colors {
+                accent: json_theme.colors.accent,
+                background: json_theme.colors.background,
+                background_light: json_theme.colors.background_light,
+                background_lightest: json_theme.colors.background_lightest,
+                focus_round: json_theme.colors.focus_round,
+                focus_round_middle,
+                focus_round_end,
+                foreground: json_theme.colors.foreground,
+                foreground_darker: json_theme.colors.foreground_darker,
+                foreground_darkest: json_theme.colors.foreground_darkest,
+                long_round: json_theme.colors.long_round,
+                short_round: json_theme.colors.short_round,
+            },
+            name: json_theme.name,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct JsonColors {
+    #[serde(rename = "--color-accent")]
+    accent: String,
+    #[serde(rename = "--color-background")]
+    background: String,
+    #[serde(rename = "--color-background-light")]
+    background_light: String,
+    #[serde(rename = "--color-background-lightest")]
+    background_lightest: String,
+    #[serde(rename = "--color-focus-round")]
+    focus_round: String,
+    #[serde(rename = "--color-focus-round-middle")]
+    focus_round_middle: Option<String>,
+    #[serde(rename = "--color-focus-round-end")]
+    focus_round_end: Option<String>,
+    #[serde(rename = "--color-foreground")]
+    foreground: String,
+    #[serde(rename = "--color-foreground-darker")]
+    foreground_darker: String,
+    #[serde(rename = "--color-foreground-darkest")]
+    foreground_darkest: String,
+    #[serde(rename = "--color-long-round")]
+    long_round: String,
+    #[serde(rename = "--color-short-round")]
+    short_round: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct JsonTheme {
+    colors: JsonColors,
+    name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,6 +201,7 @@ impl Default for Config {
             minimize_to_tray_on_close: true,
             pomodoro_duration: 25 * 60,
             short_break_duration: 5 * 60,
+            theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
         }
@@ -77,6 +211,30 @@ impl Default for Config {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     run_app(tauri::Builder::default())
+}
+
+fn get_config_file_path<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve(
+        format!("{}/config.toml", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    )
+}
+
+fn get_config_dir<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve(format!("{}/", CONFIG_DIR_NAME), BaseDirectory::Config)
+}
+
+fn get_config_theme_dir<R: Runtime>(
+    path: &tauri::path::PathResolver<R>,
+) -> Result<PathBuf, tauri::Error> {
+    path.resolve(
+        format!("{}/themes/", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    )
 }
 
 pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
@@ -139,16 +297,15 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 })
                 .build(app);
 
-            let config_file_path = &app
-                .path()
-                .resolve("config.toml", BaseDirectory::AppConfig)?;
+            let config_file_path = get_config_file_path(app.path())?;
 
-            let metadata = fs::metadata(config_file_path);
+            let metadata = fs::metadata(&config_file_path);
+            let _ = fs::create_dir_all(get_config_theme_dir(app.path())?);
 
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
-                fs::create_dir_all(app.path().app_config_dir()?)?;
+                let _ = fs::create_dir_all(get_config_dir(app.path())?);
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -206,6 +363,39 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn load_themes(app_handle: AppHandle) {
+    let mut themes_paths: Vec<PathBuf> = vec![];
+    let mut themes: Vec<Theme> = vec![];
+    let themes_path = app_handle
+        .path()
+        .resolve("themes/", BaseDirectory::Resource)
+        .unwrap();
+    let paths = fs::read_dir(themes_path).unwrap();
+
+    for path in paths {
+        let path_buf = path.unwrap().path();
+        themes_paths.push(path_buf);
+    }
+
+    let config_themes_path = get_config_theme_dir(app_handle.path()).unwrap();
+    let paths = fs::read_dir(config_themes_path).unwrap();
+
+    for path in paths {
+        let path_buf = path.unwrap().path();
+        themes_paths.push(path_buf);
+    }
+    for path in themes_paths {
+        let file = fs::File::open(path.clone()).expect("file should open read only");
+        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
+
+        match loaded_theme {
+            Ok(theme) => themes.push(Theme::from(theme)),
+            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+        }
+    }
+    let _ = app_handle.emit("themes", &themes).unwrap();
 }
 
 async fn tick(app_handle: AppHandle, path: String) {
@@ -270,7 +460,7 @@ async fn update_play_tick(state: tauri::State<'_, AppState>, play_tick: bool) ->
 
     *state_guard = App {
         play_tick,
-        config: state_guard.config,
+        config: state_guard.config.clone(),
     };
 
     Ok(())
@@ -286,11 +476,13 @@ async fn update_config(
 
     *state_guard = App {
         play_tick: state_guard.play_tick,
-        config,
+        config: config.clone(),
     };
 
-    let config_dir = app_handle.path().app_config_dir().unwrap();
-    let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
+    let config_file_path = get_config_file_path(app_handle.path())
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
 
     let file = OpenOptions::new()
         .read(true)
@@ -317,16 +509,20 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
-    let config_dir = app_handle.path().app_config_dir().unwrap();
+    let config_file_path = get_config_file_path(app_handle.path())
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
 
-    let config_file_path = &format!("{}/config.toml", config_dir.to_string_lossy());
-    let toml_str = fs::read_to_string(config_file_path)
-        .expect(&format!("Unable to open config file {}", config_file_path)[..]);
+    let toml_str = fs::read_to_string(&config_file_path)
+        .expect(&format!("Unable to open config file {}", config_file_path));
     let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
     *state_guard = App {
         play_tick: state_guard.play_tick,
-        config,
+        config: config.clone(),
     };
+
+    let _ = load_themes(app_handle.clone());
 
     Ok(config)
 }

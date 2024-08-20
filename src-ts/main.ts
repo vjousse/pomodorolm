@@ -11,14 +11,14 @@ import { getVersion } from "@tauri-apps/api/app";
 // Display logs in the webview inspector
 attachConsole();
 
-type Color = {
-  r: number;
-  g: number;
-  b: number;
-};
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__: any;
+  }
+}
 
 type ElmState = {
-  color: Color;
+  color: string;
   percentage: number;
   paused: boolean;
   playTick: boolean;
@@ -33,6 +33,21 @@ type Notification = {
   blue: number;
 };
 
+type ThemeColors = {
+  longRound: string;
+  shortRound: string;
+  focusRound: string;
+  focusRoundMiddle: string;
+  focusRoundEnd: string;
+  background: string;
+  backgroundLight: string;
+  backgroundLightest: string;
+  foreground: string;
+  foregroundDarker: string;
+  foregroundDarkest: string;
+  accent: string;
+};
+
 type ElmConfig = {
   alwaysOnTop: boolean;
   autoStartWorkTimer: boolean;
@@ -44,6 +59,7 @@ type ElmConfig = {
   minimizeToTrayOnClose: boolean;
   pomodoroDuration: number;
   shortBreakDuration: number;
+  theme: string;
   tickSoundsDuringWork: boolean;
   tickSoundsDuringBreak: boolean;
 };
@@ -59,6 +75,7 @@ type RustConfig = {
   minimize_to_tray_on_close: boolean;
   pomodoro_duration: number;
   short_break_duration: number;
+  theme: string;
   tick_sounds_during_work: boolean;
   tick_sounds_during_break: boolean;
 };
@@ -76,6 +93,7 @@ let rustConfig: RustConfig = {
   minimize_to_tray_on_close: true,
   pomodoro_duration: 1500,
   short_break_duration: 300,
+  theme: "pomodorolm",
   tick_sounds_during_work: true,
   tick_sounds_during_break: true,
 };
@@ -84,7 +102,7 @@ const app = Elm.Main.init({
   node: root,
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
-    appVersion: await getVersion(),
+    appVersion: await getAppVersion(),
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
@@ -94,6 +112,7 @@ const app = Elm.Main.init({
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
     pomodoroDuration: rustConfig.pomodoro_duration,
     shortBreakDuration: rustConfig.short_break_duration,
+    theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
     tickSoundsDuringBreak: rustConfig.tick_sounds_during_break,
   },
@@ -139,6 +158,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
       pomodoro_duration: config.pomodoroDuration,
       short_break_duration: config.shortBreakDuration,
+      theme: config.theme,
       tick_sounds_during_work: config.tickSoundsDuringWork,
       tick_sounds_during_break: config.tickSoundsDuringBreak,
     },
@@ -148,14 +168,78 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   invoke("update_play_tick", { playTick: state.playTick });
   invoke("change_icon", {
-    red: state.color.r,
-    green: state.color.g,
-    blue: state.color.b,
+    red: hexToRgb(state.color)?.r,
+    green: hexToRgb(state.color)?.g,
+    blue: hexToRgb(state.color)?.b,
     fillPercentage: state.percentage,
     paused: state.paused,
   });
 });
 
+app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
+  let mainHtmlElement = document.documentElement;
+  mainHtmlElement.style.setProperty(
+    "--color-long-round",
+    themeColors.longRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-short-round",
+    themeColors.shortRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-focus-round",
+    themeColors.focusRound
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background",
+    themeColors.background
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background-light",
+    themeColors.backgroundLight
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-background-lightest",
+    themeColors.backgroundLightest
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground",
+    themeColors.foreground
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground-darker",
+    themeColors.foregroundDarker
+  );
+  mainHtmlElement.style.setProperty(
+    "--color-foreground-darkest",
+    themeColors.foregroundDarkest
+  );
+  mainHtmlElement.style.setProperty("--color-accent", themeColors.accent);
+});
+
 await listen("tick-event", () => {
   app.ports.tick.send("");
 });
+
+await listen("themes", (themesEvent) => {
+  app.ports.loadThemes.send(themesEvent.payload);
+});
+
+function hexToRgb(hex: string) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+async function getAppVersion() {
+  if (window.__TAURI_INTERNALS__ === undefined) {
+    return "unknown";
+  } else {
+    return await getVersion();
+  }
+}
