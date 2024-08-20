@@ -374,7 +374,7 @@ getNextRoundInfo model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case Debug.log "MSG" msg of
+    case msg of
         ChangeSettingConfig settingConfig ->
             let
                 settingsConfig =
@@ -513,7 +513,7 @@ update msg model =
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == model.config.theme)
 
                 newThemes =
-                    case Debug.log "Current" (ListWithCurrent.getCurrent loadedThemes) of
+                    case ListWithCurrent.getCurrent loadedThemes of
                         Just theme ->
                             -- We found a theme with the same name than in the config: everything's fine
                             if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
