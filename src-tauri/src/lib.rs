@@ -274,9 +274,16 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
                             let state: tauri::State<'_, MenuState<R>> = app.state();
 
-                            let state_guard = state.0.lock().unwrap();
-
-                            let _ = state_guard.set_text(new_title);
+                            let state_guard = state.0.lock();
+                            match state_guard {
+                                Ok(guard) => {
+                                    let set_text_result = guard.set_text(new_title);
+                                    if let Err(e) = set_text_result {
+                                        eprintln!("Error setting MenuItem title: {:?}.", e);
+                                    }
+                                }
+                                Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+                            };
                         }
                     }
                     _ => (),
@@ -318,7 +325,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                     ..Default::default()
                 };
 
-                file.write_all(toml::to_string(&default_config).unwrap().as_bytes())?;
+                file.write_all(toml::to_string(&default_config)?.as_bytes())?;
                 default_config
             } else {
                 // Open the file
@@ -335,17 +342,23 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
             app.manage(MenuState(std::sync::Mutex::new(toggle_visibility)));
 
-            let sound_file = sound::get_sound_file("audio-tick").unwrap();
+            let sound_file =
+                sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
 
             let path = &app.path();
 
             let resource_path =
                 path.resolve(format!("audio/{}", sound_file), BaseDirectory::Resource);
-            let audio_path = resource_path.unwrap();
+            let audio_path = resource_path
+                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
 
             tauri::async_runtime::spawn(tick(
                 app.handle().clone(),
-                String::from(audio_path.to_str().unwrap()),
+                String::from(
+                    audio_path
+                        .to_str()
+                        .expect("Unable to convert tick audio path to string."),
+                ),
             ));
 
             Ok(())
@@ -365,27 +378,48 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
-fn load_themes(app_handle: AppHandle) {
+fn get_themes_for_directory(
+    app_handle: &AppHandle,
+    path_to_resolve: String,
+    base_directory: BaseDirectory,
+) -> Vec<PathBuf> {
     let mut themes_paths: Vec<PathBuf> = vec![];
-    let mut themes: Vec<Theme> = vec![];
     let themes_path = app_handle
         .path()
-        .resolve("themes/", BaseDirectory::Resource)
-        .unwrap();
-    let paths = fs::read_dir(themes_path).unwrap();
+        .resolve(path_to_resolve, base_directory)
+        .expect("Unable to resolve `themes/{}` resource.");
+    let themes_path = fs::read_dir(themes_path);
 
-    for path in paths {
-        let path_buf = path.unwrap().path();
-        themes_paths.push(path_buf);
+    match themes_path {
+        Ok(path) => {
+            for p in path {
+                let path_buf = p.unwrap().path();
+                themes_paths.push(path_buf);
+            }
+        }
+        Err(e) => {
+            eprintln!("Unable to read builtin themes path: {:?}.", e);
+        }
     }
 
-    let config_themes_path = get_config_theme_dir(app_handle.path()).unwrap();
-    let paths = fs::read_dir(config_themes_path).unwrap();
+    themes_paths
+}
 
-    for path in paths {
-        let path_buf = path.unwrap().path();
-        themes_paths.push(path_buf);
-    }
+fn load_themes(app_handle: AppHandle) {
+    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(
+        &app_handle,
+        String::from("themes/"),
+        BaseDirectory::Resource,
+    );
+
+    themes_paths.extend_from_slice(&get_themes_for_directory(
+        &app_handle,
+        format!("{}/themes/", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    ));
+
+    let mut themes: Vec<Theme> = vec![];
+
     for path in themes_paths {
         let file = fs::File::open(path.clone()).expect("file should open read only");
         let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
