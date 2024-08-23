@@ -587,16 +587,19 @@ async fn load_config(
 
 #[tauri::command]
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    let sound_file = sound::get_sound_file(sound_id.as_str()).unwrap();
+    match sound::get_sound_file(sound_id.as_str()) {
+        Some(sound_file) => {
+            let resource_path = app_handle
+                .path()
+                .resolve(format!("audio/{}", sound_file), BaseDirectory::Resource)
+                .unwrap();
+            let path = resource_path.to_string_lossy();
 
-    let resource_path = app_handle
-        .path()
-        .resolve(format!("audio/{}", sound_file), BaseDirectory::Resource)
-        .unwrap();
-    let path = resource_path.to_string_lossy();
-
-    // Fail silently if we can't play sound file
-    let _ = sound::play_sound_file(&path);
+            // Fail silently if we can't play sound file
+            let _ = sound::play_sound_file(&path);
+        }
+        None => eprintln!("Impossible to get sound file with id {}", sound_id),
+    }
 }
 
 #[tauri::command]
