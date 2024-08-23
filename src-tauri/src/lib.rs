@@ -383,18 +383,20 @@ fn get_themes_for_directory(
     path_to_resolve: String,
     base_directory: BaseDirectory,
 ) -> Vec<PathBuf> {
-    let mut themes_paths: Vec<PathBuf> = vec![];
+    let mut themes_paths_bufs: Vec<PathBuf> = vec![];
     let themes_path = app_handle
         .path()
         .resolve(path_to_resolve, base_directory)
         .expect("Unable to resolve `themes/{}` resource.");
-    let themes_path = fs::read_dir(themes_path);
+    let themes_path_dir = fs::read_dir(themes_path);
 
-    match themes_path {
-        Ok(path) => {
-            for p in path {
-                let path_buf = p.unwrap().path();
-                themes_paths.push(path_buf);
+    match themes_path_dir {
+        Ok(path_dir) => {
+            for p in path_dir {
+                match p {
+                    Ok(p_ok) => themes_paths_bufs.push(p_ok.path()),
+                    Err(e) => eprintln!("Error reading theme path dir: {:?}.", e),
+                }
             }
         }
         Err(e) => {
@@ -402,7 +404,7 @@ fn get_themes_for_directory(
         }
     }
 
-    themes_paths
+    themes_paths_bufs
 }
 
 fn load_themes(app_handle: AppHandle) {
@@ -435,23 +437,27 @@ fn load_themes(app_handle: AppHandle) {
 async fn tick(app_handle: AppHandle, path: String) {
     let mut stream = IntervalStream::new(time::interval(Duration::from_secs(1)));
 
-    let window = app_handle.get_webview_window("main").unwrap();
-    while let Some(_ts) = stream.next().await {
-        window.emit("tick-event", "").unwrap();
+    match app_handle.get_webview_window("main") {
+        Some(window) => {
+            while let Some(_ts) = stream.next().await {
+                let _ = window.emit("tick-event", "");
 
-        let state: tauri::State<AppState> = app_handle.state();
-        let new_state = state.clone();
-        let state_guard = new_state.0.lock().await;
-        let play_tick: bool = state_guard.play_tick;
+                let state: tauri::State<AppState> = app_handle.state();
+                let new_state = state.clone();
+                let state_guard = new_state.0.lock().await;
+                let play_tick: bool = state_guard.play_tick;
 
-        let new_path = path.clone();
+                let new_path = path.clone();
 
-        tauri::async_runtime::spawn_blocking(move || {
-            if play_tick {
-                // Fail silently if we can't play sound file
-                let _ = sound::play_sound_file(&new_path);
+                tauri::async_runtime::spawn_blocking(move || {
+                    if play_tick {
+                        // Fail silently if we can't play sound file
+                        let _ = sound::play_sound_file(&new_path);
+                    }
+                });
             }
-        });
+        }
+        None => eprintln!("Impossible to get main window for tick sound"),
     }
 }
 
@@ -468,23 +474,26 @@ async fn change_icon(
     let width = 512;
     let height = 512;
 
-    let data_dir = app_handle.path().app_data_dir().unwrap();
+    match app_handle.path().app_data_dir() {
+        Ok(data_dir) => {
+            let icon_path_buf = icon::create_icon(
+                icon::PomodorolmIcon {
+                    width,
+                    height,
+                    red,
+                    green,
+                    blue,
+                    fill_percentage,
+                    paused,
+                },
+                format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
+            );
 
-    let icon_path_buf = icon::create_icon(
-        icon::PomodorolmIcon {
-            width,
-            height,
-            red,
-            green,
-            blue,
-            fill_percentage,
-            paused,
-        },
-        format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
-    );
-
-    if let Some(tray) = app_handle.tray_by_id("app-tray") {
-        let _ = tray.set_icon(tauri::image::Image::from_path(icon_path_buf).ok());
+            if let Some(tray) = app_handle.tray_by_id("app-tray") {
+                let _ = tray.set_icon(tauri::image::Image::from_path(icon_path_buf).ok());
+            }
+        }
+        Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
     }
 }
 
@@ -513,25 +522,27 @@ async fn update_config(
         config: config.clone(),
     };
 
-    let config_file_path = get_config_file_path(app_handle.path())
-        .unwrap()
-        .to_string_lossy()
-        .to_string();
+    match get_config_file_path(app_handle.path()) {
+        Ok(config_file_pathbuf) => {
+            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(config_file_path);
+            let file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(config_file_path);
 
-    let _ = match file {
-        Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
-        Err(_) => {
-            println!("Error opening config file on update");
-            Ok(())
+            let _ = match file {
+                Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
+                Err(_) => {
+                    println!("Error opening config file on update");
+                    Ok(())
+                }
+            };
         }
-    };
+        Err(e) => eprintln!("Unable to get config file path: {:?}.", e),
+    }
 
     Ok(())
 }
@@ -543,22 +554,35 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
-    let config_file_path = get_config_file_path(app_handle.path())
-        .unwrap()
-        .to_string_lossy()
-        .to_string();
+    match get_config_file_path(app_handle.path()) {
+        Ok(config_file_pathbuf) => {
+            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
-    let toml_str = fs::read_to_string(&config_file_path)
-        .expect(&format!("Unable to open config file {}", config_file_path));
-    let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
-    *state_guard = App {
-        play_tick: state_guard.play_tick,
-        config: config.clone(),
-    };
+            let toml_str = fs::read_to_string(&config_file_path).map_err(|err| {
+                eprintln!("Unable to open config file {}: {:?}", config_file_path, err)
+            })?;
 
-    let _ = load_themes(app_handle.clone());
+            let config: Config = toml::from_str(toml_str.as_str()).map_err(|err| {
+                eprintln!(
+                    "Unable to parse config file {}: {:?}",
+                    config_file_path, err
+                )
+            })?;
 
-    Ok(config)
+            *state_guard = App {
+                play_tick: state_guard.play_tick,
+                config: config.clone(),
+            };
+
+            let _ = load_themes(app_handle.clone());
+
+            Ok(config)
+        }
+        Err(e) => {
+            eprintln!("Unable to get config file path: {:?}.", e);
+            Err(())
+        }
+    }
 }
 
 #[tauri::command]
