@@ -274,9 +274,16 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
                             let state: tauri::State<'_, MenuState<R>> = app.state();
 
-                            let state_guard = state.0.lock().unwrap();
-
-                            let _ = state_guard.set_text(new_title);
+                            let state_guard = state.0.lock();
+                            match state_guard {
+                                Ok(guard) => {
+                                    let set_text_result = guard.set_text(new_title);
+                                    if let Err(e) = set_text_result {
+                                        eprintln!("Error setting MenuItem title: {:?}.", e);
+                                    }
+                                }
+                                Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+                            };
                         }
                     }
                     _ => (),
@@ -318,7 +325,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                     ..Default::default()
                 };
 
-                file.write_all(toml::to_string(&default_config).unwrap().as_bytes())?;
+                file.write_all(toml::to_string(&default_config)?.as_bytes())?;
                 default_config
             } else {
                 // Open the file
@@ -335,17 +342,23 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
             app.manage(MenuState(std::sync::Mutex::new(toggle_visibility)));
 
-            let sound_file = sound::get_sound_file("audio-tick").unwrap();
+            let sound_file =
+                sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
 
             let path = &app.path();
 
             let resource_path =
                 path.resolve(format!("audio/{}", sound_file), BaseDirectory::Resource);
-            let audio_path = resource_path.unwrap();
+            let audio_path = resource_path
+                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
 
             tauri::async_runtime::spawn(tick(
                 app.handle().clone(),
-                String::from(audio_path.to_str().unwrap()),
+                String::from(
+                    audio_path
+                        .to_str()
+                        .expect("Unable to convert tick audio path to string."),
+                ),
             ));
 
             Ok(())
@@ -365,27 +378,50 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
-fn load_themes(app_handle: AppHandle) {
-    let mut themes_paths: Vec<PathBuf> = vec![];
-    let mut themes: Vec<Theme> = vec![];
+fn get_themes_for_directory(
+    app_handle: &AppHandle,
+    path_to_resolve: String,
+    base_directory: BaseDirectory,
+) -> Vec<PathBuf> {
+    let mut themes_paths_bufs: Vec<PathBuf> = vec![];
     let themes_path = app_handle
         .path()
-        .resolve("themes/", BaseDirectory::Resource)
-        .unwrap();
-    let paths = fs::read_dir(themes_path).unwrap();
+        .resolve(path_to_resolve, base_directory)
+        .expect("Unable to resolve `themes/{}` resource.");
+    let themes_path_dir = fs::read_dir(themes_path);
 
-    for path in paths {
-        let path_buf = path.unwrap().path();
-        themes_paths.push(path_buf);
+    match themes_path_dir {
+        Ok(path_dir) => {
+            for p in path_dir {
+                match p {
+                    Ok(p_ok) => themes_paths_bufs.push(p_ok.path()),
+                    Err(e) => eprintln!("Error reading theme path dir: {:?}.", e),
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Unable to read builtin themes path: {:?}.", e);
+        }
     }
 
-    let config_themes_path = get_config_theme_dir(app_handle.path()).unwrap();
-    let paths = fs::read_dir(config_themes_path).unwrap();
+    themes_paths_bufs
+}
 
-    for path in paths {
-        let path_buf = path.unwrap().path();
-        themes_paths.push(path_buf);
-    }
+fn load_themes(app_handle: AppHandle) {
+    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(
+        &app_handle,
+        String::from("themes/"),
+        BaseDirectory::Resource,
+    );
+
+    themes_paths.extend_from_slice(&get_themes_for_directory(
+        &app_handle,
+        format!("{}/themes/", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    ));
+
+    let mut themes: Vec<Theme> = vec![];
+
     for path in themes_paths {
         let file = fs::File::open(path.clone()).expect("file should open read only");
         let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
@@ -401,23 +437,27 @@ fn load_themes(app_handle: AppHandle) {
 async fn tick(app_handle: AppHandle, path: String) {
     let mut stream = IntervalStream::new(time::interval(Duration::from_secs(1)));
 
-    let window = app_handle.get_webview_window("main").unwrap();
-    while let Some(_ts) = stream.next().await {
-        window.emit("tick-event", "").unwrap();
+    match app_handle.get_webview_window("main") {
+        Some(window) => {
+            while let Some(_ts) = stream.next().await {
+                let _ = window.emit("tick-event", "");
 
-        let state: tauri::State<AppState> = app_handle.state();
-        let new_state = state.clone();
-        let state_guard = new_state.0.lock().await;
-        let play_tick: bool = state_guard.play_tick;
+                let state: tauri::State<AppState> = app_handle.state();
+                let new_state = state.clone();
+                let state_guard = new_state.0.lock().await;
+                let play_tick: bool = state_guard.play_tick;
 
-        let new_path = path.clone();
+                let new_path = path.clone();
 
-        tauri::async_runtime::spawn_blocking(move || {
-            if play_tick {
-                // Fail silently if we can't play sound file
-                let _ = sound::play_sound_file(&new_path);
+                tauri::async_runtime::spawn_blocking(move || {
+                    if play_tick {
+                        // Fail silently if we can't play sound file
+                        let _ = sound::play_sound_file(&new_path);
+                    }
+                });
             }
-        });
+        }
+        None => eprintln!("Impossible to get main window for tick sound"),
     }
 }
 
@@ -434,23 +474,26 @@ async fn change_icon(
     let width = 512;
     let height = 512;
 
-    let data_dir = app_handle.path().app_data_dir().unwrap();
+    match app_handle.path().app_data_dir() {
+        Ok(data_dir) => {
+            let icon_path_buf = icon::create_icon(
+                icon::PomodorolmIcon {
+                    width,
+                    height,
+                    red,
+                    green,
+                    blue,
+                    fill_percentage,
+                    paused,
+                },
+                format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
+            );
 
-    let icon_path_buf = icon::create_icon(
-        icon::PomodorolmIcon {
-            width,
-            height,
-            red,
-            green,
-            blue,
-            fill_percentage,
-            paused,
-        },
-        format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
-    );
-
-    if let Some(tray) = app_handle.tray_by_id("app-tray") {
-        let _ = tray.set_icon(tauri::image::Image::from_path(icon_path_buf).ok());
+            if let Some(tray) = app_handle.tray_by_id("app-tray") {
+                let _ = tray.set_icon(tauri::image::Image::from_path(icon_path_buf).ok());
+            }
+        }
+        Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
     }
 }
 
@@ -479,25 +522,27 @@ async fn update_config(
         config: config.clone(),
     };
 
-    let config_file_path = get_config_file_path(app_handle.path())
-        .unwrap()
-        .to_string_lossy()
-        .to_string();
+    match get_config_file_path(app_handle.path()) {
+        Ok(config_file_pathbuf) => {
+            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(config_file_path);
+            let file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(config_file_path);
 
-    let _ = match file {
-        Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
-        Err(_) => {
-            println!("Error opening config file on update");
-            Ok(())
+            let _ = match file {
+                Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
+                Err(_) => {
+                    println!("Error opening config file on update");
+                    Ok(())
+                }
+            };
         }
-    };
+        Err(e) => eprintln!("Unable to get config file path: {:?}.", e),
+    }
 
     Ok(())
 }
@@ -509,36 +554,52 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
-    let config_file_path = get_config_file_path(app_handle.path())
-        .unwrap()
-        .to_string_lossy()
-        .to_string();
+    match get_config_file_path(app_handle.path()) {
+        Ok(config_file_pathbuf) => {
+            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
-    let toml_str = fs::read_to_string(&config_file_path)
-        .expect(&format!("Unable to open config file {}", config_file_path));
-    let config: Config = toml::from_str(toml_str.as_str()).expect("Unable to parse config file");
-    *state_guard = App {
-        play_tick: state_guard.play_tick,
-        config: config.clone(),
-    };
+            let toml_str = fs::read_to_string(&config_file_path).map_err(|err| {
+                eprintln!("Unable to open config file {}: {:?}", config_file_path, err)
+            })?;
 
-    let _ = load_themes(app_handle.clone());
+            let config: Config = toml::from_str(toml_str.as_str()).map_err(|err| {
+                eprintln!(
+                    "Unable to parse config file {}: {:?}",
+                    config_file_path, err
+                )
+            })?;
 
-    Ok(config)
+            *state_guard = App {
+                play_tick: state_guard.play_tick,
+                config: config.clone(),
+            };
+
+            let _ = load_themes(app_handle.clone());
+
+            Ok(config)
+        }
+        Err(e) => {
+            eprintln!("Unable to get config file path: {:?}.", e);
+            Err(())
+        }
+    }
 }
 
 #[tauri::command]
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    let sound_file = sound::get_sound_file(sound_id.as_str()).unwrap();
+    match sound::get_sound_file(sound_id.as_str()) {
+        Some(sound_file) => {
+            let resource_path = app_handle
+                .path()
+                .resolve(format!("audio/{}", sound_file), BaseDirectory::Resource)
+                .unwrap();
+            let path = resource_path.to_string_lossy();
 
-    let resource_path = app_handle
-        .path()
-        .resolve(format!("audio/{}", sound_file), BaseDirectory::Resource)
-        .unwrap();
-    let path = resource_path.to_string_lossy();
-
-    // Fail silently if we can't play sound file
-    let _ = sound::play_sound_file(&path);
+            // Fail silently if we can't play sound file
+            let _ = sound::play_sound_file(&path);
+        }
+        None => eprintln!("Impossible to get sound file with id {}", sound_id),
+    }
 }
 
 #[tauri::command]
@@ -546,13 +607,20 @@ fn minimize_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     app_menu: tauri::State<'_, MenuState<R>>,
 ) -> Result<(), ()> {
-    let state_guard = app_menu.0.lock().unwrap();
-
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.minimize();
-        let _ = state_guard.set_text("Show");
+    let state_guard = app_menu.0.lock();
+    match state_guard {
+        Ok(guard) => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.minimize();
+                let _ = guard.set_text("Show");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error getting state lock: {:?}.", e);
+            Err(())
+        }
     }
-    Ok(())
 }
 
 #[tauri::command]
@@ -560,13 +628,20 @@ fn hide_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     app_menu: tauri::State<'_, MenuState<R>>,
 ) -> Result<(), ()> {
-    let state_guard = app_menu.0.lock().unwrap();
-
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
-        let _ = state_guard.set_text("Show");
+    let state_guard = app_menu.0.lock();
+    match state_guard {
+        Ok(guard) => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.hide();
+                let _ = guard.set_text("Show");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error getting state lock: {:?}.", e);
+            Err(())
+        }
     }
-    Ok(())
 }
 
 #[tauri::command]
