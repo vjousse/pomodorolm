@@ -607,13 +607,20 @@ fn minimize_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     app_menu: tauri::State<'_, MenuState<R>>,
 ) -> Result<(), ()> {
-    let state_guard = app_menu.0.lock().unwrap();
-
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.minimize();
-        let _ = state_guard.set_text("Show");
+    let state_guard = app_menu.0.lock();
+    match state_guard {
+        Ok(guard) => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.minimize();
+                let _ = guard.set_text("Show");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error getting state lock: {:?}.", e);
+            Err(())
+        }
     }
-    Ok(())
 }
 
 #[tauri::command]
@@ -621,13 +628,20 @@ fn hide_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     app_menu: tauri::State<'_, MenuState<R>>,
 ) -> Result<(), ()> {
-    let state_guard = app_menu.0.lock().unwrap();
-
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
-        let _ = state_guard.set_text("Show");
+    let state_guard = app_menu.0.lock();
+    match state_guard {
+        Ok(guard) => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.hide();
+                let _ = guard.set_text("Show");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error getting state lock: {:?}.", e);
+            Err(())
+        }
     }
-    Ok(())
 }
 
 #[tauri::command]
