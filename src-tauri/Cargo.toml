@@ -11,21 +11,21 @@ rust-version = "1.60"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "2.0.0-rc.0", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "2.0.0-beta", features = [ "devtools", "tray-icon", "image-png"] }
+tauri = { version = "2.0.0-rc.0", features = [ "devtools", "tray-icon", "image-png"] }
 image = { version = "0.25", features = ["png"] }
 tempfile = "3.10.1"
 rodio = "0.17.3"
 toml = "0.8.12"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.30"
-tauri-plugin-shell = "2.0.0-beta"
-tauri-plugin-notification = "2.0.0-beta"
-tauri-plugin-log = "2.0.0-beta"
+tauri-plugin-shell = "2.0.0-rc.0"
+tauri-plugin-notification = "2.0.0-rc.0"
+tauri-plugin-log = "2.0.0-rc.0"
 tokio-stream = "0.1.15"
 hex_color = "3.0.0"
 [features]
