@@ -28,6 +28,7 @@
 - [x] **Always on top** (optional)
 - [x] Fully compatible with **HiDPI/4K screens**
 - [x] Linux: **Wayland** and **X11** support
+- [x] Small: size < 4Mb (no electron, no node)
 - [ ] Mini mode
 - [ ] Terminal User Interface
 - [ ] Mobile version
