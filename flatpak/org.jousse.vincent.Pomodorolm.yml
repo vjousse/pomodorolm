@@ -8,8 +8,10 @@ command: pomodorolm
 finish-args:
   - --socket=wayland # Permission needed to show the window
   - --socket=fallback-x11 # Permission needed to show the window
-  - --device=dri # OpenGL, not necessary for all projects
+  - --socket=pulseaudio # We want to be able to play sounds
+  - --device=dri # OpenGL
   - --share=ipc
+  - --env=APPDIR=/app
 
 modules:
   - libappindicator/libappindicator-gtk3-12.10.json
@@ -17,8 +19,9 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://github.com/vjousse/pomodorolm/releases/download/app-v0.1.5/pomodorolm_0.1.5_amd64.deb
-        sha256: 367ea0a8e5891a63a04b2270f14bd040600530f0b56b1d6b00d28dca376ba158 # This is required if you are using a remote source
+        path: /home/vjousse/usr/src/elm/pomodorolm/src-tauri/target/release/bundle/deb/pomodorolm_0.1.6_amd64.deb
+        # url: https://github.com/vjousse/pomodorolm/releases/download/app-v0.1.6/pomodorolm_0.1.6_amd64.deb
+        # sha256: f89f7bf6d20b6ab99746b826c7b2e99d6345796b70168e00efcc79c1d8031661
         only-arches: [x86_64] #This source is only used on x86_64 Computers
         # This path points to the binary file which was created in the .deb bundle.
         # Tauri also creates a folder which corresponds to the content of the unpacked .deb.
@@ -27,6 +30,8 @@ modules:
       - tar -xf data.tar.gz
       - "install -Dm755 usr/bin/pomodorolm /app/bin/pomodorolm"
       - sed -i s/Icon=pomodorolm/Icon=org.jousse.vincent.Pomodorolm/ usr/share/applications/pomodorolm.desktop
+      - mkdir -p /app/usr/lib
+      - cp -rf usr/lib/pomodorolm /app/usr/lib/
       - install -Dm644 usr/share/applications/pomodorolm.desktop /app/share/applications/org.jousse.vincent.Pomodorolm.desktop
       - install -Dm644 usr/share/icons/hicolor/128x128/apps/pomodorolm.png /app/share/icons/hicolor/128x128/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 usr/share/icons/hicolor/32x32/apps/pomodorolm.png /app/share/icons/hicolor/32x32/apps/org.jousse.vincent.Pomodorolm.png
