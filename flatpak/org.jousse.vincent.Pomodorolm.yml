@@ -1,0 +1,34 @@
+id: org.jousse.vincent.Pomodorolm
+
+runtime: org.gnome.Platform
+runtime-version: "46"
+sdk: org.gnome.Sdk
+
+command: pomodorolm
+finish-args:
+  - --socket=wayland # Permission needed to show the window
+  - --socket=fallback-x11 # Permission needed to show the window
+  - --device=dri # OpenGL, not necessary for all projects
+  - --share=ipc
+
+modules:
+  - libappindicator/libappindicator-gtk3-12.10.json
+  - name: binary
+    buildsystem: simple
+    sources:
+      - type: file
+        url: https://github.com/vjousse/pomodorolm/releases/download/app-v0.1.5/pomodorolm_0.1.5_amd64.deb
+        sha256: 367ea0a8e5891a63a04b2270f14bd040600530f0b56b1d6b00d28dca376ba158 # This is required if you are using a remote source
+        only-arches: [x86_64] #This source is only used on x86_64 Computers
+        # This path points to the binary file which was created in the .deb bundle.
+        # Tauri also creates a folder which corresponds to the content of the unpacked .deb.
+    build-commands:
+      - ar -x *.deb
+      - tar -xf data.tar.gz
+      - "install -Dm755 usr/bin/pomodorolm /app/bin/pomodorolm"
+      - sed -i s/Icon=pomodorolm/Icon=org.jousse.vincent.Pomodorolm/ usr/share/applications/pomodorolm.desktop
+      - install -Dm644 usr/share/applications/pomodorolm.desktop /app/share/applications/org.jousse.vincent.Pomodorolm.desktop
+      - install -Dm644 usr/share/icons/hicolor/128x128/apps/pomodorolm.png /app/share/icons/hicolor/128x128/apps/org.jousse.vincent.Pomodorolm.png
+      - install -Dm644 usr/share/icons/hicolor/32x32/apps/pomodorolm.png /app/share/icons/hicolor/32x32/apps/org.jousse.vincent.Pomodorolm.png
+      - install -Dm644 usr/share/icons/hicolor/256x256@2/apps/pomodorolm.png /app/share/icons/hicolor/256x256@2/apps/org.jousse.vincent.Pomodorolm.png
+      #- install -Dm644 app.pomodorolm.Pomodorolm.metainfo.xml /app/share/metainfo/app.pomodorolm.Pomodorolm.rosary.metainfo.xml
