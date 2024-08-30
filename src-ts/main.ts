@@ -5,7 +5,7 @@ import { Elm } from "../src-elm/Main.elm";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-import { info, attachConsole } from "@tauri-apps/plugin-log";
+import { attachConsole } from "@tauri-apps/plugin-log";
 import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
@@ -119,7 +119,6 @@ const app = Elm.Main.init({
 });
 
 app.ports.playSound.subscribe(function (soundElementId: string) {
-  info("Playing sound");
   invoke("play_sound_command", { soundId: soundElementId });
 });
 
