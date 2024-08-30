@@ -12,6 +12,9 @@ finish-args:
   - --device=dri # OpenGL
   - --share=ipc
   - --env=APPDIR=/app
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.kde.*
 
 modules:
   - libappindicator/libappindicator-gtk3-12.10.json
