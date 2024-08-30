@@ -532,6 +532,8 @@ async fn update_config(
         config: config.clone(),
     };
 
+    eprintln!("Updating config: {:?}", config);
+
     match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -564,6 +566,8 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
+    eprintln!("Loading config.");
+
     match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -586,6 +590,7 @@ async fn load_config(
 
             let _ = load_themes(app_handle.clone());
 
+            eprintln!("Loaded config: {:?}", config);
             Ok(config)
         }
         Err(e) => {
