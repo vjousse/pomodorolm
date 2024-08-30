@@ -307,7 +307,8 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let config_file_path = get_config_file_path(app.path())?;
 
             let metadata = fs::metadata(&config_file_path);
-            let _ = fs::create_dir_all(get_config_theme_dir(app.path())?);
+            let config_theme_dir = get_config_theme_dir(app.path())?;
+            let _ = fs::create_dir_all(config_theme_dir);
 
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
@@ -388,7 +389,7 @@ fn get_themes_for_directory(
         .path()
         .resolve(path_to_resolve, base_directory)
         .expect("Unable to resolve `themes/{}` resource.");
-    let themes_path_dir = fs::read_dir(themes_path);
+    let themes_path_dir = fs::read_dir(themes_path.clone());
 
     match themes_path_dir {
         Ok(path_dir) => {
@@ -400,7 +401,10 @@ fn get_themes_for_directory(
             }
         }
         Err(e) => {
-            eprintln!("Unable to read builtin themes path: {:?}.", e);
+            eprintln!(
+                "Unable to read builtin themes path {:?}: {:?}.",
+                themes_path, e
+            );
         }
     }
 
@@ -452,7 +456,13 @@ async fn tick(app_handle: AppHandle, path: String) {
                 tauri::async_runtime::spawn_blocking(move || {
                     if play_tick {
                         // Fail silently if we can't play sound file
-                        let _ = sound::play_sound_file(&new_path);
+                        let play_sound_file_result = sound::play_sound_file(&new_path);
+                        if play_sound_file_result.is_err() {
+                            eprintln!(
+                                "Unable to play sound file {:?}: {:?}",
+                                new_path, play_sound_file_result
+                            );
+                        }
                     }
                 });
             }
@@ -522,6 +532,8 @@ async fn update_config(
         config: config.clone(),
     };
 
+    eprintln!("Updating config: {:?}", config);
+
     match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -554,6 +566,8 @@ async fn load_config(
 ) -> Result<Config, ()> {
     let mut state_guard = state.0.lock().await;
 
+    eprintln!("Loading config.");
+
     match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -576,6 +590,7 @@ async fn load_config(
 
             let _ = load_themes(app_handle.clone());
 
+            eprintln!("Loaded config: {:?}", config);
             Ok(config)
         }
         Err(e) => {

@@ -263,7 +263,7 @@ init flags =
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
       , theme = theme
-      , themes = ListWithCurrent.fromList [ theme ]
+      , themes = EmptyListWithCurrent
       , volume = 1
       , volumeSliderHidden = True
       }
@@ -470,7 +470,7 @@ update msg model =
                     case ListWithCurrent.getCurrent updatedThemes of
                         Just theme ->
                             -- We found a theme with the same name than in the config: everything's fine
-                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
+                            if (theme.name |> String.toLower) == (config.theme |> String.toLower) then
                                 updatedThemes
 
                             else
@@ -531,12 +531,7 @@ update msg model =
                         | themes = newThemes
                     }
             in
-            case newThemes |> ListWithCurrent.getCurrent of
-                Just currentTheme ->
-                    update (ChangeTheme currentTheme) newModel
-
-                _ ->
-                    ( newModel, Cmd.none )
+            ( newModel, Cmd.none )
 
         MinimizeWindow ->
             ( model
