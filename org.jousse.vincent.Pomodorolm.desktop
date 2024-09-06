@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+
+Name=pomodorolm
+Comment=A simple, good looking and configurable pomodoro tracker with tray icon.
+Icon=org.jousse.vincent.Pomodorolm
+Exec=pomodorolm
+Terminal=false
+Categories=Utility;
+Keywords=pomodoro;time;tracker;
