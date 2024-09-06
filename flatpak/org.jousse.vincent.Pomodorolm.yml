@@ -23,7 +23,7 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        path: /home/vjousse/usr/src/elm/pomodorolm/src-tauri/target/release/bundle/deb/pomodorolm_0.1.7_amd64.deb
+        path: ../src-tauri/target/release/bundle/deb/pomodorolm_0.1.7_amd64.deb
         # url: https://github.com/vjousse/pomodorolm/releases/download/app-v0.1.6/pomodorolm_0.1.6_amd64.deb
         # sha256: f89f7bf6d20b6ab99746b826c7b2e99d6345796b70168e00efcc79c1d8031661
         only-arches: [x86_64] #This source is only used on x86_64 Computers
