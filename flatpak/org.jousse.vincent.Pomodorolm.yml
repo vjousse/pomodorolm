@@ -11,10 +11,14 @@ finish-args:
   - --socket=pulseaudio # We want to be able to play sounds
   - --device=dri # OpenGL
   - --share=ipc
-  - --env=APPDIR=/app
+  - --env=APPDIR=/app # Fake AppImage env for Tauri. Needed so than it will look for assets in /app
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
+  # Required for the systray to work
   - --own-name=org.kde.*
+  # Needed for the systray to work properly. libappindicator emits a dbus signal with the systray icon absolute path
+  # so flatpak and the host need to both have access to the icon for the systray to work properly
+  - --filesystem=xdg-data
 
 modules:
   - libappindicator/libappindicator-gtk3-12.10.json
@@ -22,21 +26,24 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        path: /home/vjousse/usr/src/elm/pomodorolm/src-tauri/target/release/bundle/deb/pomodorolm_0.1.6_amd64.deb
+        path: ../src-tauri/target/release/bundle/deb/pomodorolm_0.1.7_amd64.deb
         # url: https://github.com/vjousse/pomodorolm/releases/download/app-v0.1.6/pomodorolm_0.1.6_amd64.deb
         # sha256: f89f7bf6d20b6ab99746b826c7b2e99d6345796b70168e00efcc79c1d8031661
         only-arches: [x86_64] #This source is only used on x86_64 Computers
         # This path points to the binary file which was created in the .deb bundle.
         # Tauri also creates a folder which corresponds to the content of the unpacked .deb.
+      - type: file
+        path: org.jousse.vincent.Pomodorolm.metainfo.xml
+      - type: file
+        path: org.jousse.vincent.Pomodorolm.desktop
     build-commands:
       - ar -x *.deb
       - tar -xf data.tar.gz
       - "install -Dm755 usr/bin/pomodorolm /app/bin/pomodorolm"
-      - sed -i s/Icon=pomodorolm/Icon=org.jousse.vincent.Pomodorolm/ usr/share/applications/pomodorolm.desktop
       - mkdir -p /app/usr/lib
       - cp -rf usr/lib/pomodorolm /app/usr/lib/
-      - install -Dm644 usr/share/applications/pomodorolm.desktop /app/share/applications/org.jousse.vincent.Pomodorolm.desktop
       - install -Dm644 usr/share/icons/hicolor/128x128/apps/pomodorolm.png /app/share/icons/hicolor/128x128/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 usr/share/icons/hicolor/32x32/apps/pomodorolm.png /app/share/icons/hicolor/32x32/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 usr/share/icons/hicolor/256x256@2/apps/pomodorolm.png /app/share/icons/hicolor/256x256@2/apps/org.jousse.vincent.Pomodorolm.png
-      #- install -Dm644 app.pomodorolm.Pomodorolm.metainfo.xml /app/share/metainfo/app.pomodorolm.Pomodorolm.rosary.metainfo.xml
+      - install -Dm644 -t /app/share/metainfo/ org.jousse.vincent.Pomodorolm.metainfo.xml
+      - install -Dm644 -t /app/share/applications/ org.jousse.vincent.Pomodorolm.desktop
