@@ -500,7 +500,10 @@ async fn change_icon(
             );
 
             if let Some(tray) = app_handle.tray_by_id("app-tray") {
-                let _ = tray.set_icon(tauri::image::Image::from_path(icon_path_buf).ok());
+                let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
+                let _ = tray.set_temp_dir_path(Some("/tmp/tray-icon"));
+                eprintln!("Setting icon_path {:?}", icon_path_buf);
+                let _ = tray.set_icon(icon_path);
             }
         }
         Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
