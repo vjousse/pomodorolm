@@ -11,22 +11,11 @@ finish-args:
   - --socket=pulseaudio # We want to be able to play sounds
   - --device=dri # OpenGL
   - --share=ipc
-  - --env=APPDIR=/app
+  - --env=APPDIR=/app # Fake AppImage env for Tauri. Needed so than it will look for assets in /app
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
   - --own-name=org.kde.*
-  - --device=dri # OpenGL, not necessary for all projects
-  - --share=ipc
-  - --env=APPDIR=/app
-  - --talk-name=org.freedesktop.DBus.Proprieties
-  - --talk-name=org.freedesktop.IBus
-  - --talk-name=org.freedesktop.Notifications
-  - --talk-name=org.kde.StatusNotifierWatcher
-  - --talk-name=com.canonical.indicator.application
-  - --talk-name=org.ayatana.indicator.application
-  - --own-name=org.kde.*
-  - --filesystem=xdg-run/tray-icon
-  - --filesystem=/tmp
+  - --filesystem=xdg-data
 
 modules:
   - libappindicator/libappindicator-gtk3-12.10.json

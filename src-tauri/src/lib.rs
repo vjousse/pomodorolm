@@ -501,8 +501,17 @@ async fn change_icon(
 
             if let Some(tray) = app_handle.tray_by_id("app-tray") {
                 let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
-                let _ = tray.set_temp_dir_path(Some("/tmp/tray-icon"));
-                eprintln!("Setting icon_path {:?}", icon_path_buf);
+
+                // Don't let tauri choose where to store the temp icon path. Setting it allows the tray icon to work
+                // properly in sandboxes env like Flatpak where we can share XDG_DATA_HOME between the host and the sandboxed env
+                // libappindicator will add the full path of the icon to the dbus message when changing it,
+                // so the path needs to be the same between the host and the sandboxed env
+                let local_data_path = app_handle
+                    .path()
+                    .resolve("tray-icon", BaseDirectory::AppLocalData)
+                    .unwrap();
+
+                let _ = tray.set_temp_dir_path(Some(local_data_path));
                 let _ = tray.set_icon(icon_path);
             }
         }
