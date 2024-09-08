@@ -28,6 +28,8 @@ tauri-plugin-notification = "2.0.0-rc.0"
 tauri-plugin-log = "2.0.0-rc.0"
 tokio-stream = "0.1.15"
 hex_color = "3.0.0"
+hyper-tls = "0.6.0"
+rustls-pemfile = "2.1.3"
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
 # If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.

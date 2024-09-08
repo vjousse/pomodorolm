@@ -19,6 +19,7 @@ pub struct AppState(Arc<Mutex<App>>);
 pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
+use std::env;
 use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
@@ -346,10 +347,11 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let sound_file =
                 sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
 
-            let path = &app.path();
-
-            let resource_path =
-                path.resolve(format!("audio/{}", sound_file), BaseDirectory::Resource);
+            let resource_path = resolve_resource_path(
+                app.handle(),
+                format!("audio/{}", sound_file),
+                BaseDirectory::Resource,
+            );
             let audio_path = resource_path
                 .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
 
@@ -379,16 +381,8 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
-fn get_themes_for_directory(
-    app_handle: &AppHandle,
-    path_to_resolve: String,
-    base_directory: BaseDirectory,
-) -> Vec<PathBuf> {
+fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     let mut themes_paths_bufs: Vec<PathBuf> = vec![];
-    let themes_path = app_handle
-        .path()
-        .resolve(path_to_resolve, base_directory)
-        .expect("Unable to resolve `themes/{}` resource.");
     let themes_path_dir = fs::read_dir(themes_path.clone());
 
     match themes_path_dir {
@@ -412,17 +406,23 @@ fn get_themes_for_directory(
 }
 
 fn load_themes(app_handle: AppHandle) {
-    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(
+    let theme_resource_path = resolve_resource_path(
         &app_handle,
         String::from("themes/"),
         BaseDirectory::Resource,
-    );
+    )
+    .expect("Unable to resolve `themes/{}` resource.");
 
-    themes_paths.extend_from_slice(&get_themes_for_directory(
-        &app_handle,
+    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
+
+    let custom_themes_path = app_handle.path().resolve(
         format!("{}/themes/", CONFIG_DIR_NAME),
         BaseDirectory::Config,
-    ));
+    );
+
+    if let Ok(path) = custom_themes_path {
+        themes_paths.extend_from_slice(&get_themes_for_directory(path));
+    }
 
     let mut themes: Vec<Theme> = vec![];
 
@@ -611,14 +611,17 @@ async fn load_config(
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
     match sound::get_sound_file(sound_id.as_str()) {
         Some(sound_file) => {
-            let resource_path = app_handle
-                .path()
-                .resolve(format!("audio/{}", sound_file), BaseDirectory::Resource)
-                .unwrap();
-            let path = resource_path.to_string_lossy();
+            let resource_path = resolve_resource_path(
+                &app_handle,
+                format!("audio/{}", sound_file),
+                BaseDirectory::Resource,
+            );
+            let path = resource_path
+                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
+            let audio_path = path.to_string_lossy();
 
             // Fail silently if we can't play sound file
-            let _ = sound::play_sound_file(&path);
+            let _ = sound::play_sound_file(&audio_path);
         }
         None => eprintln!("Impossible to get sound file with id {}", sound_id),
     }
@@ -701,4 +704,30 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
             .icon(icon_path_buf.to_string_lossy())
             .show();
     }
+}
+
+fn resolve_resource_path(
+    app_handle: &AppHandle,
+    path_to_resolve: String,
+    base_directory: BaseDirectory,
+) -> Result<PathBuf, tauri::Error> {
+    let mut resolved_path = app_handle
+        .path()
+        .resolve(path_to_resolve.clone(), base_directory);
+
+    #[cfg(target_os = "linux")]
+    {
+        let flatpak = std::env::var_os("FLATPAK");
+
+        if flatpak.is_some() {
+            let package_info = app_handle.package_info();
+
+            resolved_path = Ok(PathBuf::from(format!(
+                "/app/lib/{}/{}",
+                package_info.crate_name, path_to_resolve
+            )));
+        }
+    }
+
+    resolved_path
 }
