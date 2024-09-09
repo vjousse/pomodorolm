@@ -17,11 +17,9 @@ finish-args:
   - --env=FLATPAK=1 # Used to tell the app to look for assets in /app/lib/pomodorolm
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
-  # Required for the systray to work
-  - --own-name=org.kde.*
   # Needed for the systray to work properly. libappindicator emits a dbus signal with the systray icon absolute path
   # so flatpak and the host need to both have access to the icon for the systray to work properly
-  - --filesystem=xdg-data
+  - --filesystem=xdg-data/tray-icon
 
 build-options:
   append-path: /usr/lib/sdk/node20/bin:/usr/lib/sdk/rust-stable/bin
@@ -42,18 +40,27 @@ modules:
       env:
         CARGO_HOME: /run/build/pomodorolm/cargo
     build-commands:
+      # Node packages
       - yarn --offline config set yarn-offline-mirror $FLATPAK_BUILDER_BUILDDIR/flatpak-node/yarn-mirror
+      # Rust packages
       - cargo --offline fetch --manifest-path src-tauri/Cargo.toml --verbose
+      # Compile the app without creating any bundle
       - yarn --offline run tauri build --no-bundle
+
       - install -Dm644 -t /app/share/metainfo/ org.jousse.vincent.Pomodorolm.metainfo.xml
       - install -Dm644 -t /app/share/applications/ org.jousse.vincent.Pomodorolm.desktop
       - install -Dm755 -t /app/bin/ src-tauri/target/release/pomodorolm
 
+      # Install icons
       - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/org.jousse.vincent.Pomodorolm.png
       - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/256x256@2/apps/org.jousse.vincent.Pomodorolm.png
 
+      # Copy the assets
       - mkdir -p /app/lib/pomodorolm
       - cp -rf src-tauri/themes /app/lib/pomodorolm
       - cp -rf src-tauri/audio /app/lib/pomodorolm
+
+    post-install:
+      - install -Dm644 LICENSE /app/share/licenses/org.jousse.vincent.Pomodorolm/LICENSE
