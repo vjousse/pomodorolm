@@ -31,7 +31,12 @@ modules:
     sources:
       - type: git
         url: https://github.com/vjousse/pomodorolm.git
-        branch: main
+        branch: flatpak-build
+
+      # - type: git
+      #   url: https://github.com/vjousse/pomodorolm.git
+      #   tag: app-v0.1.9
+      #   commit: 93705d4fee26dcb295afe948ceb402ef2913e761
       # - type: dir
       #   path: ..
       - node-sources.json
