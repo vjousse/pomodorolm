@@ -16,6 +16,13 @@
 
     flatpak run --command=bash --socket=pulseaudio org.jousse.vincent.Pomodorolm
 
+## Generate dependencies
+
+Use https://github.com/flatpak/flatpak-builder-tools
+
+    python ~/usr/src/python/flatpak-builder-tools/cargo/flatpak-cargo-generator.py -d ../src-tauri/Cargo.lock -o cargo-sources.json
+    flatpak-node-generator yarn -o flatpak/node-sources.json yarn.lock
+
 ## Links
 
 - https://github.com/axolotl-chat/axolotl/blob/main/flatpak/org.nanuc.Axolotl.yml
