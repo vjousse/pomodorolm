@@ -3,7 +3,7 @@
   <id>org.jousse.vincent.Pomodorolm</id>
 
   <name>pomodorolm</name>
-  <summary>A simple, good looking and configurable pomodoro tracker with tray icon</summary>
+  <summary>A simple, good looking and configurable pomodoro tracker with tray icon.</summary>
   <developer_name>Vincent Jousse</developer_name>
 
   <metadata_license>CC0-1.0</metadata_license>
@@ -13,15 +13,17 @@
   <url type="bugtracker">https://github.com/vjousse/pomodorolm/issues</url>
 
   <description>
-    <p> Pomodorolm is a simple, good looking and configurable time tracker fot the Pomodoro technique. Work by batch of 25 minutes and enhance your productivity.</p>
+    <p>
+      Pomodorolm is a simple, good looking and configurable pomodoro tracker with tray icon. You can change its look and feel by using themes and you if none suits you, you can create your own theme.
 
-    <p>Pomodorolm provides a tray icon updated with the remaining time. You can change its look and feel by using themes and you if none suits you, you can create your own theme. All sessions durations are configurable and you can choose to play sounds too (ticking sound, end of session and so on). You can even display notifications if you want to.</p>
+      All sessions durations are configurable and you can choose to play sounds too (ticking sound, end of session and so on). You can even display notifications if you want to.
+    </p>
   </description>
 
   <launchable type="desktop-id">org.jousse.vincent.Pomodorolm.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/vjousse/pomodorolm/main/screenshot.png</image>
+      <image>screenshots/pomodorolm.png</image>
     </screenshot>
   </screenshots>
 
