@@ -29,11 +29,11 @@ modules:
   - name: pomodorolm
     buildsystem: simple
     sources:
-      # - type: git
-      #   url: https://github.com/vjousse/pomodorolm.git
-      #   branch: main
-      - type: dir
-        path: ..
+      - type: git
+        url: https://github.com/vjousse/pomodorolm.git
+        branch: main
+      # - type: dir
+      #   path: ..
       - node-sources.json
       - cargo-sources.json
     build-options:
@@ -42,10 +42,11 @@ modules:
     build-commands:
       # Node packages
       - yarn --offline config set yarn-offline-mirror $FLATPAK_BUILDER_BUILDDIR/flatpak-node/yarn-mirror
+      - yarn --offline
       # Rust packages
       - cargo --offline fetch --manifest-path src-tauri/Cargo.toml --verbose
       # Compile the app without creating any bundle
-      - yarn --offline run tauri build --no-bundle
+      - yarn --offline tauri build --no-bundle
 
       - install -Dm644 -t /app/share/metainfo/ org.jousse.vincent.Pomodorolm.metainfo.xml
       - install -Dm644 -t /app/share/applications/ org.jousse.vincent.Pomodorolm.desktop
