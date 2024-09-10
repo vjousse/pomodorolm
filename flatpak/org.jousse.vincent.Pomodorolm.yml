@@ -44,14 +44,16 @@ modules:
     build-options:
       env:
         CARGO_HOME: /run/build/pomodorolm/cargo
+        XDG_CACHE_HOME: /run/build/pomodorolm/flatpak-node/cache
+        npm_config_cache: /run/build/pomodorolm/flatpak-node/npm-cache
+        npm_config_offline: "true"
     build-commands:
       # Node packages
-      - yarn --offline config set yarn-offline-mirror $FLATPAK_BUILDER_BUILDDIR/flatpak-node/yarn-mirror
-      - yarn --offline
+      - npm ci --offline --legacy-peer-deps
       # Rust packages
       - cargo --offline fetch --manifest-path src-tauri/Cargo.toml --verbose
       # Compile the app without creating any bundle
-      - yarn --offline tauri build --no-bundle
+      - npm run tauri build -- --no-bundle
 
       - install -Dm644 -t /app/share/metainfo/ org.jousse.vincent.Pomodorolm.metainfo.xml
       - install -Dm644 -t /app/share/applications/ org.jousse.vincent.Pomodorolm.desktop
