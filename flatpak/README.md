@@ -20,8 +20,25 @@
 
 Use https://github.com/flatpak/flatpak-builder-tools
 
-    python ~/usr/src/python/flatpak-builder-tools/cargo/flatpak-cargo-generator.py -d ../src-tauri/Cargo.lock -o cargo-sources.json
-    flatpak-node-generator yarn -o flatpak/node-sources.json yarn.lock
+    python ~/usr/src/python/flatpak-builder-tools/cargo/flatpak-cargo-generator.py -d ./src-tauri/Cargo.lock -o flatpak/cargo-sources.json
+
+Before running the node generator for `npm`, be sure to `rm -rf node_modules` or it will fail to generate the file properly.
+
+    flatpak-node-generator npm -o flatpak/node-sources.json package-lock.json
+
+## Elm
+
+### Generate `elm-sources.json`
+
+    ./flatpak-elm-generator.py ../elm.json elm-sources.json
+
+### Get registry.dat
+
+In the project root directory:
+
+    rm -rf elm-stuff && ELM_HOME=tmp npx elm make src-elm/Main.elm
+    cp tmp/0.19.1/packages/registry.dat flatpak
+    rm -rf tmp
 
 ## Links
 
@@ -37,3 +54,5 @@ Use https://github.com/flatpak/flatpak-builder-tools
 - https://github.com/flathub/com.modrinth.ModrinthApp
 
 Tray icons sucks - https://blog.tingping.se/2019/09/07/how-to-design-a-modern-status-icon.html
+
+To make ELM local cache: https://github.com/robx/shelm

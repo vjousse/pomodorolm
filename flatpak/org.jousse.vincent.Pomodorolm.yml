@@ -31,22 +31,37 @@ modules:
     sources:
       - type: git
         url: https://github.com/vjousse/pomodorolm.git
-        branch: main
-      # - type: dir
-      #   path: ..
+        branch: flatpak-build
+
+      # flatpak-node-generator npm -o flatpak/node-sources.json package-lock.json
       - node-sources.json
+
+      # flatpak-cargo-generator.py -d ./src-tauri/Cargo.lock -o flatpak/cargo-sources.json
       - cargo-sources.json
+
+      # flatpak-elm-generator.py ../elm.json elm-sources.json
+      - elm-sources.json
+
+      - type: file
+        path: registry.dat
+
     build-options:
       env:
         CARGO_HOME: /run/build/pomodorolm/cargo
+        XDG_CACHE_HOME: /run/build/pomodorolm/flatpak-node/cache
+        npm_config_cache: /run/build/pomodorolm/flatpak-node/npm-cache
+        npm_config_offline: "true"
+        ELM_HOME: /run/build/pomodorolm/elm-stuff/home/.elm/
     build-commands:
+      # To work offline, Elm needs a proper registry.dat than can only be generated
+      # when connected to internet, so we provide one with the bundle
+      - mv registry.dat elm-stuff/home/.elm/0.19.1/packages/registry.dat
       # Node packages
-      - yarn --offline config set yarn-offline-mirror $FLATPAK_BUILDER_BUILDDIR/flatpak-node/yarn-mirror
-      - yarn --offline
+      - npm ci --offline --legacy-peer-deps
       # Rust packages
       - cargo --offline fetch --manifest-path src-tauri/Cargo.toml --verbose
       # Compile the app without creating any bundle
-      - yarn --offline tauri build --no-bundle
+      - npm run --offline tauri build -- --no-bundle
 
       - install -Dm644 -t /app/share/metainfo/ org.jousse.vincent.Pomodorolm.metainfo.xml
       - install -Dm644 -t /app/share/applications/ org.jousse.vincent.Pomodorolm.desktop
