@@ -310,7 +310,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let metadata = fs::metadata(&config_file_path);
             let config_theme_dir = get_config_theme_dir(app.path())?;
             let _ = fs::create_dir_all(config_theme_dir);
-
+            let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand

@@ -114,7 +114,7 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
     let temp_path = Path::new(path_name);
 
     // Save the DynamicImage to the temporary file
-    imgbuf.save(temp_path).expect("Failed to save image");
+    imgbuf.save(temp_path).expect(format!("Failed to save image to {:?}.", temp_path).as_str());
 
     temp_path.to_path_buf()
 }
