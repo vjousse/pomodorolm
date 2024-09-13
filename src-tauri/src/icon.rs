@@ -11,7 +11,7 @@ pub struct PomodorolmIcon {
     pub paused: bool,
 }
 
-pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
+pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, String> {
     // Create a new ImageBuffer with RGBA colors
     let mut imgbuf = ImageBuffer::<Rgba<u8>, _>::new(icon.width, icon.height);
 
@@ -114,7 +114,7 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> PathBuf {
     let temp_path = Path::new(path_name);
 
     // Save the DynamicImage to the temporary file
-    imgbuf.save(temp_path).expect("Failed to save image");
-
-    temp_path.to_path_buf()
+    imgbuf.save(temp_path)
+        .map(|_| temp_path.to_path_buf())
+        .map_err(|e| format!("Failed to save image to {:?}: {:?}.", temp_path, e))
 }

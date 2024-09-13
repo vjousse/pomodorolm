@@ -310,7 +310,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let metadata = fs::metadata(&config_file_path);
             let config_theme_dir = get_config_theme_dir(app.path())?;
             let _ = fs::create_dir_all(config_theme_dir);
-
+            let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
@@ -486,7 +486,7 @@ async fn change_icon(
 
     match app_handle.path().app_data_dir() {
         Ok(data_dir) => {
-            let icon_path_buf = icon::create_icon(
+            match icon::create_icon(
                 icon::PomodorolmIcon {
                     width,
                     height,
@@ -497,22 +497,25 @@ async fn change_icon(
                     paused,
                 },
                 format!("{}/temp_icon_tray.png", data_dir.to_string_lossy()).as_str(),
-            );
+            ) {
+                Ok(icon_path_buf) => {
+                    if let Some(tray) = app_handle.tray_by_id("app-tray") {
+                        let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
 
-            if let Some(tray) = app_handle.tray_by_id("app-tray") {
-                let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
+                        // Don't let tauri choose where to store the temp icon path. Setting it allows the tray icon to work
+                        // properly in sandboxes env like Flatpak where we can share XDG_DATA_HOME between the host and the sandboxed env
+                        // libappindicator will add the full path of the icon to the dbus message when changing it,
+                        // so the path needs to be the same between the host and the sandboxed env
+                        let local_data_path = app_handle
+                            .path()
+                            .resolve("tray-icon", BaseDirectory::AppLocalData)
+                            .unwrap();
 
-                // Don't let tauri choose where to store the temp icon path. Setting it allows the tray icon to work
-                // properly in sandboxes env like Flatpak where we can share XDG_DATA_HOME between the host and the sandboxed env
-                // libappindicator will add the full path of the icon to the dbus message when changing it,
-                // so the path needs to be the same between the host and the sandboxed env
-                let local_data_path = app_handle
-                    .path()
-                    .resolve("tray-icon", BaseDirectory::AppLocalData)
-                    .unwrap();
-
-                let _ = tray.set_temp_dir_path(Some(local_data_path));
-                let _ = tray.set_icon(icon_path);
+                        let _ = tray.set_temp_dir_path(Some(local_data_path));
+                        let _ = tray.set_icon(icon_path);
+                    }
+                }
+                Err(e) => eprintln!("{:?}", e),
             }
         }
         Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
@@ -681,7 +684,7 @@ async fn close_window(app_handle: tauri::AppHandle) {
 #[tauri::command]
 async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
     let data_dir = app_handle.path().app_data_dir().unwrap();
-    let icon_path_buf = icon::create_icon(
+    match icon::create_icon(
         icon::PomodorolmIcon {
             width: 512,
             height: 512,
@@ -692,17 +695,20 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
             paused: false,
         },
         format!("{}/temp_icon_notification.png", data_dir.to_string_lossy()).as_str(),
-    );
-
-    // shows a notification with the given title and body
-    if app_handle.notification().permission_state().unwrap() == PermissionState::Granted {
-        let _ = app_handle
-            .notification()
-            .builder()
-            .title(notification.title)
-            .body(notification.body)
-            .icon(icon_path_buf.to_string_lossy())
-            .show();
+    ) {
+        Ok(icon_path_buf) => {
+            // shows a notification with the given title and body
+            if app_handle.notification().permission_state().unwrap() == PermissionState::Granted {
+                let _ = app_handle
+                    .notification()
+                    .builder()
+                    .title(notification.title)
+                    .body(notification.body)
+                    .icon(icon_path_buf.to_string_lossy())
+                    .show();
+            }
+        }
+        Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
     }
 }
 
