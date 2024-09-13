@@ -10,9 +10,9 @@
     "tauri": "tauri"
   },
   "devDependencies": {
+    "@lydell/elm": "^0.19.1-14",
     "@tauri-apps/cli": "^2.0.0-rc.7",
     "@types/node": "^20.11.30",
-    "elm": "^0.19.1-5",
     "elm-debug-transformer": "^1.2.1",
     "elm-review": "^2.10.3",
     "elm-tooling": "^1.15.0",
