@@ -23,12 +23,9 @@
   <launchable type="desktop-id">org.jousse.vincent.Pomodorolm.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>screenshots/pomodorolm.png</image>
+      <image>https://raw.githubusercontent.com/vjousse/pomodorolm/main/screenshot.png</image>
     </screenshot>
   </screenshots>
 
-  <releases>
-    <release version="0.1.8" date="2024-09-06"/>
-  </releases>
   <content_rating type="oars-1.1"/>
 </component>
