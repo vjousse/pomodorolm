@@ -1,5 +1,6 @@
+# check https://github.com/BlueBubblesApp/bluebubbles-app/blob/3f659afcb06e0b5766b4f1fc74cabc98c9498359/snap/snapcraft.yaml#L34
 name: pomodorolm
-base: core24
+base: core22
 version: "0.1.5"
 summary: A simple, good looking and multi-platform pomodoro tracker
 description: |
@@ -8,9 +9,9 @@ description: |
 grade: stable
 confinement: strict
 
-# layout:
-#   /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
-#     bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1
 
 apps:
   pomodorolm:
@@ -18,6 +19,7 @@ apps:
     desktop: usr/share/applications/pomodorolm.desktop
     extensions: [gnome]
     plugs:
+      - alsa
       - audio-playback
       - home
       - browser-support
@@ -61,6 +63,7 @@ parts:
     stage-packages:
       - libwebkit2gtk-4.1-0
       - libayatana-appindicator3-1
+      - libc-bin
     source: .
     override-build: |
       set -eu
