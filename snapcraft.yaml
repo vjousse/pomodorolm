@@ -1,6 +1,6 @@
 # check https://github.com/BlueBubblesApp/bluebubbles-app/blob/3f659afcb06e0b5766b4f1fc74cabc98c9498359/snap/snapcraft.yaml#L34
 name: pomodorolm
-base: core22
+base: core24
 version: "0.1.5"
 summary: A simple, good looking and multi-platform pomodoro tracker
 description: |
@@ -12,21 +12,25 @@ confinement: strict
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1
+  /usr/lib/pomodorolm:
+    symlink: $SNAP/usr/lib/pomodorolm
 
 apps:
   pomodorolm:
     command: usr/bin/pomodorolm
     desktop: usr/share/applications/pomodorolm.desktop
     extensions: [gnome]
+    environment:
+      ALSA_CONFIG_PATH: "$SNAP/etc/asound.conf"
     plugs:
-      - alsa
-      - audio-playback
       - home
       - browser-support
       - network
+      - network-status
       - gsettings
       - pulseaudio
       - opengl
+      - desktop
     # Add whatever plugs you need here, see https://snapcraft.io/docs/snapcraft-interfaces for more info.
     # The gnome extension already includes [ desktop, desktop-legacy, gsettings, opengl, wayland, x11, mount-observe, calendar-service ]
 
@@ -54,21 +58,22 @@ parts:
       - libayatana-appindicator3-dev
       - librsvg2-dev
       - dpkg
-      - libasound2-dev
-      - libsecret-1-0
-      - libsecret-1-dev
-      - libatk-bridge2.0-0
-      - libatk-bridge2.0-dev
-      - libpangoft2-1.0-0
     stage-packages:
       - libwebkit2gtk-4.1-0
       - libayatana-appindicator3-1
-      - libc-bin
+      - libasound2
+      - libpulse0
+      - libasound2-plugins
+
+    # For pulse/alsa see: https://forum.snapcraft.io/t/help-needed-with-bombsquad-snap/36744/2
+
     source: .
+
     override-build: |
       set -eu
       npm install
       rustup default stable
       npm run tauri build -- --bundles deb
+      cp etc/asound.conf $SNAPCRAFT_PART_INSTALL/etc/
       dpkg -x src-tauri/target/release/bundle/deb/*.deb $SNAPCRAFT_PART_INSTALL/
       sed -i -e "s|Icon=pomodorolm|Icon=/usr/share/icons/hicolor/32x32/apps/pomodorolm.png|g" $SNAPCRAFT_PART_INSTALL/usr/share/applications/pomodorolm.desktop
