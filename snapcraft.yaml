@@ -67,7 +67,7 @@ parts:
 
     # For pulse/alsa see: https://forum.snapcraft.io/t/help-needed-with-bombsquad-snap/36744/2
 
-    source: ..
+    source: .
 
     override-build: |
       set -eu

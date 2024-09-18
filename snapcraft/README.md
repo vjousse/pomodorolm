@@ -16,7 +16,7 @@
 
 Happens only for developers locally.
 
-    ** (process:172251): ERROR **: 23:34:35.683: Unable to spawn a new child process: Failed to spawn child process “/usr/lib/webkitgtk-4.1/WebKitNetworkProcess” (No such file or directory)
+    ** (pomodorolm:364934): ERROR **: 11:34:14.245: Unable to spawn a new child process: Failed to spawn child process “/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitNetworkProcess” (No such file or directory)
 
 To fix it run:
 
