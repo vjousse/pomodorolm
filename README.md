@@ -35,6 +35,12 @@
 
 # 📘 Installation
 
+## Flatpak
+
+<a href="https://flathub.org/apps/org.jousse.vincent.Pomodorolm">
+    <img width="240" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/>
+</a>
+
 ## Archlinux
 
     yay -S pomodorolm-bin
