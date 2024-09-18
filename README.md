@@ -35,12 +35,6 @@
 
 # 📘 Installation
 
-## Flatpak
-
-<a href="https://flathub.org/apps/org.jousse.vincent.Pomodorolm">
-    <img width="240" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/>
-</a>
-
 ## Archlinux
 
     yay -S pomodorolm-bin
@@ -48,6 +42,16 @@
 ## Windows, Mac OS X, Debian, AppImage
 
 Download the install file for your OS from the latest release on https://github.com/vjousse/pomodorolm/releases/
+
+## Flatpak
+
+<a href="https://flathub.org/apps/org.jousse.vincent.Pomodorolm">
+    <img width="240" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/>
+</a>
+
+## Snap Store
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/pomodorolm)
 
 # 🎨 Themes
 
