@@ -1,6 +1,11 @@
 # check https://github.com/BlueBubblesApp/bluebubbles-app/blob/3f659afcb06e0b5766b4f1fc74cabc98c9498359/snap/snapcraft.yaml#L34
 name: pomodorolm
 base: core24
+platforms:
+  amd64:
+  arm64:
+    build-on: [amd64, arm64]
+    build-for: [arm64]
 version: "0.1.5"
 summary: A simple, good looking and multi-platform pomodoro tracker
 description: |
@@ -58,6 +63,7 @@ parts:
       - libayatana-appindicator3-dev
       - librsvg2-dev
       - dpkg
+      - libasound2-dev
     stage-packages:
       - libwebkit2gtk-4.1-0
       - libayatana-appindicator3-1
