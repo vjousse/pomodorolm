@@ -67,13 +67,13 @@ parts:
 
     # For pulse/alsa see: https://forum.snapcraft.io/t/help-needed-with-bombsquad-snap/36744/2
 
-    source: .
+    source: ..
 
     override-build: |
       set -eu
       npm install
       rustup default stable
       npm run tauri build -- --bundles deb
-      cp etc/asound.conf $SNAPCRAFT_PART_INSTALL/etc/
+      cp snapcraft/asound.conf $SNAPCRAFT_PART_INSTALL/etc/
       dpkg -x src-tauri/target/release/bundle/deb/*.deb $SNAPCRAFT_PART_INSTALL/
       sed -i -e "s|Icon=pomodorolm|Icon=/usr/share/icons/hicolor/32x32/apps/pomodorolm.png|g" $SNAPCRAFT_PART_INSTALL/usr/share/applications/pomodorolm.desktop
