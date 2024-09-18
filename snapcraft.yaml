@@ -4,8 +4,7 @@ base: core24
 platforms:
   amd64:
   arm64:
-    build-on: [amd64, arm64]
-    build-for: [arm64]
+
 version: "0.1.5"
 summary: A simple, good looking and multi-platform pomodoro tracker
 description: |
