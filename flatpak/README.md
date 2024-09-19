@@ -32,14 +32,6 @@ Before running the node generator for `npm`, be sure to `rm -rf node_modules` or
 
     ./flatpak-elm-generator.py ../elm.json elm-sources.json
 
-### Get registry.dat
-
-In the project root directory:
-
-    rm -rf elm-stuff && ELM_HOME=tmp npx elm make src-elm/Main.elm
-    cp tmp/0.19.1/packages/registry.dat flatpak
-    rm -rf tmp
-
 ## Links
 
 - https://github.com/axolotl-chat/axolotl/blob/main/flatpak/org.nanuc.Axolotl.yml

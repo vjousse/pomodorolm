@@ -17,9 +17,6 @@ finish-args:
   - --env=FLATPAK=1 # Used to tell the app to look for assets in /app/lib/pomodorolm
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
-  # Needed for the systray to work properly. libappindicator emits a dbus signal with the systray icon absolute path
-  # so flatpak and the host need to both have access to the icon for the systray to work properly
-  - --filesystem=xdg-data/tray-icon
 
 build-options:
   append-path: /usr/lib/sdk/node20/bin:/usr/lib/sdk/rust-stable/bin
@@ -31,7 +28,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/vjousse/pomodorolm.git
-        branch: flatpak-build
+        tag: app-v0.1.11
+        commit: a111a8b6cca6f525d7d6369b0d3a60b80b031451
 
       # flatpak-node-generator npm -o flatpak/node-sources.json package-lock.json
       - node-sources.json
@@ -43,7 +41,11 @@ modules:
       - elm-sources.json
 
       - type: file
-        path: registry.dat
+        url: https://raw.githubusercontent.com/robx/shelm/4417730f5847e6ccba1b19f1b25166471433d633/shelm
+        sha256: a8b05b32495515f43fa24b2cec4dbb1fc141daf2d30eccb65df01b1a8ba31a5d
+
+      - type: patch
+        path: shelm-gnu-find-compat.patch
 
     build-options:
       env:
@@ -51,13 +53,17 @@ modules:
         XDG_CACHE_HOME: /run/build/pomodorolm/flatpak-node/cache
         npm_config_cache: /run/build/pomodorolm/flatpak-node/npm-cache
         npm_config_offline: "true"
-        ELM_HOME: /run/build/pomodorolm/elm-stuff/home/.elm/
+        # Required so that packages are sorted in the C order (capital letters first)
+        # by shelm when generating registry.dat
+        LC_ALL: C.utf8
+        ELM_HOME: elm-stuff/home/.elm
     build-commands:
-      # To work offline, Elm needs a proper registry.dat than can only be generated
-      # when connected to internet, so we provide one with the bundle
-      - mv registry.dat elm-stuff/home/.elm/0.19.1/packages/registry.dat
       # Node packages
       - npm ci --offline --legacy-peer-deps
+      # Generate elm packages index file (registry.dat)
+      # Patched version of https://github.com/robx/shelm to make it work
+      # with gnu find
+      - bash ./shelm generate
       # Rust packages
       - cargo --offline fetch --manifest-path src-tauri/Cargo.toml --verbose
       # Compile the app without creating any bundle
