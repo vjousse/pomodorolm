@@ -2,7 +2,7 @@ on:
   push:
     branches: [main, release]
   pull_request:
-name: CI
+name: Build Flatpak
 jobs:
   flatpak:
     name: "Flatpak"
