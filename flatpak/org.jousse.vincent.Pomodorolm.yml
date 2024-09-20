@@ -26,10 +26,8 @@ modules:
   - name: pomodorolm
     buildsystem: simple
     sources:
-      - type: git
-        url: https://github.com/vjousse/pomodorolm.git
-        tag: app-v0.1.11
-        commit: a111a8b6cca6f525d7d6369b0d3a60b80b031451
+      - type: dir
+        path: ..
 
       # flatpak-node-generator npm -o flatpak/node-sources.json package-lock.json
       - node-sources.json
