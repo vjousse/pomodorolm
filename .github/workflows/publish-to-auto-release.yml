@@ -29,6 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Check versions consistency from `src-tauri/tauri.conf.json`
+        run: uv run ./bin/release.py
+
       - name: setup node
         uses: actions/setup-node@v4
         with:
