@@ -496,14 +496,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/bindgen/bindgen-0.69.4.crate",
-        "sha256": "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0",
-        "dest": "cargo/vendor/bindgen-0.69.4"
+        "url": "https://static.crates.io/crates/bindgen/bindgen-0.70.1.crate",
+        "sha256": "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f",
+        "dest": "cargo/vendor/bindgen-0.70.1"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0\", \"files\": {}}",
-        "dest": "cargo/vendor/bindgen-0.69.4",
+        "contents": "{\"package\": \"f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f\", \"files\": {}}",
+        "dest": "cargo/vendor/bindgen-0.70.1",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -1211,14 +1211,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/coreaudio-sys/coreaudio-sys-0.2.15.crate",
-        "sha256": "7f01585027057ff5f0a5bf276174ae4c1594a2c5bde93d5f46a016d76270f5a9",
-        "dest": "cargo/vendor/coreaudio-sys-0.2.15"
+        "url": "https://static.crates.io/crates/coreaudio-sys/coreaudio-sys-0.2.16.crate",
+        "sha256": "2ce857aa0b77d77287acc1ac3e37a05a8c95a2af3647d23b15f263bdaeb7562b",
+        "dest": "cargo/vendor/coreaudio-sys-0.2.16"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"7f01585027057ff5f0a5bf276174ae4c1594a2c5bde93d5f46a016d76270f5a9\", \"files\": {}}",
-        "dest": "cargo/vendor/coreaudio-sys-0.2.15",
+        "contents": "{\"package\": \"2ce857aa0b77d77287acc1ac3e37a05a8c95a2af3647d23b15f263bdaeb7562b\", \"files\": {}}",
+        "dest": "cargo/vendor/coreaudio-sys-0.2.16",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -3091,19 +3091,6 @@
         "type": "inline",
         "contents": "{\"package\": \"bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe\", \"files\": {}}",
         "dest": "cargo/vendor/lazy_static-1.5.0",
-        "dest-filename": ".cargo-checksum.json"
-    },
-    {
-        "type": "archive",
-        "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/lazycell/lazycell-1.3.0.crate",
-        "sha256": "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55",
-        "dest": "cargo/vendor/lazycell-1.3.0"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": \"830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55\", \"files\": {}}",
-        "dest": "cargo/vendor/lazycell-1.3.0",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -5111,14 +5098,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/rodio/rodio-0.17.3.crate",
-        "sha256": "3b1bb7b48ee48471f55da122c0044fcc7600cfcc85db88240b89cb832935e611",
-        "dest": "cargo/vendor/rodio-0.17.3"
+        "url": "https://static.crates.io/crates/rodio/rodio-0.19.0.crate",
+        "sha256": "6006a627c1a38d37f3d3a85c6575418cfe34a5392d60a686d0071e1c8d427acb",
+        "dest": "cargo/vendor/rodio-0.19.0"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"3b1bb7b48ee48471f55da122c0044fcc7600cfcc85db88240b89cb832935e611\", \"files\": {}}",
-        "dest": "cargo/vendor/rodio-0.17.3",
+        "contents": "{\"package\": \"6006a627c1a38d37f3d3a85c6575418cfe34a5392d60a686d0071e1c8d427acb\", \"files\": {}}",
+        "dest": "cargo/vendor/rodio-0.19.0",
         "dest-filename": ".cargo-checksum.json"
     },
     {
