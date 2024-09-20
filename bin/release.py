@@ -1,27 +1,41 @@
 #!/usr/bin/env python
 
 import argparse
+import hashlib
 import json
+import pathlib
+import urllib.request
 import xml.etree.ElementTree as ET
 
+import fileinput
 import yaml
 
 METAINFO = "org.jousse.vincent.Pomodorolm.metainfo.xml"
 PACKAGE_JSON = "package.json"
 SNAPCRAFT = "snapcraft.yaml"
 TAURI_CONF = "src-tauri/tauri.conf.json"
+AUR_PKGBUILD = "aur/PKGBUILD"
 
 tauri_version = None
 snapcraft_version = None
 package_json_version = None
 metainfo_version = None
+aur_version = None
+aur_source = None
+aur_sha256 = None
 
 parser = argparse.ArgumentParser(
     description="Check the coherence of files containing version information."
 )
 parser.add_argument("--version", help="The version you want to publish", type=str)
+parser.add_argument(
+    "--update-aur-checksum",
+    help="Download the release from Github, compute the checksum and override it in PKGBUILD",
+    action="store_true",
+)
 
 args = parser.parse_args()
+
 
 versions = []
 
@@ -41,12 +55,57 @@ with open(PACKAGE_JSON, "r") as package_json_file:
     package_version = package_json["version"]
     versions.append({"source": PACKAGE_JSON, "version": package_version})
 
+
+with open(AUR_PKGBUILD, "r") as aur_pkgbuild_file:
+    for line in aur_pkgbuild_file.readlines():
+        if line.startswith("pkgver="):
+            aur_version = line.split("=")[1].strip()
+
+        if line.startswith("source="):
+            aur_source = line.split('"')[1].strip()
+
+        if line.startswith("sha256sums="):
+            aur_sha256 = line.split("'")[1].strip()
+
+    versions.append({"source": AUR_PKGBUILD, "version": aur_version})
+
 tree = ET.parse(METAINFO)
 root = tree.getroot()
 
 latest_metainfo_version = root.find("releases").find("release").attrib["version"]
 
 versions.append({"source": "metainfo", "version": latest_metainfo_version})
+
+
+if args.update_aur_checksum:
+    print(f"--> Updating AUR checksum {aur_source}")
+    url = aur_source.replace("${pkgver}", aur_version).replace("$pkgver", aur_version)
+    print(f"--> Downloading {url}")
+    tmp_file = "pomodorolm.deb"
+
+    urllib.request.urlretrieve(url, tmp_file)
+    sha256 = ""
+    with open(tmp_file, "rb", buffering=0) as f:
+        sha256 = hashlib.file_digest(f, "sha256").hexdigest()
+
+    print(f"--> SHA256: {sha256}")
+    if sha256 != aur_sha256:
+        print(
+            f"--> Sha sums are different. Computed : {sha256}, in PKGBUILD: {aur_sha256}, updating."
+        )
+        pass
+
+        for line in fileinput.input(AUR_PKGBUILD, inplace=True):
+            if line.startswith("sha256sums="):
+                print(f"sha256sums=('{sha256}')", end="")
+            else:
+                print(line, end="")
+    else:
+        print("--> SHA is up to date PKGBUILD, nothing to do.")
+
+    pathlib.Path.unlink(tmp_file)
+    exit(0)
+
 
 if args.version:
     version_to_check = args.version
