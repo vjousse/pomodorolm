@@ -243,7 +243,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            if app.notification().permission_state()? == PermissionState::Unknown {
+            if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;
             }
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
