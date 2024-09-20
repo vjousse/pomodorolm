@@ -1,6 +1,6 @@
 [package]
 name = "pomodorolm"
-version = "0.1.0"
+version = "0.1.11"
 description = "A Tauri App"
 authors = ["Vincent Jousse"]
 license = ""

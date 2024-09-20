@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 
 import argparse
+import fileinput
 import hashlib
 import json
 import pathlib
 import urllib.request
 import xml.etree.ElementTree as ET
 
-import fileinput
+import tomllib
 import yaml
 
 METAINFO = "org.jousse.vincent.Pomodorolm.metainfo.xml"
 PACKAGE_JSON = "package.json"
 SNAPCRAFT = "snapcraft.yaml"
 TAURI_CONF = "src-tauri/tauri.conf.json"
+CARGO_TOML = "src-tauri/Cargo.toml"
 AUR_PKGBUILD = "aur/PKGBUILD"
 
 tauri_version = None
+cargo_version = None
 snapcraft_version = None
 package_json_version = None
 metainfo_version = None
@@ -44,6 +47,11 @@ with open(TAURI_CONF, "r") as tauri_file:
     tauri_version = tauri_json["version"]
 
     versions.append({"source": TAURI_CONF, "version": tauri_version})
+
+with open(CARGO_TOML, "rb") as f:
+    cargo_toml = tomllib.load(f)
+    cargo_version = cargo_toml["package"]["version"]
+    versions.append({"source": CARGO_TOML, "version": cargo_version})
 
 with open(SNAPCRAFT, "r") as snapcraft_file:
     snapcraft_yaml = yaml.safe_load(snapcraft_file)
