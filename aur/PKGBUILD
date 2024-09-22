@@ -1,7 +1,7 @@
 # Maintainer: Vincent Jousse <vincent@jousse.org> - https://vincent.jousse.org
 pkgname=pomodorolm-bin
 pkgver=0.1.11
-pkgrel=1
+pkgrel=2
 pkgdesc="Multi-platform pomodoro tracker with a nice looking UI, inspired by Pomotroid"
 arch=('x86_64')
 url="https://github.com/vjousse/pomodorolm"
