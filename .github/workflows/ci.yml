@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  pre-commit:
+  linting:
     runs-on: ubuntu-latest
 
     steps:
