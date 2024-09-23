@@ -63,7 +63,14 @@ Visit the [theme documentation](./docs/themes/themes.md) to view the full list o
 
 # 💻 Dev
 
-You will need to [install rust](https://www.rust-lang.org/tools/install) first.
+You will need to [install rust](https://www.rust-lang.org/tools/install) first and [https://github.com/astral-sh/uv](uv) for the`pre-commit` hooks and the release script.
+
+## Install `pre-commit` hooks
+
+    uv sync
+    uv run pre-commit install
+
+## Install node dependencies
 
     npm ci
 

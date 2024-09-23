@@ -34,3 +34,9 @@ dist-ssr
 # Flatpak
 .flatpak-builder/
 repo/
+
+# Snap
+*.snap
+
+# python
+*.egg-info
