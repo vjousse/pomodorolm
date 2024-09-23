@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: (flatpak/|src-tauri/gen/schemas/.*)
+      - id: trailing-whitespace
+        exclude: (flatpak/|src-tauri/gen/schemas/.*)
+
+  - repo: https://github.com/FeryET/pre-commit-rust
+    rev: v1.1.1
+    hooks:
+      - id: fmt
+        args: ["--manifest-path", "src-tauri/Cargo.toml", "--"]
+        files: \.rs$
+      - id: cargo-check
+        args: ["--manifest-path", "src-tauri/Cargo.toml", "--"]
+        files: \.rs$
