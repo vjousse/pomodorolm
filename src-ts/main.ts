@@ -217,7 +217,7 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 });
 
 await listen("tick-event", () => {
-  app.ports.tick.send("");
+  app.ports.tick.send(null);
 });
 
 await listen("themes", (themesEvent) => {

@@ -1,9 +1,4 @@
-module Themes exposing (RGBColor(..), Theme, ThemeColors, pomodorolmTheme)
-
-
-type RGBColor
-    = RGB Int Int Int
-    | RGBA Int Int Int Float
+module Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 
 
 type alias Theme =

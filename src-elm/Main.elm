@@ -1,4 +1,4 @@
-port module Main exposing (..)
+port module Main exposing (Config, CurrentState, Defaults, Flags, Model, Msg(..), NextRoundInfo, Notification, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
 
 import Browser
 import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
@@ -7,7 +7,6 @@ import Html.Attributes exposing (attribute, class, href, id, style, target, titl
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
-import Json.Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -115,24 +114,6 @@ configDecoder =
         (Decode.field "theme" Decode.string)
         (Decode.field "tick_sounds_during_break" Decode.bool)
         (Decode.field "tick_sounds_during_work" Decode.bool)
-
-
-encodedConfig : Config -> Json.Encode.Value
-encodedConfig config =
-    Json.Encode.object
-        [ ( "always_on_top", Json.Encode.bool config.alwaysOnTop )
-        , ( "auto_start_break_timer", Json.Encode.bool config.autoStartBreakTimer )
-        , ( "auto_start_work_timer", Json.Encode.bool config.autoStartWorkTimer )
-        , ( "desktop_notifications", Json.Encode.bool config.desktopNotifications )
-        , ( "long_break_duration", Json.Encode.int config.longBreakDuration )
-        , ( "max_round_number", Json.Encode.int config.maxRoundNumber )
-        , ( "minimize_to_tray", Json.Encode.bool config.minimizeToTray )
-        , ( "minimize_to_tray_on_close", Json.Encode.bool config.minimizeToTrayOnClose )
-        , ( "pomodoro_duration", Json.Encode.int config.pomodoroDuration )
-        , ( "short_break_duration", Json.Encode.int config.shortBreakDuration )
-        , ( "tick_sounds_during_break", Json.Encode.bool config.tickSoundsDuringBreak )
-        , ( "tick_sounds_during_work", Json.Encode.bool config.tickSoundsDuringWork )
-        ]
 
 
 type alias CurrentState =
@@ -295,8 +276,7 @@ type Msg
     | Reset
     | ResetSettings
     | SkipCurrentRound
-    | ShowVolumeBar
-    | Tick String
+    | Tick
     | ToggleDrawer
     | ToggleMute
     | ToggleStatus
@@ -551,11 +531,7 @@ update msg model =
                     { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType model.theme
                     , percentage = 100
                     , paused =
-                        if model.sessionStatus == Paused then
-                            True
-
-                        else
-                            False
+                        model.sessionStatus == Paused
                     , playTick = False
                     }
             in
@@ -635,11 +611,7 @@ update msg model =
                     { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                     , percentage = 100
                     , paused =
-                        if model.sessionStatus == Paused then
-                            True
-
-                        else
-                            False
+                        model.sessionStatus == Paused
                     , playTick = shouldPlayTick nextModel
                     }
             in
@@ -659,10 +631,7 @@ update msg model =
                 ]
             )
 
-        ShowVolumeBar ->
-            ( { model | volumeSliderHidden = False }, Cmd.none )
-
-        Tick _ ->
+        Tick ->
             if model.currentTime > 0 && model.sessionStatus == Running then
                 let
                     newTime =
@@ -675,7 +644,7 @@ update msg model =
                         computeCurrentColor newTime maxTime model.currentSessionType model.theme
 
                     percent =
-                        1 * toFloat newTime / toFloat maxTime
+                        toFloat newTime / toFloat maxTime
 
                     nextModel =
                         { model
@@ -687,11 +656,7 @@ update msg model =
                         { color = fromRGBToCSSHex currentColor
                         , percentage = percent
                         , paused =
-                            if model.sessionStatus == Paused then
-                                True
-
-                            else
-                                False
+                            model.sessionStatus == Paused
                         , playTick = shouldPlayTick nextModel
                         }
                 in
@@ -735,11 +700,7 @@ update msg model =
                         { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
                         , percentage = 100
                         , paused =
-                            if nextModel.sessionStatus == Paused then
-                                True
-
-                            else
-                                False
+                            nextModel.sessionStatus == Paused
                         , playTick = shouldPlayTick nextModel
                         }
                 in
@@ -862,7 +823,7 @@ update msg model =
                                         (getCurrentMaxTime model)
                                         model.currentSessionType
                                         model.theme
-                            , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                            , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = True
                             , playTick = shouldPlayTick nextModel
                             }
@@ -883,7 +844,7 @@ update msg model =
                                         (getCurrentMaxTime model)
                                         model.currentSessionType
                                         model.theme
-                            , percentage = 1 * toFloat model.currentTime / toFloat (getCurrentMaxTime model)
+                            , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = False
                             , playTick = shouldPlayTick nextModel
                             }
@@ -1012,11 +973,7 @@ update msg model =
             ( { model
                 | volume = newVolume
                 , muted =
-                    if newVolume > 0 then
-                        False
-
-                    else
-                        True
+                    newVolume <= 0
               }
             , setVolume newVolume
             )
@@ -1061,16 +1018,15 @@ colorForSessionType sessionType theme =
 
 computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
 computeCurrentColor currentTime maxTime sessionType theme =
-    let
-        percent =
-            1 * toFloat currentTime / toFloat maxTime
-
-        relativePercent =
-            1 * (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
-    in
     case sessionType of
         Pomodoro ->
             let
+                percent =
+                    toFloat currentTime / toFloat maxTime
+
+                relativePercent =
+                    (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
+
                 ( startRed, startGreen, startBlue ) =
                     case fromCSSHexToRGB theme.colors.focusRound of
                         RGB r g b ->
@@ -1110,7 +1066,7 @@ dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> Html Msg
 dialView sessionType currentTime maxTime maxStrokeDasharray theme =
     let
         percent =
-            1 * toFloat currentTime / toFloat maxTime
+            toFloat currentTime / toFloat maxTime
 
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * percent
@@ -1186,73 +1142,66 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
 
 playPauseView : SessionStatus -> Html Msg
 playPauseView sessionStatus =
-    let
-        pauseSvg =
-            svg
-                [ SvgAttr.version "1.2"
-                , SvgAttr.baseProfile "tiny"
-                , SvgAttr.id "Layer_2"
-                , SvgAttr.x "0px"
-                , SvgAttr.y "0px"
-                , SvgAttr.viewBox "0 0 10.9 18"
-                , SvgAttr.xmlSpace "preserve"
-                , SvgAttr.height "4vw"
-                , SvgAttr.class "icon--pause"
-                ]
-                [ Svg.line
-                    [ SvgAttr.fill "none"
-                    , SvgAttr.stroke "var(--color-foreground)"
-                    , SvgAttr.strokeWidth "3"
-                    , SvgAttr.strokeLinecap "round"
-                    , SvgAttr.strokeMiterlimit "10"
-                    , SvgAttr.x1 "1.5"
-                    , SvgAttr.y1 "1.5"
-                    , SvgAttr.x2 "1.5"
-                    , SvgAttr.y2 "16.5"
-                    ]
-                    []
-                , Svg.line
-                    [ SvgAttr.fill "none"
-                    , SvgAttr.stroke "var(--color-foreground)"
-                    , SvgAttr.strokeWidth "3"
-                    , SvgAttr.strokeLinecap "round"
-                    , SvgAttr.strokeMiterlimit "10"
-                    , SvgAttr.x1 "9.4"
-                    , SvgAttr.y1 "1.5"
-                    , SvgAttr.x2 "9.4"
-                    , SvgAttr.y2 "16.5"
-                    ]
-                    []
-                ]
-
-        playSvg =
-            svg
-                [ SvgAttr.version "1.2"
-                , SvgAttr.baseProfile "tiny"
-                , SvgAttr.id "Layer_1"
-                , SvgAttr.x "0px"
-                , SvgAttr.y "0px"
-                , SvgAttr.viewBox "0 0 7.6 15"
-                , SvgAttr.xmlSpace "preserve"
-                , SvgAttr.height "4vw"
-                , SvgAttr.class "icon--start"
-                ]
-                [ Svg.polygon
-                    [ SvgAttr.fill "var(--color-foreground)"
-                    , SvgAttr.points "0,0 0,15 7.6,7.4 "
-                    ]
-                    []
-                ]
-    in
     section [ class "container", class "button-wrapper" ]
         [ div [ class "button", onClick ToggleStatus ]
             [ div [ class "button-icon-wrapper" ]
                 [ case sessionStatus of
                     Running ->
-                        pauseSvg
+                        svg
+                            [ SvgAttr.version "1.2"
+                            , SvgAttr.baseProfile "tiny"
+                            , SvgAttr.id "Layer_2"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "0 0 10.9 18"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.height "4vw"
+                            , SvgAttr.class "icon--pause"
+                            ]
+                            [ Svg.line
+                                [ SvgAttr.fill "none"
+                                , SvgAttr.stroke "var(--color-foreground)"
+                                , SvgAttr.strokeWidth "3"
+                                , SvgAttr.strokeLinecap "round"
+                                , SvgAttr.strokeMiterlimit "10"
+                                , SvgAttr.x1 "1.5"
+                                , SvgAttr.y1 "1.5"
+                                , SvgAttr.x2 "1.5"
+                                , SvgAttr.y2 "16.5"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.fill "none"
+                                , SvgAttr.stroke "var(--color-foreground)"
+                                , SvgAttr.strokeWidth "3"
+                                , SvgAttr.strokeLinecap "round"
+                                , SvgAttr.strokeMiterlimit "10"
+                                , SvgAttr.x1 "9.4"
+                                , SvgAttr.y1 "1.5"
+                                , SvgAttr.x2 "9.4"
+                                , SvgAttr.y2 "16.5"
+                                ]
+                                []
+                            ]
 
                     _ ->
-                        playSvg
+                        svg
+                            [ SvgAttr.version "1.2"
+                            , SvgAttr.baseProfile "tiny"
+                            , SvgAttr.id "Layer_1"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "0 0 7.6 15"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.height "4vw"
+                            , SvgAttr.class "icon--start"
+                            ]
+                            [ Svg.polygon
+                                [ SvgAttr.fill "var(--color-foreground)"
+                                , SvgAttr.points "0,0 0,15 7.6,7.4 "
+                                ]
+                                []
+                            ]
                 ]
             ]
         ]
@@ -1991,13 +1940,13 @@ mapLoadThemes modelJson =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ tick Tick
+        [ tick (always Tick)
         , loadConfig mapLoadConfig
         , loadThemes mapLoadThemes
         ]
 
 
-port tick : (String -> msg) -> Sub msg
+port tick : (() -> msg) -> Sub msg
 
 
 port loadConfig : (Decode.Value -> msg) -> Sub msg
@@ -2011,9 +1960,6 @@ port loadThemes : (Decode.Value -> msg) -> Sub msg
 
 
 port playSound : String -> Cmd msg
-
-
-port playTick : Bool -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg
