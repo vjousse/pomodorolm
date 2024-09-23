@@ -13,6 +13,7 @@ import yaml
 
 METAINFO = "org.jousse.vincent.Pomodorolm.metainfo.xml"
 PACKAGE_JSON = "package.json"
+PACKAGE_LOCK_JSON = "package-lock.json"
 SNAPCRAFT = "snapcraft.yaml"
 TAURI_CONF = "src-tauri/tauri.conf.json"
 CARGO_TOML = "src-tauri/Cargo.toml"
@@ -62,6 +63,11 @@ with open(PACKAGE_JSON, "r") as package_json_file:
     package_json = json.load(package_json_file)
     package_version = package_json["version"]
     versions.append({"source": PACKAGE_JSON, "version": package_version})
+
+with open(PACKAGE_LOCK_JSON, "r") as package_lock_json_file:
+    package_lock_json = json.load(package_lock_json_file)
+    package_lock_version = package_lock_json["version"]
+    versions.append({"source": PACKAGE_LOCK_JSON, "version": package_lock_version})
 
 
 with open(AUR_PKGBUILD, "r") as aur_pkgbuild_file:

@@ -23,5 +23,16 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
         shell: sh
 
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Run elm-review
+        run: npm run review
+
       - name: Run pre-commit hooks on all files
         run: uv run pre-commit run --all-files
