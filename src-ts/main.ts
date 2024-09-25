@@ -175,6 +175,10 @@ app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   });
 });
 
+app.ports.updateSessionStatus.subscribe(function (status: String) {
+  invoke("update_session_status", { status });
+});
+
 app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
   let mainHtmlElement = document.documentElement;
   mainHtmlElement.style.setProperty(
@@ -222,6 +226,14 @@ await listen("tick-event", () => {
 
 await listen("themes", (themesEvent) => {
   app.ports.loadThemes.send(themesEvent.payload);
+});
+
+await listen("toggle-play", () => {
+  app.ports.togglePlay.send(null);
+});
+
+await listen("skip", () => {
+  app.ports.skip.send(null);
 });
 
 function hexToRgb(hex: string) {

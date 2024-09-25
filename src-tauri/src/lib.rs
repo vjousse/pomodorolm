@@ -16,7 +16,7 @@ use tauri::{path::BaseDirectory, Manager};
 use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
-pub struct MenuState<R: Runtime>(std::sync::Mutex<tauri::menu::MenuItem<R>>);
+pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
 use std::env;
@@ -33,6 +33,11 @@ const CONFIG_DIR_NAME: &str = "pomodorolm";
 struct App {
     play_tick: bool,
     config: Config,
+}
+
+struct MenuStates<R: Runtime> {
+    toggle_visibility_menu: tauri::menu::MenuItem<R>,
+    toggle_play_menu: tauri::menu::MenuItem<R>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -249,8 +254,13 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let toggle_visibility =
                 MenuItemBuilder::with_id("toggle_visibility", "Hide").build(app)?;
+            let skip = MenuItemBuilder::with_id("skip", "Skip").build(app)?;
+            let toggle_play = MenuItemBuilder::with_id("toggle_play", "Play").build(app)?;
 
             let tray_menu = MenuBuilder::new(app)
+                .item(&skip)
+                .item(&toggle_play)
+                .separator()
                 .item(&toggle_visibility)
                 .separator()
                 .item(&quit)
@@ -261,6 +271,16 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "quit" => {
                         app.exit(0);
+                    }
+                    "toggle_play" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("toggle-play", "");
+                        }
+                    }
+                    "skip" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("skip", "");
+                        }
                     }
                     "toggle_visibility" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -273,12 +293,13 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                                 "Hide"
                             };
 
-                            let state: tauri::State<'_, MenuState<R>> = app.state();
+                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
 
                             let state_guard = state.0.lock();
                             match state_guard {
                                 Ok(guard) => {
-                                    let set_text_result = guard.set_text(new_title);
+                                    let set_text_result =
+                                        guard.toggle_visibility_menu.set_text(new_title);
                                     if let Err(e) = set_text_result {
                                         eprintln!("Error setting MenuItem title: {:?}.", e);
                                     }
@@ -342,7 +363,10 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 config,
             }))));
 
-            app.manage(MenuState(std::sync::Mutex::new(toggle_visibility)));
+            app.manage(AppMenuStates(std::sync::Mutex::new(MenuStates {
+                toggle_visibility_menu: toggle_visibility,
+                toggle_play_menu: toggle_play,
+            })));
 
             let sound_file =
                 sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
@@ -375,7 +399,8 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             notify,
             play_sound_command,
             update_config,
-            update_play_tick
+            update_play_tick,
+            update_session_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -472,14 +497,14 @@ async fn tick(app_handle: AppHandle, path: String) {
 }
 
 #[tauri::command]
-async fn change_icon(
-    app_handle: tauri::AppHandle,
+async fn change_icon<R: tauri::Runtime>(
+    app_handle: tauri::AppHandle<R>,
     red: u8,
     green: u8,
     blue: u8,
     fill_percentage: f32,
     paused: bool,
-) {
+) -> Result<(), ()> {
     // Image dimensions
     let width = 512;
     let height = 512;
@@ -520,6 +545,36 @@ async fn change_icon(
         }
         Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
     }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_session_status<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
+    state: tauri::State<'_, AppMenuStates<R>>,
+    status: String,
+) -> Result<(), ()> {
+    let state_guard = state.0.lock();
+
+    match state_guard {
+        Ok(guard) => {
+            if status == "running" {
+                let set_text_result = guard.toggle_play_menu.set_text("Pause");
+                if let Err(e) = set_text_result {
+                    eprintln!("Error setting MenuItem title: {:?}.", e);
+                }
+            } else {
+                let set_text_result = guard.toggle_play_menu.set_text("Play");
+                if let Err(e) = set_text_result {
+                    eprintln!("Error setting MenuItem title: {:?}.", e);
+                }
+            }
+        }
+        Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+    };
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -633,14 +688,14 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
 #[tauri::command]
 fn minimize_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
-    app_menu: tauri::State<'_, MenuState<R>>,
+    app_menu: tauri::State<'_, AppMenuStates<R>>,
 ) -> Result<(), ()> {
     let state_guard = app_menu.0.lock();
     match state_guard {
         Ok(guard) => {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.minimize();
-                let _ = guard.set_text("Show");
+                let _ = guard.toggle_visibility_menu.set_text("Show");
             }
             Ok(())
         }
@@ -654,14 +709,14 @@ fn minimize_window<R: tauri::Runtime>(
 #[tauri::command]
 fn hide_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
-    app_menu: tauri::State<'_, MenuState<R>>,
+    app_menu: tauri::State<'_, AppMenuStates<R>>,
 ) -> Result<(), ()> {
     let state_guard = app_menu.0.lock();
     match state_guard {
         Ok(guard) => {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.hide();
-                let _ = guard.set_text("Show");
+                let _ = guard.toggle_visibility_menu.set_text("Show");
             }
             Ok(())
         }

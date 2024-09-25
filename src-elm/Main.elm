@@ -126,10 +126,23 @@ type SessionType
     | LongBreak
 
 
+sessionStatusToString : SessionStatus -> String
+sessionStatusToString sessionStatus =
+    case sessionStatus of
+        Paused ->
+            "paused"
+
+        Running ->
+            "running"
+
+        Stopped ->
+            "stopped"
+
+
 type SessionStatus
     = Paused
-    | Stopped
     | Running
+    | Stopped
 
 
 type SettingTab
@@ -250,6 +263,7 @@ init flags =
       }
     , Cmd.batch
         [ updateCurrentState currentState
+        , updateSessionStatus (Stopped |> sessionStatusToString)
         , loadRustConfig ()
         , setThemeColors <| theme.colors
         ]
@@ -479,10 +493,14 @@ update msg model =
             in
             case newThemes |> ListWithCurrent.getCurrent of
                 Just currentTheme ->
-                    update (ChangeTheme currentTheme) newModel
+                    let
+                        ( updatedModel, cmds ) =
+                            update (ChangeTheme currentTheme) newModel
+                    in
+                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (Stopped |> sessionStatusToString) ] )
 
                 _ ->
-                    ( newModel, Cmd.none )
+                    ( newModel, updateSessionStatus (Stopped |> sessionStatusToString) )
 
         LoadThemes themes ->
             let
@@ -548,7 +566,10 @@ update msg model =
                         LongBreak ->
                             model.config.longBreakDuration
               }
-            , updateCurrentState currentState
+            , Cmd.batch
+                [ updateCurrentState currentState
+                , updateSessionStatus (Stopped |> sessionStatusToString)
+                ]
             )
 
         ResetSettings ->
@@ -577,7 +598,10 @@ update msg model =
                 , currentState = currentState
                 , sessionStatus = Stopped
               }
-            , updateCurrentState currentState
+            , Cmd.batch
+                [ updateCurrentState currentState
+                , updateSessionStatus (Stopped |> sessionStatusToString)
+                ]
             )
 
         SkipCurrentRound ->
@@ -628,6 +652,7 @@ update msg model =
 
                   else
                     Cmd.none
+                , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
                 ]
             )
 
@@ -737,6 +762,7 @@ update msg model =
 
                       else
                         Cmd.none
+                    , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
                     ]
                 )
 
@@ -829,7 +855,10 @@ update msg model =
                             }
                     in
                     ( { nextModel | currentState = currentState }
-                    , updateCurrentState currentState
+                    , Cmd.batch
+                        [ updateCurrentState currentState
+                        , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
+                        ]
                     )
 
                 _ ->
@@ -850,7 +879,10 @@ update msg model =
                             }
                     in
                     ( { nextModel | currentState = currentState }
-                    , updateCurrentState currentState
+                    , Cmd.batch
+                        [ updateCurrentState currentState
+                        , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
+                        ]
                     )
 
         UpdateSetting settingType v ->
@@ -1941,12 +1973,20 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ tick (always Tick)
+        , togglePlay (always ToggleStatus)
+        , skip (always SkipCurrentRound)
         , loadConfig mapLoadConfig
         , loadThemes mapLoadThemes
         ]
 
 
 port tick : (() -> msg) -> Sub msg
+
+
+port togglePlay : (() -> msg) -> Sub msg
+
+
+port skip : (() -> msg) -> Sub msg
 
 
 port loadConfig : (Decode.Value -> msg) -> Sub msg
@@ -1978,6 +2018,9 @@ port hideWindow : () -> Cmd msg
 
 
 port updateCurrentState : CurrentState -> Cmd msg
+
+
+port updateSessionStatus : String -> Cmd msg
 
 
 port notify : Notification -> Cmd msg
