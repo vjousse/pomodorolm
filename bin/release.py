@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
 import argparse
+import datetime
 import fileinput
 import hashlib
 import json
 import pathlib
+import subprocess as sp
 import urllib.request
 import xml.etree.ElementTree as ET
 
 import tomllib
 import yaml
+from packaging.version import Version
 
 METAINFO = "org.jousse.vincent.Pomodorolm.metainfo.xml"
 PACKAGE_JSON = "package.json"
@@ -18,6 +21,8 @@ SNAPCRAFT = "snapcraft.yaml"
 TAURI_CONF = "src-tauri/tauri.conf.json"
 CARGO_TOML = "src-tauri/Cargo.toml"
 AUR_PKGBUILD = "aur/PKGBUILD"
+
+metainfo_first_version = Version("0.1.8")
 
 tauri_version = None
 cargo_version = None
@@ -91,6 +96,12 @@ latest_metainfo_version = root.find("releases").find("release").attrib["version"
 versions.append({"source": "metainfo", "version": latest_metainfo_version})
 
 
+metainfo_releases = {}
+
+for release in root.find("releases"):
+    metainfo_releases[release.attrib["version"]] = release.attrib["date"]
+
+
 if args.update_aur_checksum:
     print(f"--> Updating AUR checksum {aur_source}")
     url = aur_source.replace("${pkgver}", aur_version).replace("$pkgver", aur_version)
@@ -120,12 +131,31 @@ if args.update_aur_checksum:
     pathlib.Path.unlink(tmp_file)
     exit(0)
 
+git_cliff_output = json.loads(sp.getoutput("git-cliff --bump --context"))
+
+git_cliff_releases = {}
+latest_git_cliff_version = None
+
+for release in git_cliff_output:
+    date = datetime.datetime.fromtimestamp(release["timestamp"]).strftime("%Y-%m-%d")
+    version = release["version"]
+    stripped_version = version.replace("app-v", "")
+
+    if latest_git_cliff_version is None:
+        latest_git_cliff_version = stripped_version
+
+    if (
+        Version(stripped_version) >= metainfo_first_version
+        and stripped_version not in metainfo_releases
+    ):
+        print(f"--> ⚠️ Version {stripped_version} is missing in metainfo.xml")
+
 
 if args.version:
     version_to_check = args.version
 else:
     print(
-        "--> No version specified in parameters, reading version from `src-tauri/tauri.conf.json`"
+        f"--> ℹ️ No version specified in parameters, reading version from `src-tauri/tauri.conf.json`: {tauri_version}"
     )
     version_to_check = tauri_version
 
@@ -133,16 +163,22 @@ all_versions_are_the_same = all(
     version["version"] == version_to_check for version in versions
 )
 
-if all_versions_are_the_same:
+if all_versions_are_the_same and version_to_check == latest_git_cliff_version:
     print(
         f"--> 🎉 Your files are coherent, ready to publish version `{version_to_check}`"
     )
     exit(0)
 else:
-    print(f"--> 🚨 Some versions differ from `{version_to_check}`:")
+    if version_to_check != latest_git_cliff_version:
+        print(
+            f"--> 🚨 Git cliff found a new version `{latest_git_cliff_version}` that is different from `{version_to_check}`, you should probably bump your version number."
+        )
 
-    for version in versions:
-        if version["version"] != version_to_check:
-            print(json.dumps(version, indent=2))
+    if not all_versions_are_the_same:
+        print(f"--> 🚨 Some versions differ from `{version_to_check}`:")
+
+        for version in versions:
+            if version["version"] != version_to_check:
+                print(json.dumps(version, indent=2))
 
     exit(1)
