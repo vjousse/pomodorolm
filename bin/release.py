@@ -166,6 +166,13 @@ def update_files(version_number: str, version_date: str):
         child = ET.Element("release")
         child.set("version", version_number)
         child.set("date", version_date)
+
+        sub = ET.SubElement(child, "url")
+        sub.set("type", "details")
+        sub.text = (
+            f"https://github.com/vjousse/pomodorolm/releases/tag/app-v{version_number}"
+        )
+
         releases.insert(0, child)
 
         ET.indent(tree, space="  ", level=0)
