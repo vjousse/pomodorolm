@@ -3499,7 +3499,7 @@ dependencies = [
 
 [[package]]
 name = "pomodorolm"
-version = "0.1.11"
+version = "0.2.0"
 dependencies = [
  "futures",
  "hex_color",
