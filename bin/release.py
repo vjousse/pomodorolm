@@ -23,9 +23,11 @@ PACKAGE_LOCK_JSON = "package-lock.json"
 SNAPCRAFT = "snapcraft.yaml"
 TAURI_CONF = "src-tauri/tauri.conf.json"
 CARGO_TOML = "src-tauri/Cargo.toml"
+CARGO_LOCK = "src-tauri/Cargo.lock"
 AUR_PKGBUILD = "aur/PKGBUILD"
 
 metainfo_first_version = Semver("0.1.8")
+
 
 app = typer.Typer()
 
@@ -70,6 +72,14 @@ def get_version_state() -> VersionState:
         cargo_version = cargo_toml["package"]["version"]
         state.versions.append(Version(source=CARGO_TOML, number=cargo_version))
 
+    with open(CARGO_LOCK, "rb") as f:
+        cargo_lock = tomllib.load(f)
+        for package in cargo_lock["package"]:
+            if package["name"] == "pomodorolm":
+                state.versions.append(
+                    Version(source=CARGO_LOCK, number=package["version"])
+                )
+
     with open(SNAPCRAFT, "r") as snapcraft_file:
         snapcraft_yaml = yaml.safe_load(snapcraft_file)
         snapcraft_version = snapcraft_yaml["version"]
@@ -112,6 +122,114 @@ def get_version_state() -> VersionState:
     return state
 
 
+def update_files(version_number: str, version_date: str):
+    for line in fileinput.input(PACKAGE_JSON, inplace=True):
+        if '"version"' in line:
+            print(f'  "version": "{version_number}",')
+        else:
+            print(line, end="")
+
+    for line in fileinput.input(TAURI_CONF, inplace=True):
+        if '"version"' in line:
+            print(f'  "version": "{version_number}",')
+        else:
+            print(line, end="")
+
+    for line in fileinput.input(SNAPCRAFT, inplace=True):
+        if line.startswith("version"):
+            print(f'version: "{version_number}"')
+        else:
+            print(line, end="")
+
+    for line in fileinput.input(CARGO_TOML, inplace=True):
+        if line.startswith("version"):
+            print(f'version = "{version_number}"')
+        else:
+            print(line, end="")
+
+    for line in fileinput.input(AUR_PKGBUILD, inplace=True):
+        if line.startswith("pkgver"):
+            print(f"pkgver={version_number}")
+        elif line.startswith("pkgrel"):
+            # Reset pkgrel version to 1
+            print("pkgrel=1")
+        else:
+            print(line, end="")
+
+    tree = ET.parse(METAINFO)
+    root = tree.getroot()
+
+    latest_metainfo_version = root.find("releases").find("release").attrib["version"]
+
+    if latest_metainfo_version != version_number:
+        releases = root.find("releases")
+        child = ET.Element("release")
+        child.set("version", version_number)
+        child.set("date", version_date)
+        releases.insert(0, child)
+
+        ET.indent(tree, space="  ", level=0)
+
+        with open(METAINFO, "wb") as f:
+            ET.ElementTree(root).write(f, encoding="UTF-8", xml_declaration=True)
+
+    # update package-lock
+    sp.run("npm i --package-lock-only".split(" "))
+
+    # update Cargo.lock
+    sp.run("cargo update pomodorolm --manifest-path src-tauri/Cargo.toml".split(" "))
+
+
+@app.command()
+def bump_version(
+    version_number: Annotated[
+        str,
+        typer.Option(help="The version number that you want to bump in files."),
+    ] = None,
+    version_date: Annotated[
+        str,
+        typer.Option(help="The version date that you want to bump in files."),
+    ] = None,
+):
+    if version_number is None or version_date is None:
+        git_cliff_output = json.loads(sp.getoutput("git-cliff --bump --context"))
+
+    if version_number is None:
+        # Get next version number from `git-cliff`
+        latest_release = git_cliff_output[0]
+        next_version_number = latest_release["version"].replace("app-v", "")
+        next_version_date = latest_release["version"].replace("app-v", "")
+
+        next_version_date = datetime.datetime.fromtimestamp(
+            latest_release["timestamp"]
+        ).strftime("%Y-%m-%d")
+
+        print(
+            f"--> ℹ️ git-cliff found the next version number to be: `{next_version_number}`."
+        )
+        version_number = next_version_number
+
+    if version_date is None:
+        # Get next version number from `git-cliff`
+        latest_release = git_cliff_output[0]
+
+        next_version_date = datetime.datetime.fromtimestamp(
+            latest_release["timestamp"]
+        ).strftime("%Y-%m-%d")
+
+        print(f"--> ℹ️ git-cliff found the version date to be: `{next_version_date}`.")
+        version_date = next_version_date
+
+    confirm = typer.confirm(
+        f"--> ❓ I'm about to update the files with the version number `{next_version_number}` and the date `{next_version_date}`, should I procede?"
+    )
+
+    if not confirm:
+        raise typer.Abort()
+
+    update_files(version_number, version_date)
+
+
 @app.command()
 def check_versions(
     version: Annotated[
@@ -133,9 +251,6 @@ def check_versions(
     latest_git_cliff_version = None
 
     for release in git_cliff_output:
-        date = datetime.datetime.fromtimestamp(release["timestamp"]).strftime(
-            "%Y-%m-%d"
-        )
         released_version = release["version"]
         stripped_version = released_version.replace("app-v", "")
 
@@ -168,11 +283,11 @@ def check_versions(
     else:
         if version_to_check != latest_git_cliff_version:
             print(
-                f"--> 🚨 Git cliff found a new version `{latest_git_cliff_version}` that is different from `{version_to_check}`, you should probably bump your version number."
+                f"--> 🚨 Error: `git-cliff` found a new version `{latest_git_cliff_version}` that is different from `{version_to_check}`, you should probably bump your version number."
             )
 
         if not all_versions_are_the_same:
-            print(f"--> 🚨 Some versions differ from `{version_to_check}`:")
+            print(f"--> 🚨 Error: some versions differ from `{version_to_check}`:")
 
             for version in version_state.versions:
                 if version.number != version_to_check:
