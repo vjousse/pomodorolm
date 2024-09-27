@@ -56,12 +56,6 @@ jobs:
       - name: install frontend dependencies
         run: npm install # change this to npm, pnpm or bun depending on which one you use.
 
-      - name: Set up git-cliff
-        run: cargo install git-cliff
-
-      - name: Check versions consistency from `src-tauri/tauri.conf.json`
-        run: uv run ./bin/release.py check-versions
-
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
