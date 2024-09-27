@@ -35,7 +35,7 @@ jobs:
           version: "latest"
 
       - name: Check versions consistency from `src-tauri/tauri.conf.json`
-        run: uv run ./bin/release.py
+        run: uv run ./bin/release.py check-versions
 
       - name: setup node
         uses: actions/setup-node@v4
