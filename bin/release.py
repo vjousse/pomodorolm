@@ -186,6 +186,9 @@ def update_files(version_number: str, version_date: str):
     # update Cargo.lock
     sp.run("cargo update pomodorolm --manifest-path src-tauri/Cargo.toml".split(" "))
 
+    # Update the changelog
+    sp.run("git-cliff -o CHANGELOG.md --bump".split(" "))
+
 
 @app.command()
 def bump_version(
