@@ -333,7 +333,7 @@ def update_aur_checksum():
 
         for line in fileinput.input(AUR_PKGBUILD, inplace=True):
             if line.startswith("sha256sums="):
-                print(f"sha256sums=('{sha256}')", end="")
+                print(f"sha256sums=('{sha256}')")
             else:
                 print(line, end="")
     else:
