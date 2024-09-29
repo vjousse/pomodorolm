@@ -394,7 +394,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             change_icon,
             close_window,
             hide_window,
-            load_config,
+            load_config_and_themes,
             minimize_window,
             notify,
             play_sound_command,
@@ -428,39 +428,6 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     }
 
     themes_paths_bufs
-}
-
-fn load_themes(app_handle: AppHandle) {
-    let theme_resource_path = resolve_resource_path(
-        &app_handle,
-        String::from("themes/"),
-        BaseDirectory::Resource,
-    )
-    .expect("Unable to resolve `themes/{}` resource.");
-
-    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
-
-    let custom_themes_path = app_handle.path().resolve(
-        format!("{}/themes/", CONFIG_DIR_NAME),
-        BaseDirectory::Config,
-    );
-
-    if let Ok(path) = custom_themes_path {
-        themes_paths.extend_from_slice(&get_themes_for_directory(path));
-    }
-
-    let mut themes: Vec<Theme> = vec![];
-
-    for path in themes_paths {
-        let file = fs::File::open(path.clone()).expect("file should open read only");
-        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
-
-        match loaded_theme {
-            Ok(theme) => themes.push(Theme::from(theme)),
-            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
-        }
-    }
-    let _ = app_handle.emit("themes", &themes).unwrap();
 }
 
 async fn tick(app_handle: AppHandle, path: String) {
@@ -628,13 +595,13 @@ async fn update_config(
 }
 
 #[tauri::command]
-async fn load_config(
+async fn load_config_and_themes(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
-) -> Result<Config, ()> {
+) -> Result<(Config, Vec<Theme>), ()> {
     let mut state_guard = state.0.lock().await;
 
-    match get_config_file_path(app_handle.path()) {
+    let config = match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
@@ -654,15 +621,45 @@ async fn load_config(
                 config: config.clone(),
             };
 
-            let _ = load_themes(app_handle.clone());
-
             Ok(config)
         }
         Err(e) => {
             eprintln!("Unable to get config file path: {:?}.", e);
             Err(())
         }
+    };
+
+    let theme_resource_path = resolve_resource_path(
+        &app_handle,
+        String::from("themes/"),
+        BaseDirectory::Resource,
+    )
+    .expect("Unable to resolve `themes/{}` resource.");
+
+    let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
+
+    let custom_themes_path = app_handle.path().resolve(
+        format!("{}/themes/", CONFIG_DIR_NAME),
+        BaseDirectory::Config,
+    );
+
+    if let Ok(path) = custom_themes_path {
+        themes_paths.extend_from_slice(&get_themes_for_directory(path));
     }
+
+    let mut themes: Vec<Theme> = vec![];
+
+    for path in themes_paths {
+        let file = fs::File::open(path.clone()).expect("file should open read only");
+        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
+
+        match loaded_theme {
+            Ok(theme) => themes.push(Theme::from(theme)),
+            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+        }
+    }
+
+    config.map(|c| (c, themes))
 }
 
 #[tauri::command]
