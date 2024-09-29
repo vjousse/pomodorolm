@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.2.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.1)] - 2024-09-29
+
+### 🐛 Bug Fixes
+
+- Load themes and config synchronously ([#110](https://github.com/vjousse/pomodorolm/issues/110))
+- Aur sha computation
+
 ## [[app-v0.2.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.0)] - 2024-09-27
 
 ### 🚀 Features
@@ -14,11 +21,13 @@ All notable changes to this project will be documented in this file.
 
 - Snapcraft build
 - Snapcraft builds
+- Remove version check for now
 
 ### 📚 Documentation
 
 - Add flathub link
 - Add Snap Store badge
+- Add CHANGELOG.md
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -38,6 +47,10 @@ All notable changes to this project will be documented in this file.
 - Add pre-commit ([#102](https://github.com/vjousse/pomodorolm/issues/102))
 - Add elm-review ([#104](https://github.com/vjousse/pomodorolm/issues/104))
 - Fix snapcraft build ([#105](https://github.com/vjousse/pomodorolm/issues/105))
+- Bump version to 0.2.0
+- Fix check-versions workflow
+- Add missing git-cliff
+- Install git-cliff using cargo
 
 ## [[app-v0.1.11](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.1.11)] - 2024-09-13
 
