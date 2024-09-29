@@ -1,4 +1,4 @@
-port module Main exposing (Config, CurrentState, Defaults, Flags, Model, Msg(..), NextRoundInfo, Notification, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
+port module Main exposing (Config, ConfigAndThemes, CurrentState, Defaults, Flags, Model, Msg(..), NextRoundInfo, Notification, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
 
 import Browser
 import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
@@ -64,6 +64,12 @@ type alias Config =
     }
 
 
+type alias ConfigAndThemes =
+    { config : Config
+    , themes : List Theme
+    }
+
+
 themeColorsDecoder : Decode.Decoder ThemeColors
 themeColorsDecoder =
     Decode.succeed ThemeColors
@@ -114,6 +120,13 @@ configDecoder =
         (Decode.field "theme" Decode.string)
         (Decode.field "tick_sounds_during_break" Decode.bool)
         (Decode.field "tick_sounds_during_work" Decode.bool)
+
+
+configAndThemesDecoder : Decode.Decoder ConfigAndThemes
+configAndThemesDecoder =
+    Decode.succeed ConfigAndThemes
+        |> Pipe.required "config" configDecoder
+        |> Pipe.required "themes" themesDecoder
 
 
 type alias CurrentState =
@@ -264,7 +277,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (Stopped |> sessionStatusToString)
-        , loadRustConfig ()
+        , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
     )
@@ -283,8 +296,7 @@ type Msg
     | ChangeSettingConfig Setting
     | ChangeTheme Theme
     | HideVolumeBar
-    | LoadConfig Config
-    | LoadThemes (List Theme)
+    | LoadConfig ConfigAndThemes
     | MinimizeWindow
     | NoOp
     | Reset
@@ -454,10 +466,11 @@ update msg model =
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
-        LoadConfig config ->
+        LoadConfig { config, themes } ->
             let
                 updatedThemes =
-                    model.themes
+                    themes
+                        |> ListWithCurrent.fromList
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
 
                 newThemes =
@@ -501,35 +514,6 @@ update msg model =
 
                 _ ->
                     ( newModel, updateSessionStatus (Stopped |> sessionStatusToString) )
-
-        LoadThemes themes ->
-            let
-                loadedThemes =
-                    themes
-                        |> List.sortBy .name
-                        |> ListWithCurrent.fromList
-                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == model.config.theme)
-
-                newThemes =
-                    case ListWithCurrent.getCurrent loadedThemes of
-                        Just theme ->
-                            -- We found a theme with the same name than in the config: everything's fine
-                            if (theme.name |> String.toLower) == (model.config.theme |> String.toLower) then
-                                loadedThemes
-
-                            else
-                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
-                                loadedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
-
-                        Nothing ->
-                            loadedThemes
-
-                newModel =
-                    { model
-                        | themes = newThemes
-                    }
-            in
-            ( newModel, Cmd.none )
 
         MinimizeWindow ->
             ( model
@@ -1947,22 +1931,11 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapLoadConfig : Decode.Value -> Msg
-mapLoadConfig modelJson =
-    case Decode.decodeValue configDecoder modelJson of
+mapLoadConfigAndThemes : Decode.Value -> Msg
+mapLoadConfigAndThemes modelJson =
+    case Decode.decodeValue configAndThemesDecoder modelJson of
         Ok model ->
             LoadConfig model
-
-        Err _ ->
-            --@FIX: don't fail silently
-            NoOp
-
-
-mapLoadThemes : Decode.Value -> Msg
-mapLoadThemes modelJson =
-    case Decode.decodeValue themesDecoder modelJson of
-        Ok themes ->
-            LoadThemes themes
 
         Err _ ->
             --@FIX: don't fail silently
@@ -1975,8 +1948,7 @@ subscriptions _ =
         [ tick (always Tick)
         , togglePlay (always ToggleStatus)
         , skip (always SkipCurrentRound)
-        , loadConfig mapLoadConfig
-        , loadThemes mapLoadThemes
+        , loadConfigAndThemes mapLoadConfigAndThemes
         ]
 
 
@@ -1989,10 +1961,7 @@ port togglePlay : (() -> msg) -> Sub msg
 port skip : (() -> msg) -> Sub msg
 
 
-port loadConfig : (Decode.Value -> msg) -> Sub msg
-
-
-port loadThemes : (Decode.Value -> msg) -> Sub msg
+port loadConfigAndThemes : (Decode.Value -> msg) -> Sub msg
 
 
 
@@ -2008,7 +1977,7 @@ port setVolume : Float -> Cmd msg
 port closeWindow : () -> Cmd msg
 
 
-port loadRustConfig : () -> Cmd msg
+port getConfigFromRust : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg

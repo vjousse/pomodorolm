@@ -33,6 +33,20 @@ type Notification = {
   blue: number;
 };
 
+type RustThemeColors = {
+  long_round: string;
+  short_round: string;
+  focus_round: string;
+  focus_roundMiddle: string;
+  focus_roundEnd: string;
+  background: string;
+  background_light: string;
+  background_lightest: string;
+  foreground: string;
+  foreground_darker: string;
+  foreground_darkest: string;
+  accent: string;
+};
 type ThemeColors = {
   longRound: string;
   shortRound: string;
@@ -98,7 +112,9 @@ let rustConfig: RustConfig = {
   tick_sounds_during_break: true,
 };
 
-const app = Elm.Main.init({
+let app;
+
+app = Elm.Main.init({
   node: root,
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
@@ -134,9 +150,13 @@ app.ports.closeWindow.subscribe(function () {
   invoke("close_window");
 });
 
-app.ports.loadRustConfig.subscribe(function () {
-  invoke("load_config").then((config) => {
-    app.ports.loadConfig.send(config);
+app.ports.getConfigFromRust.subscribe(function () {
+  invoke("load_config_and_themes").then((config_and_themes) => {
+    const [config, themes] = config_and_themes as [
+      RustConfig,
+      Array<RustThemeColors>
+    ];
+    app.ports.loadConfigAndThemes.send({ config, themes });
   });
 });
 
@@ -222,10 +242,6 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 
 await listen("tick-event", () => {
   app.ports.tick.send(null);
-});
-
-await listen("themes", (themesEvent) => {
-  app.ports.loadThemes.send(themesEvent.payload);
 });
 
 await listen("toggle-play", () => {
