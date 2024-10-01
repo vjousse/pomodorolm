@@ -7,6 +7,7 @@ import Html.Attributes exposing (attribute, class, href, id, style, target, titl
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
+import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -25,6 +26,17 @@ main =
 
 type alias Seconds =
     Int
+
+
+type alias ElmMessage =
+    { name : String }
+
+
+elmMessageEncoder : ElmMessage -> Encode.Value
+elmMessageEncoder elmMessage =
+    Encode.object
+        [ ( "name", Encode.string elmMessage.name )
+        ]
 
 
 type alias Model =
@@ -305,7 +317,7 @@ type Msg
     | Tick
     | ToggleDrawer
     | ToggleMute
-    | ToggleStatus
+    | TogglePlayStatus
     | UpdateSetting SettingType String
     | UpdateVolume String
 
@@ -637,6 +649,7 @@ update msg model =
                   else
                     Cmd.none
                 , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
+                , sendMessageFromElm (elmMessageEncoder { name = "skip" })
                 ]
             )
 
@@ -818,7 +831,7 @@ update msg model =
             , Cmd.batch [ setVolume newVolume, updateCurrentState currentState ]
             )
 
-        ToggleStatus ->
+        TogglePlayStatus ->
             case model.sessionStatus of
                 Running ->
                     let
@@ -842,6 +855,7 @@ update msg model =
                     , Cmd.batch
                         [ updateCurrentState currentState
                         , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
+                        , sendMessageFromElm (elmMessageEncoder { name = "pause" })
                         ]
                     )
 
@@ -866,6 +880,7 @@ update msg model =
                     , Cmd.batch
                         [ updateCurrentState currentState
                         , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
+                        , sendMessageFromElm (elmMessageEncoder { name = "play" })
                         ]
                     )
 
@@ -1159,7 +1174,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
 playPauseView : SessionStatus -> Html Msg
 playPauseView sessionStatus =
     section [ class "container", class "button-wrapper" ]
-        [ div [ class "button", onClick ToggleStatus ]
+        [ div [ class "button", onClick TogglePlayStatus ]
             [ div [ class "button-icon-wrapper" ]
                 [ case sessionStatus of
                     Running ->
@@ -1946,7 +1961,7 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ tick (always Tick)
-        , togglePlay (always ToggleStatus)
+        , togglePlay (always TogglePlayStatus)
         , skip (always SkipCurrentRound)
         , loadConfigAndThemes mapLoadConfigAndThemes
         ]
@@ -1966,6 +1981,9 @@ port loadConfigAndThemes : (Decode.Value -> msg) -> Sub msg
 
 
 -- PORTS
+
+
+port sendMessageFromElm : Encode.Value -> Cmd msg
 
 
 port playSound : String -> Cmd msg

@@ -33,6 +33,10 @@ type Notification = {
   blue: number;
 };
 
+type Message = {
+  name: string;
+};
+
 type RustThemeColors = {
   long_round: string;
   short_round: string;
@@ -162,6 +166,10 @@ app.ports.getConfigFromRust.subscribe(function () {
 
 app.ports.notify.subscribe(function (notification: Notification) {
   invoke("notify", { notification: notification });
+});
+
+app.ports.sendMessageFromElm.subscribe(function (message: Message) {
+  invoke("handle_external_message", message);
 });
 
 app.ports.updateConfig.subscribe(function (config: ElmConfig) {
