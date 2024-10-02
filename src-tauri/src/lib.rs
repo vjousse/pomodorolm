@@ -796,7 +796,7 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
 async fn handle_external_message(
     state: tauri::State<'_, AppState<'_>>,
     name: String,
-) -> Result<(), ()> {
+) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     eprintln!("Got external message {name:?}");
 
     let mut app_state_guard = state.0.lock().await;
@@ -814,7 +814,10 @@ async fn handle_external_message(
         _ => eprintln!("Unknown message"),
     }
 
-    Ok(())
+    // Needed because Tauri doesn't play well with returning references
+    // with async commands
+    // https://v2.tauri.app/develop/calling-rust/#async-commands
+    Ok(app_state_guard.pomodoro.to_unborrowed())
 }
 
 fn resolve_resource_path(

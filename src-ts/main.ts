@@ -160,7 +160,7 @@ app.ports.getConfigFromRust.subscribe(function () {
       RustConfig,
       Array<RustThemeColors>
     ];
-    app.ports.loadConfigAndThemes.send({ config, themes });
+    app.ports.sendMessageToElm.send({ config, themes });
   });
 });
 
@@ -169,7 +169,10 @@ app.ports.notify.subscribe(function (notification: Notification) {
 });
 
 app.ports.sendMessageFromElm.subscribe(function (message: Message) {
-  invoke("handle_external_message", message);
+  invoke("handle_external_message", message).then((newState) => {
+    console.log(newState);
+    app.ports.sendMessageToElm.send(newState);
+  });
 });
 
 app.ports.updateConfig.subscribe(function (config: ElmConfig) {

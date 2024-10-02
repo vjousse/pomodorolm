@@ -35,6 +35,21 @@ pub struct Pomodoro<'a> {
     pub focus_round_number_over: u16,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PomodoroUnborrowed {
+    pub config: Config,
+    pub current_session: SessionUnburrowed,
+    pub focus_round_number_over: u16,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SessionUnburrowed {
+    current_time: Seconds,
+    label: Option<String>,
+    session_type: SessionType,
+    state: SessionState,
+}
+
 impl Default for Pomodoro<'_> {
     fn default() -> Self {
         Pomodoro {
@@ -58,6 +73,19 @@ impl Pomodoro<'_> {
             SessionType::Focus => self.config.focus_duration,
             SessionType::LongBreak => self.config.long_break_duration,
             SessionType::ShortBreak => self.config.short_break_duration,
+        }
+    }
+
+    pub fn to_unborrowed(&self) -> PomodoroUnborrowed {
+        PomodoroUnborrowed {
+            config: self.config.clone(),
+            focus_round_number_over: self.focus_round_number_over,
+            current_session: SessionUnburrowed {
+                current_time: self.current_session.current_time,
+                session_type: self.current_session.session_type,
+                state: self.current_session.state,
+                label: self.current_session.label.map(|l| String::from(l)),
+            },
         }
     }
 }

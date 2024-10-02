@@ -302,13 +302,54 @@ type SettingType
     | ShortBreakTime
 
 
+type alias RustSession =
+    { currentTime : Int
+    , label : Maybe String
+    , sessionType : String
+    , state : String
+    }
+
+
+type alias RustState =
+    { currentSession : RustSession
+    }
+
+
+type ExternalMessage
+    = RustStateMsg RustState
+    | RustConfigAndThemesMsg ConfigAndThemes
+
+
+rustStateDecoder : Decode.Decoder RustState
+rustStateDecoder =
+    Decode.succeed RustState
+        |> Pipe.required "current_session" rustSessionDecoder
+
+
+rustSessionDecoder : Decode.Decoder RustSession
+rustSessionDecoder =
+    Decode.succeed RustSession
+        |> Pipe.required "current_time" Decode.int
+        |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
+        |> Pipe.required "session_type" Decode.string
+        |> Pipe.required "state" Decode.string
+
+
+externalMessageDecoder : Decode.Decoder ExternalMessage
+externalMessageDecoder =
+    Decode.oneOf
+        [ rustStateDecoder |> Decode.map RustStateMsg
+        , configAndThemesDecoder |> Decode.map RustConfigAndThemesMsg
+        ]
+
+
 type Msg
     = CloseWindow
     | ChangeSettingTab SettingTab
     | ChangeSettingConfig Setting
     | ChangeTheme Theme
     | HideVolumeBar
-    | LoadConfig ConfigAndThemes
+    | ProcessExternalMessage ExternalMessage
     | MinimizeWindow
     | NoOp
     | Reset
@@ -478,7 +519,19 @@ update msg model =
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
-        LoadConfig { config, themes } ->
+        MinimizeWindow ->
+            ( model
+            , if model.config.minimizeToTray then
+                hideWindow ()
+
+              else
+                minimizeWindow ()
+            )
+
+        NoOp ->
+            ( model, Cmd.none )
+
+        ProcessExternalMessage (RustConfigAndThemesMsg { config, themes }) ->
             let
                 updatedThemes =
                     themes
@@ -527,16 +580,11 @@ update msg model =
                 _ ->
                     ( newModel, updateSessionStatus (Stopped |> sessionStatusToString) )
 
-        MinimizeWindow ->
-            ( model
-            , if model.config.minimizeToTray then
-                hideWindow ()
-
-              else
-                minimizeWindow ()
-            )
-
-        NoOp ->
+        ProcessExternalMessage (RustStateMsg rustSession) ->
+            let
+                _ =
+                    Debug.log "Rust Session" rustSession
+            in
             ( model, Cmd.none )
 
         Reset ->
@@ -1946,11 +1994,11 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapLoadConfigAndThemes : Decode.Value -> Msg
-mapLoadConfigAndThemes modelJson =
-    case Decode.decodeValue configAndThemesDecoder modelJson of
+mapJsonMessage : Decode.Decoder a -> (a -> Msg) -> Decode.Value -> Msg
+mapJsonMessage decoder msg value =
+    case Decode.decodeValue decoder value of
         Ok model ->
-            LoadConfig model
+            msg model
 
         Err _ ->
             --@FIX: don't fail silently
@@ -1963,7 +2011,7 @@ subscriptions _ =
         [ tick (always Tick)
         , togglePlay (always TogglePlayStatus)
         , skip (always SkipCurrentRound)
-        , loadConfigAndThemes mapLoadConfigAndThemes
+        , sendMessageToElm (mapJsonMessage externalMessageDecoder ProcessExternalMessage)
         ]
 
 
@@ -1976,7 +2024,7 @@ port togglePlay : (() -> msg) -> Sub msg
 port skip : (() -> msg) -> Sub msg
 
 
-port loadConfigAndThemes : (Decode.Value -> msg) -> Sub msg
+port sendMessageToElm : (Decode.Value -> msg) -> Sub msg
 
 
 
