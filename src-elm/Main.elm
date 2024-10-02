@@ -1,4 +1,4 @@
-port module Main exposing (Config, ConfigAndThemes, CurrentState, Defaults, Flags, Model, Msg(..), NextRoundInfo, Notification, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
+port module Main exposing (Config, ConfigAndThemes, CurrentState, Defaults, ExternalMessage(..), Flags, Model, Msg(..), NextRoundInfo, Notification, RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
 
 import Browser
 import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
@@ -49,6 +49,7 @@ type alias Model =
     , currentTime : Seconds
     , drawerOpen : Bool
     , muted : Bool
+    , rustState : Maybe RustState
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
     , strokeDasharray : Float
@@ -146,7 +147,7 @@ type alias CurrentState =
 
 
 type SessionType
-    = Pomodoro
+    = Focus
     | ShortBreak
     | LongBreak
 
@@ -160,14 +161,14 @@ sessionStatusToString sessionStatus =
         Running ->
             "running"
 
-        Stopped ->
-            "stopped"
+        NotStarted ->
+            "not_started"
 
 
 type SessionStatus
-    = Paused
+    = NotStarted
+    | Paused
     | Running
-    | Stopped
 
 
 type SettingTab
@@ -273,12 +274,13 @@ init flags =
             }
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentRoundNumber = 1
-      , currentSessionType = Pomodoro
+      , currentSessionType = Focus
       , currentState = currentState
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
       , muted = False
-      , sessionStatus = Stopped
+      , rustState = Nothing
+      , sessionStatus = NotStarted
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
       , theme = theme
@@ -288,7 +290,7 @@ init flags =
       }
     , Cmd.batch
         [ updateCurrentState currentState
-        , updateSessionStatus (Stopped |> sessionStatusToString)
+        , updateSessionStatus (NotStarted |> sessionStatusToString)
         , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
@@ -305,8 +307,8 @@ type SettingType
 type alias RustSession =
     { currentTime : Int
     , label : Maybe String
-    , sessionType : String
-    , state : String
+    , sessionType : SessionType
+    , status : SessionStatus
     }
 
 
@@ -326,13 +328,55 @@ rustStateDecoder =
         |> Pipe.required "current_session" rustSessionDecoder
 
 
+sessionTypeFromStringDecoder : String -> Decode.Decoder SessionType
+sessionTypeFromStringDecoder string =
+    case String.toLower string of
+        "focus" ->
+            Decode.succeed Focus
+
+        "shortbreak" ->
+            Decode.succeed ShortBreak
+
+        "longbreak" ->
+            Decode.succeed LongBreak
+
+        _ ->
+            Decode.fail ("Unknown sessionType: " ++ string)
+
+
+sessionTypeDecoder : Decode.Decoder SessionType
+sessionTypeDecoder =
+    Decode.string |> Decode.andThen sessionTypeFromStringDecoder
+
+
+sessionStatusDecoder : Decode.Decoder SessionStatus
+sessionStatusDecoder =
+    Decode.string |> Decode.andThen sessionStatusFromStringDecoder
+
+
+sessionStatusFromStringDecoder : String -> Decode.Decoder SessionStatus
+sessionStatusFromStringDecoder string =
+    case String.toLower string of
+        "paused" ->
+            Decode.succeed Paused
+
+        "notstarted" ->
+            Decode.succeed NotStarted
+
+        "running" ->
+            Decode.succeed Running
+
+        _ ->
+            Decode.fail ("Unknown sessionStatus: " ++ string)
+
+
 rustSessionDecoder : Decode.Decoder RustSession
 rustSessionDecoder =
     Decode.succeed RustSession
         |> Pipe.required "current_time" Decode.int
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
-        |> Pipe.required "session_type" Decode.string
-        |> Pipe.required "state" Decode.string
+        |> Pipe.required "session_type" sessionTypeDecoder
+        |> Pipe.required "state" sessionStatusDecoder
 
 
 externalMessageDecoder : Decode.Decoder ExternalMessage
@@ -397,7 +441,7 @@ getNextRoundInfo model =
             }
     in
     case model.currentSessionType of
-        Pomodoro ->
+        Focus ->
             if model.currentRoundNumber == model.config.maxRoundNumber then
                 { nextSessionType = LongBreak
                 , htmlIdOfAudioToPlay = "audio-long-break"
@@ -415,19 +459,19 @@ getNextRoundInfo model =
                 }
 
         ShortBreak ->
-            { nextSessionType = Pomodoro
+            { nextSessionType = Focus
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = model.currentRoundNumber + 1
             , nextTime = model.config.pomodoroDuration
-            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
+            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.shortBreakDuration Focus
             }
 
         LongBreak ->
-            { nextSessionType = Pomodoro
+            { nextSessionType = Focus
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = 1
             , nextTime = model.config.pomodoroDuration
-            , notification = getNotification "Long break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
+            , notification = getNotification "Long break completed" "focus round" "start_focus" model.config.shortBreakDuration Focus
             }
 
 
@@ -555,11 +599,11 @@ update msg model =
                 newModel =
                     { model
                         | config = config
-                        , sessionStatus = Stopped
+                        , sessionStatus = NotStarted
                         , themes = newThemes
                         , currentTime =
                             case model.currentSessionType of
-                                Pomodoro ->
+                                Focus ->
                                     config.pomodoroDuration
 
                                 ShortBreak ->
@@ -575,17 +619,13 @@ update msg model =
                         ( updatedModel, cmds ) =
                             update (ChangeTheme currentTheme) newModel
                     in
-                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (Stopped |> sessionStatusToString) ] )
+                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (NotStarted |> sessionStatusToString) ] )
 
                 _ ->
-                    ( newModel, updateSessionStatus (Stopped |> sessionStatusToString) )
+                    ( newModel, updateSessionStatus (NotStarted |> sessionStatusToString) )
 
-        ProcessExternalMessage (RustStateMsg rustSession) ->
-            let
-                _ =
-                    Debug.log "Rust Session" rustSession
-            in
-            ( model, Cmd.none )
+        ProcessExternalMessage (RustStateMsg rustState) ->
+            ( { model | rustState = Just rustState }, Cmd.none )
 
         Reset ->
             let
@@ -598,10 +638,10 @@ update msg model =
                     }
             in
             ( { model
-                | sessionStatus = Stopped
+                | sessionStatus = NotStarted
                 , currentTime =
                     case model.currentSessionType of
-                        Pomodoro ->
+                        Focus ->
                             model.config.pomodoroDuration
 
                         ShortBreak ->
@@ -612,7 +652,7 @@ update msg model =
               }
             , Cmd.batch
                 [ updateCurrentState currentState
-                , updateSessionStatus (Stopped |> sessionStatusToString)
+                , updateSessionStatus (NotStarted |> sessionStatusToString)
                 ]
             )
 
@@ -638,13 +678,13 @@ update msg model =
             ( { model
                 | config = newConfig
                 , currentTime = defaults.pomodoroDuration
-                , currentSessionType = Pomodoro
+                , currentSessionType = Focus
                 , currentState = currentState
-                , sessionStatus = Stopped
+                , sessionStatus = NotStarted
               }
             , Cmd.batch
                 [ updateCurrentState currentState
-                , updateSessionStatus (Stopped |> sessionStatusToString)
+                , updateSessionStatus (NotStarted |> sessionStatusToString)
                 ]
             )
 
@@ -660,19 +700,19 @@ update msg model =
                         , currentTime = nextRoundInfo.nextTime
                         , sessionStatus =
                             case nextRoundInfo.nextSessionType of
-                                Pomodoro ->
+                                Focus ->
                                     if model.config.autoStartWorkTimer then
                                         Running
 
                                     else
-                                        Stopped
+                                        NotStarted
 
                                 _ ->
                                     if model.config.autoStartBreakTimer then
                                         Running
 
                                     else
-                                        Stopped
+                                        NotStarted
                     }
 
                 currentState =
@@ -751,19 +791,19 @@ update msg model =
                             , currentTime = nextRoundInfo.nextTime
                             , sessionStatus =
                                 case nextRoundInfo.nextSessionType of
-                                    Pomodoro ->
+                                    Focus ->
                                         if model.config.autoStartWorkTimer then
                                             Running
 
                                         else
-                                            Stopped
+                                            NotStarted
 
                                     _ ->
                                         if model.config.autoStartBreakTimer then
                                             Running
 
                                         else
-                                            Stopped
+                                            NotStarted
                         }
 
                     currentState =
@@ -781,19 +821,19 @@ update msg model =
                     , currentState = currentState
                     , sessionStatus =
                         case nextRoundInfo.nextSessionType of
-                            Pomodoro ->
+                            Focus ->
                                 if model.config.autoStartWorkTimer then
                                     Running
 
                                 else
-                                    Stopped
+                                    NotStarted
 
                             _ ->
                                 if model.config.autoStartBreakTimer then
                                     Running
 
                                 else
-                                    Stopped
+                                    NotStarted
                   }
                 , Cmd.batch
                     [ updateCurrentState currentState
@@ -961,7 +1001,7 @@ update msg model =
                     ( { model
                         | config = newConfig
                         , currentTime =
-                            if model.currentSessionType == Pomodoro then
+                            if model.currentSessionType == Focus then
                                 if newValue == 0 then
                                     60
 
@@ -1066,7 +1106,7 @@ shouldPlayTick model =
 
     else if model.currentTime > 0 && model.sessionStatus == Running then
         case ( model.currentSessionType, model.config.tickSoundsDuringWork, model.config.tickSoundsDuringBreak ) of
-            ( Pomodoro, True, _ ) ->
+            ( Focus, True, _ ) ->
                 True
 
             ( ShortBreak, _, True ) ->
@@ -1085,7 +1125,7 @@ shouldPlayTick model =
 colorForSessionType : SessionType -> Theme -> RGB
 colorForSessionType sessionType theme =
     case sessionType of
-        Pomodoro ->
+        Focus ->
             fromCSSHexToRGB <| theme.colors.focusRound
 
         ShortBreak ->
@@ -1098,7 +1138,7 @@ colorForSessionType sessionType theme =
 computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
 computeCurrentColor currentTime maxTime sessionType theme =
     case sessionType of
-        Pomodoro ->
+        Focus ->
             let
                 percent =
                     toFloat currentTime / toFloat maxTime
@@ -1162,7 +1202,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
         , p [ class "dial-label", style "color" color ]
             [ text <|
                 case sessionType of
-                    Pomodoro ->
+                    Focus ->
                         "Focus"
 
                     ShortBreak ->
@@ -1395,7 +1435,7 @@ footerView model =
 getCurrentMaxTime : Model -> Seconds
 getCurrentMaxTime model =
     case model.currentSessionType of
-        Pomodoro ->
+        Focus ->
             model.config.pomodoroDuration
 
         LongBreak ->

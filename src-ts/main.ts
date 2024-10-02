@@ -255,6 +255,10 @@ await listen("tick-event", () => {
   app.ports.tick.send(null);
 });
 
+await listen("external-message", (message) => {
+  app.ports.sendMessageToElm.send(message);
+});
+
 await listen("toggle-play", () => {
   app.ports.togglePlay.send(null);
 });
