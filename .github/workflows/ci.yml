@@ -5,8 +5,12 @@ on:
   push:
     branches: [main]
 
+env:
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
   linting:
+    name: Lint python and elm
     runs-on: ubuntu-latest
 
     steps:
@@ -37,8 +41,15 @@ jobs:
       - name: Run pre-commit hooks on all files
         run: uv run pre-commit run --all-files
 
+  clippy_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
+
   rust_testing:
-    name: Cargo test
+    name: Test rust code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
