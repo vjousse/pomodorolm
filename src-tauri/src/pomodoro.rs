@@ -92,13 +92,13 @@ impl Pomodoro<'_> {
 
     pub fn to_unborrowed(&self) -> PomodoroUnborrowed {
         PomodoroUnborrowed {
-            config: self.config.clone(),
+            config: self.config,
             focus_round_number_over: self.focus_round_number_over,
             current_session: SessionUnburrowed {
                 current_time: self.current_session.current_time,
                 session_type: self.current_session.session_type,
                 status: self.current_session.status,
-                label: self.current_session.label.map(|l| String::from(l)),
+                label: self.current_session.label.map(String::from),
             },
         }
     }
@@ -113,9 +113,10 @@ pub struct Session<'a> {
 }
 impl Session<'_> {
     fn from_type(session_type: SessionType) -> Self {
-        let mut session = Session::default();
-        session.session_type = session_type;
-        session
+        Self {
+            session_type,
+            ..Default::default()
+        }
     }
 }
 impl Default for Session<'_> {
@@ -218,6 +219,6 @@ pub fn tick<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
                 ..*pomodoro
             }
         }
-        _ => pomodoro.clone(),
+        _ => *pomodoro,
     }
 }

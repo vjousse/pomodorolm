@@ -394,7 +394,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 BaseDirectory::Resource,
             );
             let audio_path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
+                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
 
             tauri::async_runtime::spawn(tick(
                 app.handle().clone(),
@@ -576,7 +576,7 @@ async fn update_play_tick(
     *state_guard = App {
         play_tick,
         config: state_guard.config.clone(),
-        pomodoro: state_guard.pomodoro.clone(),
+        pomodoro: state_guard.pomodoro,
     };
 
     Ok(())
@@ -593,7 +593,7 @@ async fn update_config(
     *state_guard = App {
         play_tick: state_guard.play_tick,
         config: config.clone(),
-        pomodoro: state_guard.pomodoro.clone(),
+        pomodoro: state_guard.pomodoro,
     };
 
     match get_config_file_path(app_handle.path()) {
@@ -646,7 +646,7 @@ async fn load_config_and_themes(
             *state_guard = App {
                 play_tick: state_guard.play_tick,
                 config: config.clone(),
-                pomodoro: state_guard.pomodoro.clone(),
+                pomodoro: state_guard.pomodoro,
             };
 
             Ok(config)
@@ -700,7 +700,7 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
                 BaseDirectory::Resource,
             );
             let path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
+                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
             let audio_path = path.to_string_lossy();
 
             // Fail silently if we can't play sound file
