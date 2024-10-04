@@ -111,14 +111,7 @@ pub struct Session<'a> {
     pub session_type: SessionType,
     pub status: SessionStatus,
 }
-impl Session<'_> {
-    fn from_type(session_type: SessionType) -> Self {
-        Self {
-            session_type,
-            ..Default::default()
-        }
-    }
-}
+
 impl Default for Session<'_> {
     fn default() -> Self {
         Session {
@@ -150,18 +143,51 @@ pub fn play<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
     }
 }
 
+pub fn reset<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
+    Pomodoro {
+        current_session: Session {
+            status: SessionStatus::NotStarted,
+            current_time: 0,
+            ..pomodoro.current_session
+        },
+        ..*pomodoro
+    }
+}
+
 pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
     let session = pomodoro.current_session;
     match session.session_type {
         SessionType::Focus => {
             if pomodoro.focus_round_number_over + 1 == pomodoro.config.max_focus_rounds {
-                Session::from_type(SessionType::LongBreak)
+                Session {
+                    session_type: SessionType::LongBreak,
+                    status: if pomodoro.config.auto_start_long_break_timer {
+                        SessionStatus::Running
+                    } else {
+                        SessionStatus::NotStarted
+                    },
+
+                    ..Default::default()
+                }
             } else {
-                Session::from_type(SessionType::ShortBreak)
+                Session {
+                    session_type: SessionType::ShortBreak,
+                    status: if pomodoro.config.auto_start_short_break_timer {
+                        SessionStatus::Running
+                    } else {
+                        SessionStatus::NotStarted
+                    },
+                    ..Default::default()
+                }
             }
         }
         _ => Session {
             session_type: SessionType::Focus,
+            status: if pomodoro.config.auto_start_focus_timer {
+                SessionStatus::Running
+            } else {
+                SessionStatus::NotStarted
+            },
             ..Session::default()
         },
     }

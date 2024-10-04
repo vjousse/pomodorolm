@@ -49,7 +49,7 @@ type alias Model =
     , currentTime : Seconds
     , drawerOpen : Bool
     , muted : Bool
-    , rustState : Maybe RustState
+    , pomodoroState : Maybe RustState
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
     , strokeDasharray : Float
@@ -143,7 +143,7 @@ configAndThemesDecoder =
 
 
 type alias CurrentState =
-    { color : String, percentage : Float, paused : Bool, playTick : Bool }
+    { color : String, percentage : Float, paused : Bool }
 
 
 type SessionType
@@ -253,7 +253,6 @@ init flags =
             { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
-            , playTick = False
             }
     in
     ( { appVersion = flags.appVersion
@@ -279,7 +278,7 @@ init flags =
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
       , muted = False
-      , rustState = Nothing
+      , pomodoroState = Nothing
       , sessionStatus = NotStarted
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
@@ -291,6 +290,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (NotStarted |> sessionStatusToString)
+        , sendMessageFromElm (elmMessageEncoder { name = "get-state" })
         , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
@@ -508,17 +508,8 @@ update msg model =
 
                         MinimizeToTrayOnClose ->
                             { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
-
-                nextModel =
-                    { model | config = newSettingsConfig }
-
-                oldState =
-                    nextModel.currentState
-
-                currentState =
-                    { oldState | playTick = shouldPlayTick model }
             in
-            ( { nextModel | currentState = currentState }, Cmd.batch [ updateConfig newSettingsConfig, updateCurrentState currentState ] )
+            ( { model | config = newSettingsConfig }, updateConfig newSettingsConfig )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -624,8 +615,8 @@ update msg model =
                 _ ->
                     ( newModel, updateSessionStatus (NotStarted |> sessionStatusToString) )
 
-        ProcessExternalMessage (RustStateMsg rustState) ->
-            ( { model | rustState = Just rustState }, Cmd.none )
+        ProcessExternalMessage (RustStateMsg pomodoroState) ->
+            ( { model | pomodoroState = Just pomodoroState }, Cmd.none )
 
         Reset ->
             let
@@ -634,7 +625,6 @@ update msg model =
                     , percentage = 100
                     , paused =
                         model.sessionStatus == Paused
-                    , playTick = False
                     }
             in
             ( { model
@@ -653,6 +643,7 @@ update msg model =
             , Cmd.batch
                 [ updateCurrentState currentState
                 , updateSessionStatus (NotStarted |> sessionStatusToString)
+                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
                 ]
             )
 
@@ -668,24 +659,14 @@ update msg model =
                         , longBreakDuration = defaults.longBreakDuration
                         , maxRoundNumber = defaults.maxRoundNumber
                     }
-
-                oldState =
-                    model.currentState
-
-                currentState =
-                    { oldState | playTick = False }
             in
             ( { model
                 | config = newConfig
                 , currentTime = defaults.pomodoroDuration
                 , currentSessionType = Focus
-                , currentState = currentState
                 , sessionStatus = NotStarted
               }
-            , Cmd.batch
-                [ updateCurrentState currentState
-                , updateSessionStatus (NotStarted |> sessionStatusToString)
-                ]
+            , updateSessionStatus (NotStarted |> sessionStatusToString)
             )
 
         SkipCurrentRound ->
@@ -720,7 +701,6 @@ update msg model =
                     , percentage = 100
                     , paused =
                         model.sessionStatus == Paused
-                    , playTick = shouldPlayTick nextModel
                     }
             in
             ( { nextModel | currentState = currentState }
@@ -756,18 +736,11 @@ update msg model =
                     percent =
                         toFloat newTime / toFloat maxTime
 
-                    nextModel =
-                        { model
-                            | currentTime = newTime
-                            , currentColor = currentColor
-                        }
-
                     currentState =
                         { color = fromRGBToCSSHex currentColor
                         , percentage = percent
                         , paused =
                             model.sessionStatus == Paused
-                        , playTick = shouldPlayTick nextModel
                         }
                 in
                 ( { model
@@ -811,7 +784,6 @@ update msg model =
                         , percentage = 100
                         , paused =
                             nextModel.sessionStatus == Paused
-                        , playTick = shouldPlayTick nextModel
                         }
                 in
                 ( { nextModel
@@ -906,17 +878,9 @@ update msg model =
 
                 nextModel =
                     { model | muted = not model.muted, volume = newVolume }
-
-                oldState =
-                    model.currentState
-
-                currentState =
-                    { oldState
-                        | playTick = shouldPlayTick nextModel
-                    }
             in
-            ( { nextModel | currentState = currentState }
-            , Cmd.batch [ setVolume newVolume, updateCurrentState currentState ]
+            ( nextModel
+            , setVolume newVolume
             )
 
         TogglePlayStatus ->
@@ -936,7 +900,6 @@ update msg model =
                                         model.theme
                             , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = True
-                            , playTick = shouldPlayTick nextModel
                             }
                     in
                     ( { nextModel | currentState = currentState }
@@ -961,7 +924,6 @@ update msg model =
                                         model.theme
                             , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
                             , paused = False
-                            , playTick = shouldPlayTick nextModel
                             }
                     in
                     ( { nextModel | currentState = currentState }
@@ -1096,30 +1058,6 @@ update msg model =
               }
             , setVolume newVolume
             )
-
-
-shouldPlayTick : Model -> Bool
-shouldPlayTick model =
-    -- If it's muted, don't play anything
-    if model.muted then
-        False
-
-    else if model.currentTime > 0 && model.sessionStatus == Running then
-        case ( model.currentSessionType, model.config.tickSoundsDuringWork, model.config.tickSoundsDuringBreak ) of
-            ( Focus, True, _ ) ->
-                True
-
-            ( ShortBreak, _, True ) ->
-                True
-
-            ( LongBreak, _, True ) ->
-                True
-
-            _ ->
-                False
-
-    else
-        False
 
 
 colorForSessionType : SessionType -> Theme -> RGB

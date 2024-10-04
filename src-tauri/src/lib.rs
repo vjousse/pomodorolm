@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -32,7 +33,6 @@ const CONFIG_DIR_NAME: &str = "pomodorolm";
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App<'a> {
     config: Config,
-    play_tick: bool,
     #[serde(borrow)]
     pomodoro: pomodoro::Pomodoro<'a>,
 }
@@ -373,11 +373,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 ..pomodoro::Pomodoro::default()
             };
 
-            app.manage(AppState(Arc::new(Mutex::new(App {
-                play_tick: false,
-                config,
-                pomodoro,
-            }))));
+            app.manage(AppState(Arc::new(Mutex::new(App { config, pomodoro }))));
 
             app.manage(AppMenuStates(std::sync::Mutex::new(MenuStates {
                 toggle_visibility_menu: toggle_visibility,
@@ -416,7 +412,6 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             notify,
             play_sound_command,
             update_config,
-            update_play_tick,
             update_session_status
         ])
         .run(tauri::generate_context!())
@@ -447,6 +442,23 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     themes_paths_bufs
 }
 
+// @FIX: handle mute on Elm side
+fn should_play_tick_sound(config: &Config, pomodoro: &Pomodoro) -> bool {
+    match (
+        pomodoro.current_session.status,
+        pomodoro.current_session.session_type,
+        config.tick_sounds_during_work,
+        config.tick_sounds_during_break,
+    ) {
+        // No tick sound configured
+        (_, _, false, false) => false,
+        (SessionStatus::Running, SessionType::Focus, true, _) => true,
+        (SessionStatus::Running, SessionType::LongBreak, _, true) => true,
+        (SessionStatus::Running, SessionType::ShortBreak, _, true) => true,
+        _ => false,
+    }
+}
+
 async fn tick(app_handle: AppHandle, path: String) {
     let mut stream = IntervalStream::new(time::interval(Duration::from_secs(1)));
 
@@ -460,7 +472,9 @@ async fn tick(app_handle: AppHandle, path: String) {
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
                 let mut state_guard = new_state.0.lock().await;
-                let play_tick: bool = state_guard.play_tick;
+                //let play_tick: bool = state_guard.play_tick;
+                let play_tick: bool =
+                    should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
                 state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
 
@@ -566,22 +580,6 @@ async fn update_session_status<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-async fn update_play_tick(
-    state: tauri::State<'_, AppState<'_>>,
-    play_tick: bool,
-) -> Result<(), ()> {
-    let mut state_guard = state.0.lock().await;
-
-    *state_guard = App {
-        play_tick,
-        config: state_guard.config.clone(),
-        pomodoro: state_guard.pomodoro,
-    };
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn update_config(
     state: tauri::State<'_, AppState<'_>>,
     app_handle: tauri::AppHandle,
@@ -590,7 +588,6 @@ async fn update_config(
     let mut state_guard = state.0.lock().await;
 
     *state_guard = App {
-        play_tick: state_guard.play_tick,
         config: config.clone(),
         pomodoro: state_guard.pomodoro,
     };
@@ -643,7 +640,6 @@ async fn load_config_and_themes(
             })?;
 
             *state_guard = App {
-                play_tick: state_guard.play_tick,
                 config: config.clone(),
                 pomodoro: state_guard.pomodoro,
             };
@@ -806,6 +802,9 @@ async fn handle_external_message(
         }
         "pause" => {
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+        }
+        "reset" => {
+            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
         }
         "skip" => {
             app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
