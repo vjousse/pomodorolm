@@ -19,6 +19,7 @@ pub struct AppState<'a>(Arc<Mutex<App<'a>>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
+#[cfg(target_os = "linux")]
 use std::env;
 use std::path::PathBuf;
 use tauri::Emitter;

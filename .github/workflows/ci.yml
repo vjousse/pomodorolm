@@ -55,7 +55,9 @@ jobs:
         run: rustup update stable && rustup default stable
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features --manifest-path src-tauri/Cargo.toml
+        run: |
+          cd src-tauri
+          cargo clippy --all-targets --all-features
 
       - name: Run cargo test
         run: cargo test --verbose --manifest-path src-tauri/Cargo.toml
