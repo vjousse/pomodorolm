@@ -25,7 +25,7 @@ use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 mod icon;
-mod pomodoro;
+pub mod pomodoro;
 mod sound;
 
 const CONFIG_DIR_NAME: &str = "pomodorolm";

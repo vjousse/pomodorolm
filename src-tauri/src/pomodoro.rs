@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub enum SessionStatus {
     NotStarted,
     Paused,
@@ -16,7 +16,7 @@ pub enum SessionType {
 
 type Seconds = u16;
 
-#[derive(Copy, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub auto_start_long_break_timer: bool,
     pub auto_start_short_break_timer: bool,
@@ -27,7 +27,21 @@ pub struct Config {
     pub short_break_duration: Seconds,
 }
 
-#[derive(Copy, Debug, Serialize, Deserialize, Clone)]
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            auto_start_long_break_timer: false,
+            auto_start_short_break_timer: false,
+            auto_start_focus_timer: false,
+            focus_duration: 25 * 60,
+            long_break_duration: 20 * 60,
+            max_focus_rounds: 4,
+            short_break_duration: 5 * 60,
+        }
+    }
+}
+
+#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub struct Pomodoro<'a> {
     pub config: Config,
     #[serde(borrow)]
@@ -90,12 +104,12 @@ impl Pomodoro<'_> {
     }
 }
 
-#[derive(Copy, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub struct Session<'a> {
-    current_time: Seconds,
-    label: Option<&'a str>,
-    session_type: SessionType,
-    status: SessionStatus,
+    pub current_time: Seconds,
+    pub label: Option<&'a str>,
+    pub session_type: SessionType,
+    pub status: SessionStatus,
 }
 impl Session<'_> {
     fn from_type(session_type: SessionType) -> Self {
@@ -168,25 +182,29 @@ pub fn tick<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
     let session = pomodoro.current_session;
 
     match session.status {
-        // Tick should do something only if the current session is in runnig mode
+        // Tick should do something only if the current session is in running mode
         SessionStatus::Running => {
             // If it was the last tick, return the next status
             let is_end_of_session =
                 session.current_time + 1 == pomodoro.duration_of_session(session);
 
             if is_end_of_session {
+                let next_session = get_next_session(pomodoro);
+
                 // Increment the number round counter if it was a focus session
                 let focus_round_number_over = if session.session_type == SessionType::Focus {
                     pomodoro.focus_round_number_over + 1
+                } else if session.session_type == SessionType::LongBreak
+                    && next_session.session_type == SessionType::Focus
+                {
+                    0
                 } else {
                     pomodoro.focus_round_number_over
                 };
 
-                let current_session = get_next_session(pomodoro);
-
                 return Pomodoro {
                     focus_round_number_over,
-                    current_session,
+                    current_session: next_session,
                     ..*pomodoro
                 };
             }
