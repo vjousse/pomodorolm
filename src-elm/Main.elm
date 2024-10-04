@@ -34,7 +34,6 @@ type alias Model =
     , currentState : CurrentState
     , currentTime : Seconds
     , drawerOpen : Bool
-    , muted : Bool
     , pomodoroState : Maybe RustState
     , sessionStatus : SessionStatus
     , settingTab : SettingTab
@@ -69,6 +68,7 @@ type alias Flags =
     , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
+    , muted : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
     , theme : String
@@ -108,6 +108,7 @@ init flags =
             , maxRoundNumber = flags.maxRoundNumber
             , minimizeToTray = flags.minimizeToTray
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
+            , muted = flags.muted
             , pomodoroDuration = flags.pomodoroDuration
             , shortBreakDuration = flags.shortBreakDuration
             , theme = flags.theme
@@ -120,7 +121,6 @@ init flags =
       , currentState = currentState
       , currentTime = flags.pomodoroDuration
       , drawerOpen = False
-      , muted = False
       , pomodoroState = Nothing
       , sessionStatus = NotStarted
       , settingTab = TimerTab
@@ -229,38 +229,35 @@ getNextRoundInfo model =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg ({ config } as model) =
     case msg of
         ChangeSettingConfig settingConfig ->
             let
-                settingsConfig =
-                    model.config
-
                 newSettingsConfig =
                     case settingConfig of
                         AlwaysOnTop ->
-                            { settingsConfig | alwaysOnTop = not settingsConfig.alwaysOnTop }
+                            { config | alwaysOnTop = not config.alwaysOnTop }
 
                         AutoStartBreakTimer ->
-                            { settingsConfig | autoStartBreakTimer = not settingsConfig.autoStartBreakTimer }
+                            { config | autoStartBreakTimer = not config.autoStartBreakTimer }
 
                         AutoStartWorkTimer ->
-                            { settingsConfig | autoStartWorkTimer = not settingsConfig.autoStartWorkTimer }
+                            { config | autoStartWorkTimer = not config.autoStartWorkTimer }
 
                         TickSoundsDuringWork ->
-                            { settingsConfig | tickSoundsDuringWork = not settingsConfig.tickSoundsDuringWork }
+                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
 
                         TickSoundsDuringBreak ->
-                            { settingsConfig | tickSoundsDuringBreak = not settingsConfig.tickSoundsDuringBreak }
+                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
 
                         DesktopNotifications ->
-                            { settingsConfig | desktopNotifications = not settingsConfig.desktopNotifications }
+                            { config | desktopNotifications = not config.desktopNotifications }
 
                         MinimizeToTray ->
-                            { settingsConfig | minimizeToTray = not settingsConfig.minimizeToTray }
+                            { config | minimizeToTray = not config.minimizeToTray }
 
                         MinimizeToTrayOnClose ->
-                            { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
+                            { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
             in
             ( { model | config = newSettingsConfig }, updateConfig newSettingsConfig )
 
@@ -274,9 +271,6 @@ update msg model =
 
                 newState =
                     { currentState | color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType theme }
-
-                config =
-                    model.config
 
                 newConfig =
                     { config
@@ -319,18 +313,18 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        ProcessExternalMessage (RustConfigAndThemesMsg { config, themes }) ->
+        ProcessExternalMessage (RustConfigAndThemesMsg c) ->
             let
                 updatedThemes =
-                    themes
+                    c.themes
                         |> ListWithCurrent.fromList
-                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
 
                 newThemes =
                     case ListWithCurrent.getCurrent updatedThemes of
                         Just theme ->
                             -- We found a theme with the same name than in the config: everything's fine
-                            if (theme.name |> String.toLower) == (config.theme |> String.toLower) then
+                            if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
                                 updatedThemes
 
                             else
@@ -342,7 +336,7 @@ update msg model =
 
                 newModel =
                     { model
-                        | config = config
+                        | config = c.config
                         , sessionStatus = NotStarted
                         , themes = newThemes
                         , currentTime =
@@ -402,9 +396,6 @@ update msg model =
 
         ResetSettings ->
             let
-                config =
-                    model.config
-
                 newConfig =
                     { config
                         | pomodoroDuration = defaults.pomodoroDuration
@@ -458,7 +449,7 @@ update msg model =
             in
             ( { nextModel | currentState = currentState }
             , Cmd.batch
-                [ if model.muted then
+                [ if model.config.muted then
                     Cmd.none
 
                   else
@@ -562,7 +553,7 @@ update msg model =
                   }
                 , Cmd.batch
                     [ updateCurrentState currentState
-                    , if nextModel.muted then
+                    , if nextModel.config.muted then
                         Cmd.none
 
                       else
@@ -581,9 +572,6 @@ update msg model =
 
         ToggleDrawer ->
             let
-                config =
-                    model.config
-
                 newConfig =
                     { config
                         | -- Avoid having impossible states
@@ -623,17 +611,17 @@ update msg model =
         ToggleMute ->
             let
                 newVolume =
-                    if model.muted then
+                    if config.muted then
                         model.volume
 
                     else
                         0
 
-                nextModel =
-                    { model | muted = not model.muted, volume = newVolume }
+                newConfig =
+                    { config | muted = not config.muted }
             in
-            ( nextModel
-            , setVolume newVolume
+            ( { model | volume = newVolume, config = newConfig }
+            , Cmd.batch [ setVolume newVolume, updateConfig newConfig ]
             )
 
         TogglePlayStatus ->
@@ -696,9 +684,6 @@ update msg model =
 
                         Just stringValue ->
                             stringValue
-
-                config =
-                    model.config
             in
             case settingType of
                 FocusTime ->
@@ -803,11 +788,13 @@ update msg model =
 
                         Just v ->
                             toFloat v / 100
+
+                newConfig =
+                    { config | muted = newVolume <= 0 }
             in
             ( { model
                 | volume = newVolume
-                , muted =
-                    newVolume <= 0
+                , config = newConfig
               }
             , setVolume newVolume
             )
@@ -1053,7 +1040,7 @@ footerView model =
                     ]
                 ]
             , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, title "Mute" ]
-                [ if model.muted == False then
+                [ if model.config.muted == False then
                     svg
                         [ SvgAttr.version "1.2"
                         , SvgAttr.id "Layer_1"

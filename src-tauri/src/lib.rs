@@ -52,6 +52,8 @@ struct Config {
     max_round_number: u16,
     minimize_to_tray: bool,
     minimize_to_tray_on_close: bool,
+    #[serde(default)]
+    muted: bool,
     pomodoro_duration: u16,
     short_break_duration: u16,
     #[serde(default = "default_theme")]
@@ -207,6 +209,7 @@ impl Default for Config {
             max_round_number: 4u16,
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
+            muted: false,
             pomodoro_duration: 25 * 60,
             short_break_duration: 5 * 60,
             theme: "pomotroid".to_string(),
@@ -442,19 +445,20 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     themes_paths_bufs
 }
 
-// @FIX: handle mute on Elm side
 fn should_play_tick_sound(config: &Config, pomodoro: &Pomodoro) -> bool {
     match (
         pomodoro.current_session.status,
         pomodoro.current_session.session_type,
         config.tick_sounds_during_work,
         config.tick_sounds_during_break,
+        config.muted,
     ) {
         // No tick sound configured
-        (_, _, false, false) => false,
-        (SessionStatus::Running, SessionType::Focus, true, _) => true,
-        (SessionStatus::Running, SessionType::LongBreak, _, true) => true,
-        (SessionStatus::Running, SessionType::ShortBreak, _, true) => true,
+        (_, _, _, _, true) => false,
+        (_, _, false, false, _) => false,
+        (SessionStatus::Running, SessionType::Focus, true, _, _) => true,
+        (SessionStatus::Running, SessionType::LongBreak, _, true, _) => true,
+        (SessionStatus::Running, SessionType::ShortBreak, _, true, _) => true,
         _ => false,
     }
 }

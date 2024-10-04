@@ -57,8 +57,9 @@ configDecoder =
                 (Decode.field "minimize_to_tray" Decode.bool)
                 (Decode.field "minimize_to_tray_on_close" Decode.bool)
     in
-    Decode.map6 (<|)
+    Decode.map7 (<|)
         fieldSet0
+        (Decode.field "muted" Decode.bool)
         (Decode.field "pomodoro_duration" Decode.int)
         (Decode.field "short_break_duration" Decode.int)
         (Decode.field "theme" Decode.string)

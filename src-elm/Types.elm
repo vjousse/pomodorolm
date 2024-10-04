@@ -20,6 +20,7 @@ type alias Config =
     , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
+    , muted : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
     , theme : String

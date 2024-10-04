@@ -21,7 +21,6 @@ type ElmState = {
   color: string;
   percentage: number;
   paused: boolean;
-  playTick: boolean;
 };
 
 type Notification = {
@@ -75,6 +74,7 @@ type ElmConfig = {
   maxRoundNumber: number;
   minimizeToTray: boolean;
   minimizeToTrayOnClose: boolean;
+  muted: boolean;
   pomodoroDuration: number;
   shortBreakDuration: number;
   theme: string;
@@ -91,6 +91,7 @@ type RustConfig = {
   max_round_number: number;
   minimize_to_tray: boolean;
   minimize_to_tray_on_close: boolean;
+  muted: boolean;
   pomodoro_duration: number;
   short_break_duration: number;
   theme: string;
@@ -109,6 +110,7 @@ let rustConfig: RustConfig = {
   max_round_number: 4,
   minimize_to_tray: true,
   minimize_to_tray_on_close: true,
+  muted: false,
   pomodoro_duration: 1500,
   short_break_duration: 300,
   theme: "pomodorolm",
@@ -130,6 +132,7 @@ app = Elm.Main.init({
     maxRoundNumber: rustConfig.max_round_number,
     minimizeToTray: rustConfig.minimize_to_tray,
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
+    muted: rustConfig.muted,
     pomodoroDuration: rustConfig.pomodoro_duration,
     shortBreakDuration: rustConfig.short_break_duration,
     theme: rustConfig.theme,
@@ -186,6 +189,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       max_round_number: config.maxRoundNumber,
       minimize_to_tray: config.minimizeToTray,
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
+      muted: config.muted,
       pomodoro_duration: config.pomodoroDuration,
       short_break_duration: config.shortBreakDuration,
       theme: config.theme,
@@ -196,7 +200,6 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
 });
 
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
-  invoke("update_play_tick", { playTick: state.playTick });
   invoke("change_icon", {
     red: hexToRgb(state.color)?.r,
     green: hexToRgb(state.color)?.g,
