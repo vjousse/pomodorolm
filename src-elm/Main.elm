@@ -182,7 +182,9 @@ update msg ({ config } as model) =
                         MinimizeToTrayOnClose ->
                             { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
             in
-            ( { model | config = newSettingsConfig }, updateConfig newSettingsConfig )
+            ( { model | config = newSettingsConfig }
+            , updateConfig newSettingsConfig
+            )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -543,70 +545,27 @@ update msg ({ config } as model) =
 
                         Just stringValue ->
                             stringValue
+
+                newConfig =
+                    case settingType of
+                        FocusTime ->
+                            { config | pomodoroDuration = min (90 * 60) (value * 60) }
+
+                        LongBreakTime ->
+                            { config | longBreakDuration = min (90 * 60) (value * 60) }
+
+                        Rounds ->
+                            { config | maxRoundNumber = min 12 value }
+
+                        ShortBreakTime ->
+                            { config | shortBreakDuration = min (90 * 60) (value * 60) }
             in
-            case settingType of
-                FocusTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-
-                        newConfig =
-                            { config | pomodoroDuration = newValue }
-                    in
-                    ( { model
-                        | config = newConfig
-                      }
-                    , updateConfig newConfig
-                    )
-
-                LongBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | longBreakDuration = newValue }
-                      }
-                    , Cmd.none
-                    )
-
-                Rounds ->
-                    let
-                        newValue =
-                            if value > 12 then
-                                12
-
-                            else
-                                value
-                    in
-                    ( { model
-                        | config = { config | maxRoundNumber = newValue }
-                      }
-                    , Cmd.none
-                    )
-
-                ShortBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | shortBreakDuration = newValue }
-                      }
-                    , Cmd.none
-                    )
+            ( { model | config = newConfig }
+            , Cmd.batch
+                [ updateConfig newConfig
+                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
+                ]
+            )
 
         UpdateVolume volumeStr ->
             let
