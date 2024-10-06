@@ -78,6 +78,7 @@ rustStateDecoder : Decode.Decoder RustState
 rustStateDecoder =
     Decode.succeed RustState
         |> Pipe.required "current_session" rustSessionDecoder
+        |> Pipe.required "current_work_round_number" Decode.int
 
 
 sessionTypeFromStringDecoder : String -> Decode.Decoder SessionType
@@ -128,7 +129,7 @@ rustSessionDecoder =
         |> Pipe.required "current_time" Decode.int
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
-        |> Pipe.required "state" sessionStatusDecoder
+        |> Pipe.required "status" sessionStatusDecoder
 
 
 externalMessageDecoder : Decode.Decoder ExternalMessage

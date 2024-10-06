@@ -23,6 +23,10 @@ type ElmState = {
   paused: boolean;
 };
 
+type Message = {
+  name: string;
+};
+
 type Notification = {
   body: string;
   title: string;
@@ -30,10 +34,6 @@ type Notification = {
   red: number;
   green: number;
   blue: number;
-};
-
-type Message = {
-  name: string;
 };
 
 type RustThemeColors = {
@@ -172,6 +172,7 @@ app.ports.notify.subscribe(function (notification: Notification) {
 });
 
 app.ports.sendMessageFromElm.subscribe(function (message: Message) {
+  console.log(`Sending message from Elm ${message}`);
   invoke("handle_external_message", message).then((newState) => {
     console.log(newState);
     app.ports.sendMessageToElm.send(newState);
@@ -255,11 +256,14 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 });
 
 await listen("tick-event", () => {
+  console.log("Getting tick event");
   app.ports.tick.send(null);
 });
 
 await listen("external-message", (message) => {
-  app.ports.sendMessageToElm.send(message);
+  console.log(`Getting external message ${message}`);
+  console.log(message.payload);
+  app.ports.sendMessageToElm.send(message.payload);
 });
 
 await listen("toggle-play", () => {

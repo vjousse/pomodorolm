@@ -3,7 +3,7 @@ use pomodorolm_lib::pomodoro::{self, Config, Pomodoro, Session, SessionStatus, S
 #[test]
 fn it_defaults_the_way_it_should() {
     let pomodoro = Pomodoro::default();
-    assert_eq!(pomodoro.focus_round_number_over, 0);
+    assert_eq!(pomodoro.current_work_round_number, 1);
     assert_eq!(
         pomodoro.current_session.session_type,
         pomodoro::SessionType::Focus
@@ -46,7 +46,6 @@ fn tick_should_return_next_session_at_end_of_turn() {
     initial_state.current_session.current_time = initial_state.config.focus_duration - 1;
 
     // At the end of a focus session, we should switch to a short break
-    // and increment the completed focus round number
     let new_state = pomodoro::tick(&initial_state);
     assert_eq!(
         new_state.current_session.session_type,
@@ -54,13 +53,15 @@ fn tick_should_return_next_session_at_end_of_turn() {
     );
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
+    // A work round includes a Focus and a Break, so the counter should be incremented only
+    // at the end of a break
     assert_eq!(
-        new_state.focus_round_number_over,
-        initial_state.focus_round_number_over + 1
+        new_state.current_work_round_number,
+        initial_state.current_work_round_number
     );
 
-    // At the end of a focus round, we should switch to short break if the number of
-    // focus sessions before a long break was not riched
+    // At the end of a short break round, we should switch to a focus round and
+    // increment the current_work_round_number counter
     let mut initial_state = pomodoro::play(&new_state);
     initial_state.current_session.current_time = initial_state.config.short_break_duration - 1;
 
@@ -70,12 +71,12 @@ fn tick_should_return_next_session_at_end_of_turn() {
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
     assert_eq!(
-        new_state.focus_round_number_over,
-        initial_state.focus_round_number_over
+        new_state.current_work_round_number,
+        initial_state.current_work_round_number + 1
     );
 
     // We are at the end of the last focus session, we should switch to a long break
-    new_state.focus_round_number_over = new_state.config.max_focus_rounds - 1;
+    new_state.current_work_round_number = new_state.config.max_focus_rounds;
     new_state.current_session.current_time = new_state.config.focus_duration - 1;
 
     let mut new_state = pomodoro::tick(&pomodoro::play(&new_state));
@@ -87,7 +88,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
     );
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
     assert_eq!(
-        new_state.focus_round_number_over,
+        new_state.current_work_round_number,
         new_state.config.max_focus_rounds
     );
 
@@ -98,7 +99,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
-    assert_eq!(new_state.focus_round_number_over, 0);
+    assert_eq!(new_state.current_work_round_number, 1);
 }
 
 #[test]
@@ -144,7 +145,7 @@ fn auto_start_should_run_next_state() {
             auto_start_long_break_timer: true,
             ..Default::default()
         },
-        focus_round_number_over: 3,
+        current_work_round_number: 4,
         ..Default::default()
     };
 

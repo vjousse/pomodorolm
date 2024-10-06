@@ -469,8 +469,6 @@ async fn tick(app_handle: AppHandle, path: String) {
     match app_handle.get_webview_window("main") {
         Some(window) => {
             while let Some(_ts) = stream.next().await {
-                let _ = window.emit("tick-event", "");
-
                 let new_path = path.clone();
 
                 let state: tauri::State<AppState> = app_handle.state();
@@ -482,7 +480,9 @@ async fn tick(app_handle: AppHandle, path: String) {
 
                 state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
 
-                eprintln!("New STATE {state_guard:?}");
+                //eprintln!("New STATE {state_guard:?}");
+
+                let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
                 tauri::async_runtime::spawn_blocking(move || {
                     if play_tick {

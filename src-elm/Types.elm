@@ -1,4 +1,4 @@
-module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), NextRoundInfo, Notification, RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Notification, RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
 import Themes exposing (Theme)
 
@@ -39,6 +39,16 @@ type alias CurrentState =
     { color : String, percentage : Float, paused : Bool }
 
 
+type alias Notification =
+    { body : String
+    , title : String
+    , name : String
+    , red : Int
+    , green : Int
+    , blue : Int
+    }
+
+
 type SessionType
     = Focus
     | ShortBreak
@@ -69,25 +79,6 @@ type Setting
     | MinimizeToTrayOnClose
 
 
-type alias Notification =
-    { body : String
-    , title : String
-    , name : String
-    , red : Int
-    , green : Int
-    , blue : Int
-    }
-
-
-type alias NextRoundInfo =
-    { nextSessionType : SessionType
-    , htmlIdOfAudioToPlay : String
-    , nextRoundNumber : Int
-    , nextTime : Seconds
-    , notification : Notification
-    }
-
-
 type alias Defaults =
     { longBreakDuration : Seconds
     , pomodoroDuration : Seconds
@@ -104,7 +95,7 @@ type SettingType
 
 
 type alias RustSession =
-    { currentTime : Int
+    { currentTime : Seconds
     , label : Maybe String
     , sessionType : SessionType
     , status : SessionStatus
@@ -113,6 +104,7 @@ type alias RustSession =
 
 type alias RustState =
     { currentSession : RustSession
+    , currentWorkRoundNumber : Int
     }
 
 

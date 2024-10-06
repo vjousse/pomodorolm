@@ -46,14 +46,15 @@ pub struct Pomodoro<'a> {
     pub config: Config,
     #[serde(borrow)]
     pub current_session: Session<'a>,
-    pub focus_round_number_over: u16,
+    // A work round is a Focus + a Break (short or long)
+    pub current_work_round_number: u16,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PomodoroUnborrowed {
     pub config: Config,
     pub current_session: SessionUnburrowed,
-    pub focus_round_number_over: u16,
+    pub current_work_round_number: u16,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -77,7 +78,7 @@ impl Default for Pomodoro<'_> {
                 short_break_duration: 5 * 60,
             },
             current_session: Session::default(),
-            focus_round_number_over: 0,
+            current_work_round_number: 1,
         }
     }
 }
@@ -93,7 +94,7 @@ impl Pomodoro<'_> {
     pub fn to_unborrowed(&self) -> PomodoroUnborrowed {
         PomodoroUnborrowed {
             config: self.config,
-            focus_round_number_over: self.focus_round_number_over,
+            current_work_round_number: self.current_work_round_number,
             current_session: SessionUnburrowed {
                 current_time: self.current_session.current_time,
                 session_type: self.current_session.session_type,
@@ -158,7 +159,7 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
     let session = pomodoro.current_session;
     match session.session_type {
         SessionType::Focus => {
-            if pomodoro.focus_round_number_over + 1 == pomodoro.config.max_focus_rounds {
+            if pomodoro.current_work_round_number == pomodoro.config.max_focus_rounds {
                 Session {
                     session_type: SessionType::LongBreak,
                     status: if pomodoro.config.auto_start_long_break_timer {
@@ -196,10 +197,10 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
 pub fn next<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
     Pomodoro {
         current_session: get_next_session(pomodoro),
-        focus_round_number_over: match pomodoro.current_session.session_type {
-            SessionType::Focus => pomodoro.focus_round_number_over + 1,
-            SessionType::LongBreak => 0,
-            _ => pomodoro.focus_round_number_over,
+        current_work_round_number: match pomodoro.current_session.session_type {
+            SessionType::ShortBreak => pomodoro.current_work_round_number + 1,
+            SessionType::LongBreak => 1,
+            _ => pomodoro.current_work_round_number,
         },
         ..*pomodoro
     }
@@ -212,28 +213,8 @@ pub fn tick<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
         // Tick should do something only if the current session is in running mode
         SessionStatus::Running => {
             // If it was the last tick, return the next status
-            let is_end_of_session =
-                session.current_time + 1 == pomodoro.duration_of_session(session);
-
-            if is_end_of_session {
-                let next_session = get_next_session(pomodoro);
-
-                // Increment the number round counter if it was a focus session
-                let focus_round_number_over = if session.session_type == SessionType::Focus {
-                    pomodoro.focus_round_number_over + 1
-                } else if session.session_type == SessionType::LongBreak
-                    && next_session.session_type == SessionType::Focus
-                {
-                    0
-                } else {
-                    pomodoro.focus_round_number_over
-                };
-
-                return Pomodoro {
-                    focus_round_number_over,
-                    current_session: next_session,
-                    ..*pomodoro
-                };
+            if session.current_time + 1 == pomodoro.duration_of_session(session) {
+                return next(pomodoro);
             }
 
             // If we're not a the end of a session, just update the time of the current session
