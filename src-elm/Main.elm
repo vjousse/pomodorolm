@@ -1,16 +1,18 @@
-port module Main exposing (Config, ConfigAndThemes, CurrentState, Defaults, Flags, Model, Msg(..), NextRoundInfo, Notification, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), main)
+port module Main exposing (Flags, Model, Msg(..), main)
 
 import Browser
 import ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
+import Json exposing (elmMessageEncoder, externalMessageDecoder)
 import Json.Decode as Decode
-import Json.Decode.Pipeline as Pipe
+import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
+import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Notification, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
 
 main : Program Flags Model Msg
@@ -23,21 +25,13 @@ main =
         }
 
 
-type alias Seconds =
-    Int
-
-
 type alias Model =
     { appVersion : String
     , config : Config
     , currentColor : RGB
-    , currentRoundNumber : Int
-    , currentSessionType : SessionType
     , currentState : CurrentState
-    , currentTime : Seconds
     , drawerOpen : Bool
-    , muted : Bool
-    , sessionStatus : SessionStatus
+    , pomodoroState : Maybe RustState
     , settingTab : SettingTab
     , strokeDasharray : Float
     , theme : Theme
@@ -45,98 +39,6 @@ type alias Model =
     , volume : Float
     , volumeSliderHidden : Bool
     }
-
-
-type alias Config =
-    { alwaysOnTop : Bool
-    , autoStartBreakTimer : Bool
-    , autoStartWorkTimer : Bool
-    , desktopNotifications : Bool
-    , longBreakDuration : Seconds
-    , maxRoundNumber : Int
-    , minimizeToTray : Bool
-    , minimizeToTrayOnClose : Bool
-    , pomodoroDuration : Seconds
-    , shortBreakDuration : Seconds
-    , theme : String
-    , tickSoundsDuringBreak : Bool
-    , tickSoundsDuringWork : Bool
-    }
-
-
-type alias ConfigAndThemes =
-    { config : Config
-    , themes : List Theme
-    }
-
-
-themeColorsDecoder : Decode.Decoder ThemeColors
-themeColorsDecoder =
-    Decode.succeed ThemeColors
-        |> Pipe.required "accent" Decode.string
-        |> Pipe.required "background" Decode.string
-        |> Pipe.required "background_light" Decode.string
-        |> Pipe.required "background_lightest" Decode.string
-        |> Pipe.required "focus_round" Decode.string
-        |> Pipe.required "focus_round_end" Decode.string
-        |> Pipe.required "focus_round_middle" Decode.string
-        |> Pipe.required "foreground" Decode.string
-        |> Pipe.required "foreground_darker" Decode.string
-        |> Pipe.required "foreground_darkest" Decode.string
-        |> Pipe.required "long_round" Decode.string
-        |> Pipe.required "short_round" Decode.string
-
-
-themeDecoder : Decode.Decoder Theme
-themeDecoder =
-    Decode.succeed Theme
-        |> Pipe.required "colors" themeColorsDecoder
-        |> Pipe.required "name" Decode.string
-
-
-themesDecoder : Decode.Decoder (List Theme)
-themesDecoder =
-    Decode.list themeDecoder
-
-
-configDecoder : Decode.Decoder Config
-configDecoder =
-    let
-        fieldSet0 =
-            Decode.map8 Config
-                (Decode.field "always_on_top" Decode.bool)
-                (Decode.field "auto_start_break_timer" Decode.bool)
-                (Decode.field "auto_start_work_timer" Decode.bool)
-                (Decode.field "desktop_notifications" Decode.bool)
-                (Decode.field "long_break_duration" Decode.int)
-                (Decode.field "max_round_number" Decode.int)
-                (Decode.field "minimize_to_tray" Decode.bool)
-                (Decode.field "minimize_to_tray_on_close" Decode.bool)
-    in
-    Decode.map6 (<|)
-        fieldSet0
-        (Decode.field "pomodoro_duration" Decode.int)
-        (Decode.field "short_break_duration" Decode.int)
-        (Decode.field "theme" Decode.string)
-        (Decode.field "tick_sounds_during_break" Decode.bool)
-        (Decode.field "tick_sounds_during_work" Decode.bool)
-
-
-configAndThemesDecoder : Decode.Decoder ConfigAndThemes
-configAndThemesDecoder =
-    Decode.succeed ConfigAndThemes
-        |> Pipe.required "config" configDecoder
-        |> Pipe.required "themes" themesDecoder
-
-
-type alias CurrentState =
-    { color : String, percentage : Float, paused : Bool, playTick : Bool }
-
-
-type SessionType
-    = Pomodoro
-    | ShortBreak
-    | LongBreak
 
 
 sessionStatusToString : SessionStatus -> String
@@ -148,59 +50,8 @@ sessionStatusToString sessionStatus =
         Running ->
             "running"
 
-        Stopped ->
-            "stopped"
-
-
-type SessionStatus
-    = Paused
-    | Running
-    | Stopped
-
-
-type SettingTab
-    = TimerTab
-    | ThemeTab
-    | SettingsTab
-    | AboutTab
-
-
-type Setting
-    = AlwaysOnTop
-    | AutoStartWorkTimer
-    | AutoStartBreakTimer
-    | TickSoundsDuringWork
-    | TickSoundsDuringBreak
-    | DesktopNotifications
-    | MinimizeToTray
-    | MinimizeToTrayOnClose
-
-
-type alias Notification =
-    { body : String
-    , title : String
-    , name : String
-    , red : Int
-    , green : Int
-    , blue : Int
-    }
-
-
-type alias NextRoundInfo =
-    { nextSessionType : SessionType
-    , htmlIdOfAudioToPlay : String
-    , nextRoundNumber : Int
-    , nextTime : Seconds
-    , notification : Notification
-    }
-
-
-type alias Defaults =
-    { longBreakDuration : Seconds
-    , pomodoroDuration : Seconds
-    , shortBreakDuration : Seconds
-    , maxRoundNumber : Int
-    }
+        NotStarted ->
+            "not_started"
 
 
 type alias Flags =
@@ -213,6 +64,7 @@ type alias Flags =
     , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
+    , muted : Bool
     , pomodoroDuration : Seconds
     , shortBreakDuration : Seconds
     , theme : String
@@ -240,7 +92,6 @@ init flags =
             { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
-            , playTick = False
             }
     in
     ( { appVersion = flags.appVersion
@@ -253,6 +104,7 @@ init flags =
             , maxRoundNumber = flags.maxRoundNumber
             , minimizeToTray = flags.minimizeToTray
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
+            , muted = flags.muted
             , pomodoroDuration = flags.pomodoroDuration
             , shortBreakDuration = flags.shortBreakDuration
             , theme = flags.theme
@@ -260,13 +112,9 @@ init flags =
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             }
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
-      , currentRoundNumber = 1
-      , currentSessionType = Pomodoro
       , currentState = currentState
-      , currentTime = flags.pomodoroDuration
       , drawerOpen = False
-      , muted = False
-      , sessionStatus = Stopped
+      , pomodoroState = Nothing
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
       , theme = theme
@@ -276,18 +124,12 @@ init flags =
       }
     , Cmd.batch
         [ updateCurrentState currentState
-        , updateSessionStatus (Stopped |> sessionStatusToString)
+        , updateSessionStatus (NotStarted |> sessionStatusToString)
+        , sendMessageFromElm (elmMessageEncoder { name = "get-state" })
         , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
     )
-
-
-type SettingType
-    = FocusTime
-    | LongBreakTime
-    | Rounds
-    | ShortBreakTime
 
 
 type Msg
@@ -296,132 +138,53 @@ type Msg
     | ChangeSettingConfig Setting
     | ChangeTheme Theme
     | HideVolumeBar
-    | LoadConfig ConfigAndThemes
+    | ProcessExternalMessage ExternalMessage
     | MinimizeWindow
     | NoOp
     | Reset
     | ResetSettings
     | SkipCurrentRound
-    | Tick
     | ToggleDrawer
     | ToggleMute
-    | ToggleStatus
+    | TogglePlayStatus
     | UpdateSetting SettingType String
     | UpdateVolume String
 
 
-getNextRoundInfo : Model -> NextRoundInfo
-getNextRoundInfo model =
-    let
-        getNotification : String -> String -> String -> Seconds -> SessionType -> Notification
-        getNotification title body name duration sessionType =
-            let
-                ( r, g, b ) =
-                    case computeCurrentColor 1 1 sessionType model.theme of
-                        RGB red_ green_ blue_ ->
-                            ( red_, green_, blue_ )
-
-                minutes =
-                    (duration |> toFloat) / 60 |> round
-            in
-            { title = title
-            , body =
-                "Start a "
-                    ++ String.fromInt minutes
-                    ++ " minute"
-                    ++ (if minutes > 1 then
-                            "s"
-
-                        else
-                            ""
-                       )
-                    ++ " "
-                    ++ body
-            , name = name
-            , red = r
-            , green = g
-            , blue = b
-            }
-    in
-    case model.currentSessionType of
-        Pomodoro ->
-            if model.currentRoundNumber == model.config.maxRoundNumber then
-                { nextSessionType = LongBreak
-                , htmlIdOfAudioToPlay = "audio-long-break"
-                , nextRoundNumber = model.currentRoundNumber
-                , nextTime = model.config.longBreakDuration
-                , notification = getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration LongBreak
-                }
-
-            else
-                { nextSessionType = ShortBreak
-                , htmlIdOfAudioToPlay = "audio-short-break"
-                , nextRoundNumber = model.currentRoundNumber
-                , nextTime = model.config.shortBreakDuration
-                , notification = getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration ShortBreak
-                }
-
-        ShortBreak ->
-            { nextSessionType = Pomodoro
-            , htmlIdOfAudioToPlay = "audio-work"
-            , nextRoundNumber = model.currentRoundNumber + 1
-            , nextTime = model.config.pomodoroDuration
-            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
-            }
-
-        LongBreak ->
-            { nextSessionType = Pomodoro
-            , htmlIdOfAudioToPlay = "audio-work"
-            , nextRoundNumber = 1
-            , nextTime = model.config.pomodoroDuration
-            , notification = getNotification "Long break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
-            }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg ({ config } as model) =
     case msg of
         ChangeSettingConfig settingConfig ->
             let
-                settingsConfig =
-                    model.config
-
                 newSettingsConfig =
                     case settingConfig of
                         AlwaysOnTop ->
-                            { settingsConfig | alwaysOnTop = not settingsConfig.alwaysOnTop }
+                            { config | alwaysOnTop = not config.alwaysOnTop }
 
                         AutoStartBreakTimer ->
-                            { settingsConfig | autoStartBreakTimer = not settingsConfig.autoStartBreakTimer }
+                            { config | autoStartBreakTimer = not config.autoStartBreakTimer }
 
                         AutoStartWorkTimer ->
-                            { settingsConfig | autoStartWorkTimer = not settingsConfig.autoStartWorkTimer }
+                            { config | autoStartWorkTimer = not config.autoStartWorkTimer }
 
                         TickSoundsDuringWork ->
-                            { settingsConfig | tickSoundsDuringWork = not settingsConfig.tickSoundsDuringWork }
+                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
 
                         TickSoundsDuringBreak ->
-                            { settingsConfig | tickSoundsDuringBreak = not settingsConfig.tickSoundsDuringBreak }
+                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
 
                         DesktopNotifications ->
-                            { settingsConfig | desktopNotifications = not settingsConfig.desktopNotifications }
+                            { config | desktopNotifications = not config.desktopNotifications }
 
                         MinimizeToTray ->
-                            { settingsConfig | minimizeToTray = not settingsConfig.minimizeToTray }
+                            { config | minimizeToTray = not config.minimizeToTray }
 
                         MinimizeToTrayOnClose ->
-                            { settingsConfig | minimizeToTrayOnClose = not settingsConfig.minimizeToTrayOnClose }
-
-                nextModel =
-                    { model | config = newSettingsConfig }
-
-                oldState =
-                    nextModel.currentState
-
-                currentState =
-                    { oldState | playTick = shouldPlayTick model }
+                            { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
             in
-            ( { nextModel | currentState = currentState }, Cmd.batch [ updateConfig newSettingsConfig, updateCurrentState currentState ] )
+            ( { model | config = newSettingsConfig }
+            , updateConfig newSettingsConfig
+            )
 
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
@@ -432,10 +195,14 @@ update msg model =
                     model.currentState
 
                 newState =
-                    { currentState | color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType theme }
-
-                config =
-                    model.config
+                    { currentState
+                        | color =
+                            fromRGBToCSSHex
+                                (model.pomodoroState
+                                    |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme)
+                                    |> Maybe.withDefault (fromCSSHexToRGB <| theme.colors.focusRound)
+                                )
+                    }
 
                 newConfig =
                     { config
@@ -466,55 +233,6 @@ update msg model =
         HideVolumeBar ->
             ( { model | volumeSliderHidden = True }, Cmd.none )
 
-        LoadConfig { config, themes } ->
-            let
-                updatedThemes =
-                    themes
-                        |> ListWithCurrent.fromList
-                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == config.theme)
-
-                newThemes =
-                    case ListWithCurrent.getCurrent updatedThemes of
-                        Just theme ->
-                            -- We found a theme with the same name than in the config: everything's fine
-                            if (theme.name |> String.toLower) == (config.theme |> String.toLower) then
-                                updatedThemes
-
-                            else
-                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
-                                updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
-
-                        Nothing ->
-                            updatedThemes
-
-                newModel =
-                    { model
-                        | config = config
-                        , sessionStatus = Stopped
-                        , themes = newThemes
-                        , currentTime =
-                            case model.currentSessionType of
-                                Pomodoro ->
-                                    config.pomodoroDuration
-
-                                ShortBreak ->
-                                    config.shortBreakDuration
-
-                                LongBreak ->
-                                    config.longBreakDuration
-                    }
-            in
-            case newThemes |> ListWithCurrent.getCurrent of
-                Just currentTheme ->
-                    let
-                        ( updatedModel, cmds ) =
-                            update (ChangeTheme currentTheme) newModel
-                    in
-                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (Stopped |> sessionStatusToString) ] )
-
-                _ ->
-                    ( newModel, updateSessionStatus (Stopped |> sessionStatusToString) )
-
         MinimizeWindow ->
             ( model
             , if model.config.minimizeToTray then
@@ -527,40 +245,167 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        ProcessExternalMessage (RustConfigAndThemesMsg c) ->
+            let
+                updatedThemes =
+                    c.themes
+                        |> ListWithCurrent.fromList
+                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
+
+                newThemes =
+                    case ListWithCurrent.getCurrent updatedThemes of
+                        Just theme ->
+                            -- We found a theme with the same name than in the config: everything's fine
+                            if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
+                                updatedThemes
+
+                            else
+                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+
+                        Nothing ->
+                            updatedThemes
+
+                newModel =
+                    { model
+                        | config = c.config
+                        , themes = newThemes
+                    }
+            in
+            case newThemes |> ListWithCurrent.getCurrent of
+                Just currentTheme ->
+                    let
+                        ( updatedModel, cmds ) =
+                            update (ChangeTheme currentTheme) newModel
+                    in
+                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (NotStarted |> sessionStatusToString) ] )
+
+                _ ->
+                    ( newModel, updateSessionStatus (NotStarted |> sessionStatusToString) )
+
+        ProcessExternalMessage (RustStateMsg pomodoroState) ->
+            let
+                getNotification : String -> String -> String -> Seconds -> RGB -> Notification
+                getNotification title body name duration (RGB r g b) =
+                    let
+                        minutes =
+                            (duration |> toFloat) / 60 |> round
+                    in
+                    { title = title
+                    , body =
+                        "Start a "
+                            ++ String.fromInt minutes
+                            ++ " minute"
+                            ++ (if minutes > 1 then
+                                    "s"
+
+                                else
+                                    ""
+                               )
+                            ++ " "
+                            ++ body
+                    , name = name
+                    , red = r
+                    , green = g
+                    , blue = b
+                    }
+
+                maxTime =
+                    getCurrentMaxTime config pomodoroState
+
+                currentColor =
+                    computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
+
+                percent =
+                    toFloat (maxTime - pomodoroState.currentSession.currentTime) / toFloat maxTime
+
+                currentState =
+                    { color = fromRGBToCSSHex currentColor
+                    , percentage = percent
+                    , paused =
+                        pomodoroState.currentSession.status == Paused
+                    }
+
+                cmds =
+                    model.pomodoroState
+                        |> Maybe.map
+                            (\state ->
+                                if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
+                                    case pomodoroState.currentSession.sessionType of
+                                        Focus ->
+                                            if state.currentSession.sessionType == ShortBreak then
+                                                [ notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.pomodoroDuration currentColor
+                                                , if config.muted then
+                                                    Cmd.none
+
+                                                  else
+                                                    playSound "audio-work"
+                                                ]
+
+                                            else
+                                                [ notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.pomodoroDuration currentColor
+                                                , if config.muted then
+                                                    Cmd.none
+
+                                                  else
+                                                    playSound "audio-work"
+                                                ]
+
+                                        LongBreak ->
+                                            [ notify <| getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration currentColor
+                                            , if config.muted then
+                                                Cmd.none
+
+                                              else
+                                                playSound "audio-long-break"
+                                            ]
+
+                                        ShortBreak ->
+                                            [ notify <| getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration currentColor
+                                            , if config.muted then
+                                                Cmd.none
+
+                                              else
+                                                playSound "audio-short-break"
+                                            ]
+
+                                else
+                                    []
+                            )
+                        |> Maybe.withDefault []
+            in
+            ( { model
+                | currentColor = currentColor
+                , currentState = currentState
+                , pomodoroState = Just pomodoroState
+              }
+            , Cmd.batch (updateCurrentState currentState :: cmds)
+            )
+
         Reset ->
             let
                 currentState =
-                    { color = fromRGBToCSSHex <| colorForSessionType model.currentSessionType model.theme
-                    , percentage = 100
+                    { color =
+                        fromRGBToCSSHex
+                            (model.pomodoroState
+                                |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType model.theme)
+                                |> Maybe.withDefault (fromCSSHexToRGB <| model.theme.colors.focusRound)
+                            )
+                    , percentage = 1
                     , paused =
-                        model.sessionStatus == Paused
-                    , playTick = False
+                        model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
                     }
             in
-            ( { model
-                | sessionStatus = Stopped
-                , currentTime =
-                    case model.currentSessionType of
-                        Pomodoro ->
-                            model.config.pomodoroDuration
-
-                        ShortBreak ->
-                            model.config.shortBreakDuration
-
-                        LongBreak ->
-                            model.config.longBreakDuration
-              }
+            ( model
             , Cmd.batch
                 [ updateCurrentState currentState
-                , updateSessionStatus (Stopped |> sessionStatusToString)
+                , updateSessionStatus (NotStarted |> sessionStatusToString)
+                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
                 ]
             )
 
         ResetSettings ->
             let
-                config =
-                    model.config
-
                 newConfig =
                     { config
                         | pomodoroDuration = defaults.pomodoroDuration
@@ -568,196 +413,23 @@ update msg model =
                         , longBreakDuration = defaults.longBreakDuration
                         , maxRoundNumber = defaults.maxRoundNumber
                     }
-
-                oldState =
-                    model.currentState
-
-                currentState =
-                    { oldState | playTick = False }
             in
             ( { model
                 | config = newConfig
-                , currentTime = defaults.pomodoroDuration
-                , currentSessionType = Pomodoro
-                , currentState = currentState
-                , sessionStatus = Stopped
               }
             , Cmd.batch
-                [ updateCurrentState currentState
-                , updateSessionStatus (Stopped |> sessionStatusToString)
+                [ updateSessionStatus (NotStarted |> sessionStatusToString)
+                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
                 ]
             )
 
         SkipCurrentRound ->
-            let
-                nextRoundInfo =
-                    getNextRoundInfo model
-
-                nextModel =
-                    { model
-                        | currentRoundNumber = nextRoundInfo.nextRoundNumber
-                        , currentSessionType = nextRoundInfo.nextSessionType
-                        , currentTime = nextRoundInfo.nextTime
-                        , sessionStatus =
-                            case nextRoundInfo.nextSessionType of
-                                Pomodoro ->
-                                    if model.config.autoStartWorkTimer then
-                                        Running
-
-                                    else
-                                        Stopped
-
-                                _ ->
-                                    if model.config.autoStartBreakTimer then
-                                        Running
-
-                                    else
-                                        Stopped
-                    }
-
-                currentState =
-                    { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
-                    , percentage = 100
-                    , paused =
-                        model.sessionStatus == Paused
-                    , playTick = shouldPlayTick nextModel
-                    }
-            in
-            ( { nextModel | currentState = currentState }
-            , Cmd.batch
-                [ if model.muted then
-                    Cmd.none
-
-                  else
-                    playSound nextRoundInfo.htmlIdOfAudioToPlay
-                , updateCurrentState currentState
-                , if model.config.desktopNotifications then
-                    notify nextRoundInfo.notification
-
-                  else
-                    Cmd.none
-                , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
-                ]
+            ( model
+            , sendMessageFromElm (elmMessageEncoder { name = "skip" })
             )
-
-        Tick ->
-            if model.currentTime > 0 && model.sessionStatus == Running then
-                let
-                    newTime =
-                        model.currentTime - 1
-
-                    maxTime =
-                        getCurrentMaxTime model
-
-                    currentColor =
-                        computeCurrentColor newTime maxTime model.currentSessionType model.theme
-
-                    percent =
-                        toFloat newTime / toFloat maxTime
-
-                    nextModel =
-                        { model
-                            | currentTime = newTime
-                            , currentColor = currentColor
-                        }
-
-                    currentState =
-                        { color = fromRGBToCSSHex currentColor
-                        , percentage = percent
-                        , paused =
-                            model.sessionStatus == Paused
-                        , playTick = shouldPlayTick nextModel
-                        }
-                in
-                ( { model
-                    | currentTime = newTime
-                    , currentColor = currentColor
-                    , currentState = currentState
-                  }
-                , updateCurrentState currentState
-                )
-
-            else if model.currentTime == 0 then
-                -- Time = 0, we are at the end of the current round
-                let
-                    nextRoundInfo =
-                        getNextRoundInfo model
-
-                    nextModel =
-                        { model
-                            | currentRoundNumber = nextRoundInfo.nextRoundNumber
-                            , currentSessionType = nextRoundInfo.nextSessionType
-                            , currentTime = nextRoundInfo.nextTime
-                            , sessionStatus =
-                                case nextRoundInfo.nextSessionType of
-                                    Pomodoro ->
-                                        if model.config.autoStartWorkTimer then
-                                            Running
-
-                                        else
-                                            Stopped
-
-                                    _ ->
-                                        if model.config.autoStartBreakTimer then
-                                            Running
-
-                                        else
-                                            Stopped
-                        }
-
-                    currentState =
-                        { color = fromRGBToCSSHex <| colorForSessionType nextRoundInfo.nextSessionType model.theme
-                        , percentage = 100
-                        , paused =
-                            nextModel.sessionStatus == Paused
-                        , playTick = shouldPlayTick nextModel
-                        }
-                in
-                ( { nextModel
-                    | currentRoundNumber = nextRoundInfo.nextRoundNumber
-                    , currentSessionType = nextRoundInfo.nextSessionType
-                    , currentTime = nextRoundInfo.nextTime
-                    , currentState = currentState
-                    , sessionStatus =
-                        case nextRoundInfo.nextSessionType of
-                            Pomodoro ->
-                                if model.config.autoStartWorkTimer then
-                                    Running
-
-                                else
-                                    Stopped
-
-                            _ ->
-                                if model.config.autoStartBreakTimer then
-                                    Running
-
-                                else
-                                    Stopped
-                  }
-                , Cmd.batch
-                    [ updateCurrentState currentState
-                    , if nextModel.muted then
-                        Cmd.none
-
-                      else
-                        playSound nextRoundInfo.htmlIdOfAudioToPlay
-                    , if model.config.desktopNotifications then
-                        notify nextRoundInfo.notification
-
-                      else
-                        Cmd.none
-                    , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
-                    ]
-                )
-
-            else
-                ( model, Cmd.none )
 
         ToggleDrawer ->
             let
-                config =
-                    model.config
-
                 newConfig =
                     { config
                         | -- Avoid having impossible states
@@ -797,77 +469,72 @@ update msg model =
         ToggleMute ->
             let
                 newVolume =
-                    if model.muted then
+                    if config.muted then
                         model.volume
 
                     else
                         0
 
-                nextModel =
-                    { model | muted = not model.muted, volume = newVolume }
-
-                oldState =
-                    model.currentState
-
-                currentState =
-                    { oldState
-                        | playTick = shouldPlayTick nextModel
-                    }
+                newConfig =
+                    { config | muted = not config.muted }
             in
-            ( { nextModel | currentState = currentState }
-            , Cmd.batch [ setVolume newVolume, updateCurrentState currentState ]
+            ( { model | volume = newVolume, config = newConfig }
+            , Cmd.batch [ setVolume newVolume, updateConfig newConfig ]
             )
 
-        ToggleStatus ->
-            case model.sessionStatus of
-                Running ->
-                    let
-                        nextModel =
-                            { model | sessionStatus = Paused }
+        TogglePlayStatus ->
+            model.pomodoroState
+                |> Maybe.map
+                    (\state ->
+                        case state.currentSession.status of
+                            Running ->
+                                let
+                                    maxTime =
+                                        getCurrentMaxTime config state
 
-                        currentState =
-                            { color =
-                                fromRGBToCSSHex <|
-                                    computeCurrentColor
-                                        model.currentTime
-                                        (getCurrentMaxTime model)
-                                        model.currentSessionType
-                                        model.theme
-                            , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
-                            , paused = True
-                            , playTick = shouldPlayTick nextModel
-                            }
-                    in
-                    ( { nextModel | currentState = currentState }
-                    , Cmd.batch
-                        [ updateCurrentState currentState
-                        , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
-                        ]
+                                    currentState =
+                                        { color =
+                                            fromRGBToCSSHex <|
+                                                computeCurrentColor
+                                                    state.currentSession.currentTime
+                                                    (getCurrentMaxTime config state)
+                                                    state.currentSession.sessionType
+                                                    model.theme
+                                        , percentage = toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+                                        , paused = True
+                                        }
+                                in
+                                ( { model | currentState = currentState }
+                                , Cmd.batch
+                                    [ updateCurrentState currentState
+                                    , sendMessageFromElm (elmMessageEncoder { name = "pause" })
+                                    ]
+                                )
+
+                            _ ->
+                                let
+                                    maxTime =
+                                        getCurrentMaxTime config state
+
+                                    currentState =
+                                        { color =
+                                            fromRGBToCSSHex <|
+                                                computeCurrentColor state.currentSession.currentTime
+                                                    (getCurrentMaxTime config state)
+                                                    state.currentSession.sessionType
+                                                    model.theme
+                                        , percentage = toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+                                        , paused = False
+                                        }
+                                in
+                                ( { model | currentState = currentState }
+                                , Cmd.batch
+                                    [ updateCurrentState currentState
+                                    , sendMessageFromElm (elmMessageEncoder { name = "play" })
+                                    ]
+                                )
                     )
-
-                _ ->
-                    let
-                        nextModel =
-                            { model | sessionStatus = Running }
-
-                        currentState =
-                            { color =
-                                fromRGBToCSSHex <|
-                                    computeCurrentColor model.currentTime
-                                        (getCurrentMaxTime model)
-                                        model.currentSessionType
-                                        model.theme
-                            , percentage = toFloat model.currentTime / toFloat (getCurrentMaxTime model)
-                            , paused = False
-                            , playTick = shouldPlayTick nextModel
-                            }
-                    in
-                    ( { nextModel | currentState = currentState }
-                    , Cmd.batch
-                        [ updateCurrentState currentState
-                        , updateSessionStatus (nextModel.sessionStatus |> sessionStatusToString)
-                        ]
-                    )
+                |> Maybe.withDefault ( model, Cmd.none )
 
         UpdateSetting settingType v ->
             let
@@ -879,102 +546,26 @@ update msg model =
                         Just stringValue ->
                             stringValue
 
-                config =
-                    model.config
+                newConfig =
+                    case settingType of
+                        FocusTime ->
+                            { config | pomodoroDuration = min (90 * 60) (value * 60) }
+
+                        LongBreakTime ->
+                            { config | longBreakDuration = min (90 * 60) (value * 60) }
+
+                        Rounds ->
+                            { config | maxRoundNumber = min 12 value }
+
+                        ShortBreakTime ->
+                            { config | shortBreakDuration = min (90 * 60) (value * 60) }
             in
-            case settingType of
-                FocusTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-
-                        newConfig =
-                            { config | pomodoroDuration = newValue }
-                    in
-                    ( { model
-                        | config = newConfig
-                        , currentTime =
-                            if model.currentSessionType == Pomodoro then
-                                if newValue == 0 then
-                                    60
-
-                                else
-                                    newValue
-
-                            else
-                                model.currentTime
-                      }
-                    , updateConfig newConfig
-                    )
-
-                LongBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | longBreakDuration = newValue }
-                        , currentTime =
-                            if model.currentSessionType == LongBreak then
-                                if newValue == 0 then
-                                    60
-
-                                else
-                                    newValue
-
-                            else
-                                model.currentTime
-                      }
-                    , Cmd.none
-                    )
-
-                Rounds ->
-                    let
-                        newValue =
-                            if value > 12 then
-                                12
-
-                            else
-                                value
-                    in
-                    ( { model
-                        | config = { config | maxRoundNumber = newValue }
-                      }
-                    , Cmd.none
-                    )
-
-                ShortBreakTime ->
-                    let
-                        newValue =
-                            if value > 90 then
-                                90 * 60
-
-                            else
-                                value * 60
-                    in
-                    ( { model
-                        | config = { config | shortBreakDuration = newValue }
-                        , currentTime =
-                            if model.currentSessionType == ShortBreak then
-                                if newValue == 0 then
-                                    60
-
-                                else
-                                    newValue
-
-                            else
-                                model.currentTime
-                      }
-                    , Cmd.none
-                    )
+            ( { model | config = newConfig }
+            , Cmd.batch
+                [ updateConfig newConfig
+                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
+                ]
+            )
 
         UpdateVolume volumeStr ->
             let
@@ -985,44 +576,22 @@ update msg model =
 
                         Just v ->
                             toFloat v / 100
+
+                newConfig =
+                    { config | muted = newVolume <= 0 }
             in
             ( { model
                 | volume = newVolume
-                , muted =
-                    newVolume <= 0
+                , config = newConfig
               }
             , setVolume newVolume
             )
 
 
-shouldPlayTick : Model -> Bool
-shouldPlayTick model =
-    -- If it's muted, don't play anything
-    if model.muted then
-        False
-
-    else if model.currentTime > 0 && model.sessionStatus == Running then
-        case ( model.currentSessionType, model.config.tickSoundsDuringWork, model.config.tickSoundsDuringBreak ) of
-            ( Pomodoro, True, _ ) ->
-                True
-
-            ( ShortBreak, _, True ) ->
-                True
-
-            ( LongBreak, _, True ) ->
-                True
-
-            _ ->
-                False
-
-    else
-        False
-
-
 colorForSessionType : SessionType -> Theme -> RGB
 colorForSessionType sessionType theme =
     case sessionType of
-        Pomodoro ->
+        Focus ->
             fromCSSHexToRGB <| theme.colors.focusRound
 
         ShortBreak ->
@@ -1035,13 +604,13 @@ colorForSessionType sessionType theme =
 computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
 computeCurrentColor currentTime maxTime sessionType theme =
     case sessionType of
-        Pomodoro ->
+        Focus ->
             let
-                percent =
-                    toFloat currentTime / toFloat maxTime
+                remainingPercent =
+                    toFloat (maxTime - currentTime) / toFloat maxTime
 
                 relativePercent =
-                    (toFloat currentTime - toFloat maxTime / 2) / (toFloat maxTime / 2)
+                    (toFloat (maxTime - currentTime) - toFloat maxTime / 2) / (toFloat maxTime / 2)
 
                 ( startRed, startGreen, startBlue ) =
                     case fromCSSHexToRGB theme.colors.focusRound of
@@ -1058,7 +627,7 @@ computeCurrentColor currentTime maxTime sessionType theme =
                         RGB r g b ->
                             ( r, g, b )
             in
-            if percent > 0.5 then
+            if remainingPercent > 0.5 then
                 RGB
                     (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
                     (toFloat middleGreen + (relativePercent * toFloat (startGreen - middleGreen)) |> round)
@@ -1081,11 +650,11 @@ secondsToString seconds =
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> Html Msg
 dialView sessionType currentTime maxTime maxStrokeDasharray theme =
     let
-        percent =
-            toFloat currentTime / toFloat maxTime
+        remainingPercent =
+            toFloat (maxTime - currentTime) / toFloat maxTime
 
         strokeDasharray =
-            maxStrokeDasharray - maxStrokeDasharray * percent
+            maxStrokeDasharray - maxStrokeDasharray * remainingPercent
 
         colorToHtmlRgbString (RGB r g b) =
             "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
@@ -1095,11 +664,11 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
-            [ text <| secondsToString currentTime ]
+            [ text <| secondsToString (maxTime - currentTime) ]
         , p [ class "dial-label", style "color" color ]
             [ text <|
                 case sessionType of
-                    Pomodoro ->
+                    Focus ->
                         "Focus"
 
                     ShortBreak ->
@@ -1159,7 +728,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
 playPauseView : SessionStatus -> Html Msg
 playPauseView sessionStatus =
     section [ class "container", class "button-wrapper" ]
-        [ div [ class "button", onClick ToggleStatus ]
+        [ div [ class "button", onClick TogglePlayStatus ]
             [ div [ class "button-icon-wrapper" ]
                 [ case sessionStatus of
                     Running ->
@@ -1227,7 +796,7 @@ footerView : Model -> Html Msg
 footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
-            [ p [] [ text <| String.fromInt model.currentRoundNumber ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
+            [ p [] [ text <| String.fromInt (model.pomodoroState |> Maybe.map (\state -> state.currentWorkRoundNumber) |> Maybe.withDefault 1) ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
             , p [ class "text-button", title "Reset current round", onClick Reset ] [ text "Reset" ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
@@ -1259,7 +828,7 @@ footerView model =
                     ]
                 ]
             , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, title "Mute" ]
-                [ if model.muted == False then
+                [ if model.config.muted == False then
                     svg
                         [ SvgAttr.version "1.2"
                         , SvgAttr.id "Layer_1"
@@ -1329,26 +898,35 @@ footerView model =
         ]
 
 
-getCurrentMaxTime : Model -> Seconds
-getCurrentMaxTime model =
-    case model.currentSessionType of
-        Pomodoro ->
-            model.config.pomodoroDuration
+getCurrentMaxTime : Config -> RustState -> Seconds
+getCurrentMaxTime config state =
+    case state.currentSession.sessionType of
+        Focus ->
+            config.pomodoroDuration
 
         LongBreak ->
-            model.config.longBreakDuration
+            config.longBreakDuration
 
         ShortBreak ->
-            model.config.shortBreakDuration
+            config.shortBreakDuration
 
 
 timerView : Model -> Html Msg
-timerView model =
-    div [ class "timer-wrapper" ]
-        [ dialView model.currentSessionType model.currentTime (getCurrentMaxTime model) model.strokeDasharray model.theme
-        , playPauseView model.sessionStatus
-        , footerView model
-        ]
+timerView ({ config, strokeDasharray, theme, pomodoroState } as model) =
+    pomodoroState
+        |> Maybe.map
+            (\state ->
+                div [ class "timer-wrapper" ]
+                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme
+                    , playPauseView state.currentSession.status
+                    , footerView model
+                    ]
+            )
+        |> Maybe.withDefault
+            (div
+                [ class "timer-wrapper" ]
+                [ div [] [ text "Loading state from Rust..." ], footerView model ]
+            )
 
 
 navView : Model -> Html Msg
@@ -1931,11 +1509,11 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapLoadConfigAndThemes : Decode.Value -> Msg
-mapLoadConfigAndThemes modelJson =
-    case Decode.decodeValue configAndThemesDecoder modelJson of
+mapJsonMessage : Decode.Decoder a -> (a -> Msg) -> Decode.Value -> Msg
+mapJsonMessage decoder msg value =
+    case Decode.decodeValue decoder value of
         Ok model ->
-            LoadConfig model
+            msg model
 
         Err _ ->
             --@FIX: don't fail silently
@@ -1945,14 +1523,10 @@ mapLoadConfigAndThemes modelJson =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ tick (always Tick)
-        , togglePlay (always ToggleStatus)
+        [ togglePlay (always TogglePlayStatus)
         , skip (always SkipCurrentRound)
-        , loadConfigAndThemes mapLoadConfigAndThemes
+        , sendMessageToElm (mapJsonMessage externalMessageDecoder ProcessExternalMessage)
         ]
-
-
-port tick : (() -> msg) -> Sub msg
 
 
 port togglePlay : (() -> msg) -> Sub msg
@@ -1961,11 +1535,14 @@ port togglePlay : (() -> msg) -> Sub msg
 port skip : (() -> msg) -> Sub msg
 
 
-port loadConfigAndThemes : (Decode.Value -> msg) -> Sub msg
+port sendMessageToElm : (Decode.Value -> msg) -> Sub msg
 
 
 
 -- PORTS
+
+
+port sendMessageFromElm : Encode.Value -> Cmd msg
 
 
 port playSound : String -> Cmd msg

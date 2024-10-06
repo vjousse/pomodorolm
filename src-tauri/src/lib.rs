@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -15,24 +16,25 @@ use tauri::Runtime;
 use tauri::{path::BaseDirectory, Manager};
 use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
-pub struct AppState(Arc<Mutex<App>>);
+pub struct AppState<'a>(Arc<Mutex<App<'a>>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
-use std::env;
 use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 mod icon;
+pub mod pomodoro;
 mod sound;
 
 const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct App {
-    play_tick: bool,
+struct App<'a> {
     config: Config,
+    #[serde(borrow)]
+    pomodoro: pomodoro::Pomodoro<'a>,
 }
 
 struct MenuStates<R: Runtime> {
@@ -50,6 +52,8 @@ struct Config {
     max_round_number: u16,
     minimize_to_tray: bool,
     minimize_to_tray_on_close: bool,
+    #[serde(default)]
+    muted: bool,
     pomodoro_duration: u16,
     short_break_duration: u16,
     #[serde(default = "default_theme")]
@@ -205,6 +209,7 @@ impl Default for Config {
             max_round_number: 4u16,
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
+            muted: false,
             pomodoro_duration: 25 * 60,
             short_break_duration: 5 * 60,
             theme: "pomotroid".to_string(),
@@ -358,10 +363,20 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 config
             };
 
-            app.manage(AppState(Arc::new(Mutex::new(App {
-                play_tick: false,
-                config,
-            }))));
+            let pomodoro = pomodoro::Pomodoro {
+                config: pomodoro::Config {
+                    auto_start_long_break_timer: config.auto_start_break_timer,
+                    auto_start_short_break_timer: config.auto_start_break_timer,
+                    auto_start_focus_timer: config.auto_start_work_timer,
+                    focus_duration: config.pomodoro_duration,
+                    long_break_duration: config.long_break_duration,
+                    max_focus_rounds: config.max_round_number,
+                    short_break_duration: config.short_break_duration,
+                },
+                ..pomodoro::Pomodoro::default()
+            };
+
+            app.manage(AppState(Arc::new(Mutex::new(App { config, pomodoro }))));
 
             app.manage(AppMenuStates(std::sync::Mutex::new(MenuStates {
                 toggle_visibility_menu: toggle_visibility,
@@ -377,7 +392,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 BaseDirectory::Resource,
             );
             let audio_path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
+                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
 
             tauri::async_runtime::spawn(tick(
                 app.handle().clone(),
@@ -393,13 +408,13 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
+            handle_external_message,
             hide_window,
             load_config_and_themes,
             minimize_window,
             notify,
             play_sound_command,
             update_config,
-            update_play_tick,
             update_session_status
         ])
         .run(tauri::generate_context!())
@@ -430,20 +445,44 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     themes_paths_bufs
 }
 
+fn should_play_tick_sound(config: &Config, pomodoro: &Pomodoro) -> bool {
+    match (
+        pomodoro.current_session.status,
+        pomodoro.current_session.session_type,
+        config.tick_sounds_during_work,
+        config.tick_sounds_during_break,
+        config.muted,
+    ) {
+        // No tick sound configured
+        (_, _, _, _, true) => false,
+        (_, _, false, false, _) => false,
+        (SessionStatus::Running, SessionType::Focus, true, _, _) => true,
+        (SessionStatus::Running, SessionType::LongBreak, _, true, _) => true,
+        (SessionStatus::Running, SessionType::ShortBreak, _, true, _) => true,
+        _ => false,
+    }
+}
+
 async fn tick(app_handle: AppHandle, path: String) {
     let mut stream = IntervalStream::new(time::interval(Duration::from_secs(1)));
 
     match app_handle.get_webview_window("main") {
         Some(window) => {
             while let Some(_ts) = stream.next().await {
-                let _ = window.emit("tick-event", "");
+                let new_path = path.clone();
 
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
-                let state_guard = new_state.0.lock().await;
-                let play_tick: bool = state_guard.play_tick;
+                let mut state_guard = new_state.0.lock().await;
+                //let play_tick: bool = state_guard.play_tick;
+                let play_tick: bool =
+                    should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                let new_path = path.clone();
+                state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
+
+                //eprintln!("New STATE {state_guard:?}");
+
+                let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
                 tauri::async_runtime::spawn_blocking(move || {
                     if play_tick {
@@ -545,28 +584,16 @@ async fn update_session_status<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-async fn update_play_tick(state: tauri::State<'_, AppState>, play_tick: bool) -> Result<(), ()> {
-    let mut state_guard = state.0.lock().await;
-
-    *state_guard = App {
-        play_tick,
-        config: state_guard.config.clone(),
-    };
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn update_config(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, AppState<'_>>,
     app_handle: tauri::AppHandle,
     config: Config,
 ) -> Result<(), ()> {
     let mut state_guard = state.0.lock().await;
 
     *state_guard = App {
-        play_tick: state_guard.play_tick,
         config: config.clone(),
+        pomodoro: state_guard.pomodoro,
     };
 
     match get_config_file_path(app_handle.path()) {
@@ -596,7 +623,7 @@ async fn update_config(
 
 #[tauri::command]
 async fn load_config_and_themes(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, AppState<'_>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(Config, Vec<Theme>), ()> {
     let mut state_guard = state.0.lock().await;
@@ -617,8 +644,8 @@ async fn load_config_and_themes(
             })?;
 
             *state_guard = App {
-                play_tick: state_guard.play_tick,
                 config: config.clone(),
+                pomodoro: state_guard.pomodoro,
             };
 
             Ok(config)
@@ -672,7 +699,7 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
                 BaseDirectory::Resource,
             );
             let path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
+                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
             let audio_path = path.to_string_lossy();
 
             // Fail silently if we can't play sound file
@@ -762,6 +789,37 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
         }
         Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
     }
+}
+
+#[tauri::command]
+async fn handle_external_message(
+    state: tauri::State<'_, AppState<'_>>,
+    name: String,
+) -> Result<pomodoro::PomodoroUnborrowed, ()> {
+    eprintln!("Got external message {name:?}");
+
+    let mut app_state_guard = state.0.lock().await;
+
+    match name.as_str() {
+        "play" => {
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
+        }
+        "pause" => {
+            app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+        }
+        "reset" => {
+            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
+        }
+        "skip" => {
+            app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
+        }
+        _ => eprintln!("Unknown message"),
+    }
+
+    // Needed because Tauri doesn't play well with returning references
+    // with async commands
+    // https://v2.tauri.app/develop/calling-rust/#async-commands
+    Ok(app_state_guard.pomodoro.to_unborrowed())
 }
 
 fn resolve_resource_path(
