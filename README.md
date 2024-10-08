@@ -49,6 +49,9 @@ Download the install file for your OS from the latest release on https://github.
     <img width="240" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/>
 </a>
 
+    flatpak install flathub org.jousse.vincent.Pomodorolm
+    flatpak run org.jousse.vincent.Pomodorolm
+
 ## Snap Store
 
 [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/pomodorolm)
@@ -102,7 +105,7 @@ Build files will be placed in the `target/` directory.
 
 ## Linux
 
-### `Failed to create GBM buffer of size…`  
+### `Failed to create GBM buffer of size…`
 
 If you run into this error, it is likely because you're using nvidia drivers under Linux. They are several bug reports in Webkit, cf this issue for wails: https://github.com/wailsapp/wails/issues/2977#issuecomment-1791041741.
 
@@ -110,7 +113,7 @@ You can try to run `pomodorolm` using this command:
 
     WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm
 
-Thanks to @Bad3r for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
+Thanks to [@Bad3r](https://github.com/Bad3r) for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
 
 ### `Error 71 (Protocol error) dispatching to Wayland display.`
 
