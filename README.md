@@ -102,7 +102,7 @@ Build files will be placed in the `target/` directory.
 
 ## Linux
 
-### `Failed to create GBM buffer of size…`
+### `Failed to create GBM buffer of size…`  
 
 If you run into this error, it is likely because you're using nvidia drivers under Linux. They are several bug reports in Webkit, cf this issue for wails: https://github.com/wailsapp/wails/issues/2977#issuecomment-1791041741.
 
@@ -111,6 +111,14 @@ You can try to run `pomodorolm` using this command:
     WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm
 
 Thanks to @Bad3r for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
+
+### `Error 71 (Protocol error) dispatching to Wayland display.`
+
+If you are using the flatpak, you can resolve this issue by using this command:
+
+    flatpak override --user --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 org.jousse.vincent.Pomodorolm
+
+This will set the environment variable for the flatpak, and you should be able to launch the application as normal from there on.
 
 ## Windows
 
