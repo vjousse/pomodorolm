@@ -386,11 +386,8 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             let sound_file =
                 sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
 
-            let resource_path = resolve_resource_path(
-                app.handle(),
-                format!("audio/{}", sound_file),
-                BaseDirectory::Resource,
-            );
+            let resource_path =
+                resolve_resource_path(app.handle(), format!("audio/{}", sound_file));
             let audio_path = resource_path
                 .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
 
@@ -533,8 +530,9 @@ async fn change_icon<R: tauri::Runtime>(
                     if let Some(tray) = app_handle.tray_by_id("app-tray") {
                         let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
 
-                        // Don't let tauri choose where to store the temp icon path. Setting it allows the tray icon to work
-                        // properly in sandboxes env like Flatpak where we can share XDG_DATA_HOME between the host and the sandboxed env
+                        // Don't let tauri choose where to store the temp icon path as it will by default store it to `/tmp`.
+                        // Setting it manually allows the tray icon to work properly in sandboxes env like Flatpak
+                        // where we can share XDG_DATA_HOME between the host and the sandboxed env
                         // libappindicator will add the full path of the icon to the dbus message when changing it,
                         // so the path needs to be the same between the host and the sandboxed env
                         let local_data_path = app_handle
@@ -656,12 +654,8 @@ async fn load_config_and_themes(
         }
     };
 
-    let theme_resource_path = resolve_resource_path(
-        &app_handle,
-        String::from("themes/"),
-        BaseDirectory::Resource,
-    )
-    .expect("Unable to resolve `themes/{}` resource.");
+    let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
+        .expect("Unable to resolve `themes/{}` resource.");
 
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
@@ -693,11 +687,7 @@ async fn load_config_and_themes(
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
     match sound::get_sound_file(sound_id.as_str()) {
         Some(sound_file) => {
-            let resource_path = resolve_resource_path(
-                &app_handle,
-                format!("audio/{}", sound_file),
-                BaseDirectory::Resource,
-            );
+            let resource_path = resolve_resource_path(&app_handle, format!("audio/{}", sound_file));
             let path = resource_path
                 .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
             let audio_path = path.to_string_lossy();
@@ -825,11 +815,10 @@ async fn handle_external_message(
 fn resolve_resource_path(
     app_handle: &AppHandle,
     path_to_resolve: String,
-    base_directory: BaseDirectory,
 ) -> Result<PathBuf, tauri::Error> {
     let mut resolved_path = app_handle
         .path()
-        .resolve(path_to_resolve.clone(), base_directory);
+        .resolve(path_to_resolve.clone(), BaseDirectory::Resource);
 
     #[cfg(target_os = "linux")]
     {
