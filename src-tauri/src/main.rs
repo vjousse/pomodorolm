@@ -13,8 +13,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Adds files to myapp
-    Cli,
+    /// Start a pomodoro
+    Start,
 }
 
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(command) => match command {
-            Commands::Cli => {
+            Commands::Start => {
                 println!("--> CLI mode");
             }
         },

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
@@ -110,6 +111,7 @@ pub struct Session<'a> {
     pub current_time: Seconds,
     pub label: Option<&'a str>,
     pub session_type: SessionType,
+    pub started_at: Option<DateTime<Utc>>,
     pub status: SessionStatus,
 }
 
@@ -119,6 +121,7 @@ impl Default for Session<'_> {
             current_time: 0,
             label: None,
             session_type: SessionType::Focus,
+            started_at: None,
             status: SessionStatus::NotStarted,
         }
     }
@@ -135,18 +138,24 @@ pub fn pause<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
 }
 
 pub fn play<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
-    Pomodoro {
-        current_session: Session {
-            status: SessionStatus::Running,
-            ..pomodoro.current_session
-        },
-        ..*pomodoro
+    if pomodoro.current_session.status != SessionStatus::Running {
+        Pomodoro {
+            current_session: Session {
+                started_at: Some(Utc::now()),
+                status: SessionStatus::Running,
+                ..pomodoro.current_session
+            },
+            ..*pomodoro
+        }
+    } else {
+        *pomodoro
     }
 }
 
 pub fn reset<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
     Pomodoro {
         current_session: Session {
+            started_at: None,
             status: SessionStatus::NotStarted,
             current_time: 0,
             ..pomodoro.current_session
@@ -162,6 +171,12 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
             if pomodoro.current_work_round_number == pomodoro.config.max_focus_rounds {
                 Session {
                     session_type: SessionType::LongBreak,
+
+                    started_at: if pomodoro.config.auto_start_long_break_timer {
+                        Some(Utc::now())
+                    } else {
+                        None
+                    },
                     status: if pomodoro.config.auto_start_long_break_timer {
                         SessionStatus::Running
                     } else {
@@ -173,6 +188,12 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
             } else {
                 Session {
                     session_type: SessionType::ShortBreak,
+
+                    started_at: if pomodoro.config.auto_start_short_break_timer {
+                        Some(Utc::now())
+                    } else {
+                        None
+                    },
                     status: if pomodoro.config.auto_start_short_break_timer {
                         SessionStatus::Running
                     } else {
@@ -184,6 +205,11 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
         }
         _ => Session {
             session_type: SessionType::Focus,
+            started_at: if pomodoro.config.auto_start_focus_timer {
+                Some(Utc::now())
+            } else {
+                None
+            },
             status: if pomodoro.config.auto_start_focus_timer {
                 SessionStatus::Running
             } else {
