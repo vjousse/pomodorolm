@@ -366,7 +366,7 @@ getNextRoundInfo model =
             , htmlIdOfAudioToPlay = "audio-work"
             , nextRoundNumber = model.currentRoundNumber + 1
             , nextTime = model.config.pomodoroDuration
-            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.shortBreakDuration Pomodoro
+            , notification = getNotification "Short break completed" "focus round" "start_focus" model.config.pomodoroDuration Pomodoro
             }
 
         LongBreak ->
