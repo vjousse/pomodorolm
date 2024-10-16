@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.2.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.2)] - 2024-10-16
+
+### 🐛 Bug Fixes
+
+- Focus notification time
+
 ## [[app-v0.2.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.1)] - 2024-09-29
 
 ### 🐛 Bug Fixes
 
 - Load themes and config synchronously ([#110](https://github.com/vjousse/pomodorolm/issues/110))
 - Aur sha computation
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version to 0.2.1
 
 ## [[app-v0.2.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.0)] - 2024-09-27
 
