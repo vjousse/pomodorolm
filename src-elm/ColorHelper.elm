@@ -1,16 +1,14 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module ColorHelper exposing (RGB(..), fromCSSHexToRGB, fromRGBToCSSHex)
+module ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 
 import Bitwise
 import Dict exposing (Dict)
 import Hex
 import List
-
-
-type RGB
-    = RGB Int Int Int
+import Themes exposing (Theme)
+import Types exposing (RGB(..), Seconds, SessionType(..))
 
 
 toStringWithZeroPadding : Int -> String
@@ -97,3 +95,57 @@ hexmap =
         , ( 'e', 14 )
         , ( 'f', 15 )
         ]
+
+
+colorForSessionType : SessionType -> Theme -> RGB
+colorForSessionType sessionType theme =
+    case sessionType of
+        Focus ->
+            fromCSSHexToRGB <| theme.colors.focusRound
+
+        ShortBreak ->
+            fromCSSHexToRGB <| theme.colors.shortRound
+
+        LongBreak ->
+            fromCSSHexToRGB <| theme.colors.longRound
+
+
+computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
+computeCurrentColor currentTime maxTime sessionType theme =
+    case sessionType of
+        Focus ->
+            let
+                remainingPercent =
+                    toFloat (maxTime - currentTime) / toFloat maxTime
+
+                relativePercent =
+                    (toFloat (maxTime - currentTime) - toFloat maxTime / 2) / (toFloat maxTime / 2)
+
+                ( startRed, startGreen, startBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRound of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( middleRed, middleGreen, middleBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRoundMiddle of
+                        RGB r g b ->
+                            ( r, g, b )
+
+                ( endRed, endGreen, endBlue ) =
+                    case fromCSSHexToRGB theme.colors.focusRoundEnd of
+                        RGB r g b ->
+                            ( r, g, b )
+            in
+            if remainingPercent > 0.5 then
+                RGB
+                    (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
+                    (toFloat middleGreen + (relativePercent * toFloat (startGreen - middleGreen)) |> round)
+                    (toFloat middleBlue + (relativePercent * toFloat (startBlue - middleBlue)) |> round)
+
+            else
+                RGB (toFloat endRed + ((1 + relativePercent) * toFloat (middleRed - endRed)) |> round)
+                    (toFloat endGreen + ((1 + relativePercent) * toFloat (middleGreen - endGreen)) |> round)
+                    (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
+
+        s ->
+            colorForSessionType s theme
