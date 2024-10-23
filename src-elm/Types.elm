@@ -56,12 +56,15 @@ type alias Config =
     , autoStartBreakTimer : Bool
     , autoStartWorkTimer : Bool
     , desktopNotifications : Bool
+    , focusAudio : Maybe String
+    , longBreakAudio : Maybe String
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
     , muted : Bool
     , pomodoroDuration : Seconds
+    , shortBreakAudio : Maybe String
     , shortBreakDuration : Seconds
     , theme : String
     , tickSoundsDuringBreak : Bool

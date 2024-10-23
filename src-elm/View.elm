@@ -1,7 +1,7 @@
 module View exposing (drawerView, navView, timerView)
 
 import ColorHelper exposing (computeCurrentColor)
-import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
+import Html exposing (Html, a, div, h1, h2, input, nav, p, section, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import ListWithCurrent
@@ -584,7 +584,28 @@ settingsSettingView model =
                 ]
     in
     div [ class "container", id "settings" ]
-        [ p
+        [ p [ class "drawer-heading" ] [ text "Custom Sounds" ]
+        , div [ class "setting-wrapper-multi" ]
+            [ div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title" ] [ text "Short break sound" ]
+                , div []
+                    [ a
+                        [ class "setting-button left active", title "Reset to default sound" ]
+                        [ text "default" ]
+                    , a
+                        [ class "setting-button right", title "Choose custom sound" ]
+                        [ text "custom" ]
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title", style "font-style" "italic" ] [ text "Reset to default sound." ]
+                ]
+            ]
+        , p
             [ class "drawer-heading"
             ]
             [ text "Settings" ]
