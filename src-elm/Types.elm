@@ -1,6 +1,46 @@
-module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Notification, RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
+import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
+
+
+type RGB
+    = RGB Int Int Int
+
+
+type alias Model =
+    { appVersion : String
+    , config : Config
+    , currentColor : RGB
+    , currentState : CurrentState
+    , drawerOpen : Bool
+    , pomodoroState : Maybe RustState
+    , settingTab : SettingTab
+    , strokeDasharray : Float
+    , theme : Theme
+    , themes : ListWithCurrent Theme
+    , volume : Float
+    , volumeSliderHidden : Bool
+    }
+
+
+type Msg
+    = CloseWindow
+    | ChangeSettingTab SettingTab
+    | ChangeSettingConfig Setting
+    | ChangeTheme Theme
+    | HideVolumeBar
+    | ProcessExternalMessage ExternalMessage
+    | MinimizeWindow
+    | NoOp
+    | Reset
+    | ResetSettings
+    | SkipCurrentRound
+    | ToggleDrawer
+    | ToggleMute
+    | TogglePlayStatus
+    | UpdateSetting SettingType String
+    | UpdateVolume String
 
 
 type alias Seconds =
