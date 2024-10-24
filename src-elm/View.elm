@@ -1,7 +1,7 @@
 module View exposing (drawerView, navView, timerView)
 
 import ColorHelper exposing (computeCurrentColor)
-import Html exposing (Html, a, div, h1, h2, input, nav, p, section, span, text)
+import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import ListWithCurrent
@@ -590,19 +590,52 @@ settingsSettingView model =
                 [ class "setting-wrapper"
                 ]
                 [ p [ class "setting-title" ] [ text "Short break sound" ]
-                , div []
+                , p [ class "setting-title" ]
                     [ a
-                        [ class "setting-button left active", title "Reset to default sound" ]
+                        [ class
+                            ("setting-button left"
+                                ++ (case model.config.shortBreakAudio of
+                                        Nothing ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Reset to default sound"
+                        , onClick ResetShortBreakAudioFile
+                        ]
                         [ text "default" ]
                     , a
-                        [ class "setting-button right", title "Choose custom sound" ]
+                        [ class
+                            ("setting-button right"
+                                ++ (case model.config.shortBreakAudio of
+                                        Just _ ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Choose custom sound"
+                        , onClick ShortBreakAudioFileRequested
+                        ]
                         [ text "custom" ]
                     ]
                 ]
             , div
                 [ class "setting-wrapper"
                 ]
-                [ p [ class "setting-title", style "font-style" "italic" ] [ text "Reset to default sound." ]
+                [ p [ class "setting-title", style "font-style" "italic" ]
+                    [ text
+                        (case model.config.shortBreakAudio of
+                            Just fileName ->
+                                "Using custom sound " ++ fileName
+
+                            Nothing ->
+                                "Using default sound"
+                        )
+                    ]
                 ]
             ]
         , p

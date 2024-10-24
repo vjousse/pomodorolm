@@ -489,7 +489,7 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--color-foreground);
   background-color: var(--color-background);
   cursor: pointer;
-  padding: 0.7vw 0.7vw;
+  padding-bottom: 0.7vw;
   display: inline-block;
 
   font-size: 0.7rem;

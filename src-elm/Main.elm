@@ -2,6 +2,8 @@ port module Main exposing (Flags, main)
 
 import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+import File
+import File.Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
 import Json exposing (elmMessageEncoder, externalMessageDecoder)
@@ -388,6 +390,36 @@ update msg ({ config } as model) =
                 [ updateSessionStatus (NotStarted |> sessionStatusToString)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset" })
                 ]
+            )
+
+        ResetShortBreakAudioFile ->
+            let
+                updatedConfig =
+                    { config
+                        | shortBreakAudio = Nothing
+                    }
+            in
+            ( { model
+                | config = updatedConfig
+              }
+            , Cmd.none
+            )
+
+        ShortBreakAudioFileLoaded file ->
+            let
+                _ =
+                    Debug.log "File loaded" file
+
+                updatedConfig =
+                    { config | shortBreakAudio = Just (File.name file) }
+            in
+            ( { model | config = updatedConfig }
+            , Cmd.none
+            )
+
+        ShortBreakAudioFileRequested ->
+            ( model
+            , File.Select.file [ "audio/*" ] ShortBreakAudioFileLoaded
             )
 
         SkipCurrentRound ->

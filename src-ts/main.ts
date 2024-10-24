@@ -256,13 +256,10 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 });
 
 await listen("tick-event", () => {
-  console.log("Getting tick event");
   app.ports.tick.send(null);
 });
 
 await listen("external-message", (message) => {
-  console.log(`Getting external message ${message}`);
-  console.log(message.payload);
   app.ports.sendMessageToElm.send(message.payload);
 });
 
