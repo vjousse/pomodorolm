@@ -1,6 +1,5 @@
 module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
-import File exposing (File)
 import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
 
@@ -37,7 +36,6 @@ type Msg
     | Reset
     | ResetSettings
     | ResetShortBreakAudioFile
-    | ShortBreakAudioFileLoaded File
     | ShortBreakAudioFileRequested
     | SkipCurrentRound
     | ToggleDrawer
@@ -158,3 +156,4 @@ type alias RustState =
 type ExternalMessage
     = RustStateMsg RustState
     | RustConfigAndThemesMsg ConfigAndThemes
+    | SoundFilePath SessionType String

@@ -2,8 +2,6 @@ port module Main exposing (Flags, main)
 
 import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
-import File
-import File.Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
 import Json exposing (elmMessageEncoder, externalMessageDecoder)
@@ -351,6 +349,16 @@ update msg ({ config } as model) =
             , Cmd.batch (updateCurrentState currentState :: cmds)
             )
 
+        ProcessExternalMessage (SoundFilePath audioFileType filePath) ->
+            let
+                _ =
+                    Debug.log "audioFileType" audioFileType
+
+                _ =
+                    Debug.log "audioFilePath" filePath
+            in
+            ( model, Cmd.none )
+
         Reset ->
             let
                 currentState =
@@ -405,21 +413,11 @@ update msg ({ config } as model) =
             , Cmd.none
             )
 
-        ShortBreakAudioFileLoaded file ->
-            let
-                _ =
-                    Debug.log "File loaded" file
-
-                updatedConfig =
-                    { config | shortBreakAudio = Just (File.name file) }
-            in
-            ( { model | config = updatedConfig }
-            , Cmd.none
-            )
-
         ShortBreakAudioFileRequested ->
+            -- See https://v2.tauri.app/plugin/dialog/
             ( model
-            , File.Select.file [ "audio/*" ] ShortBreakAudioFileLoaded
+              -- , File.Select.file [ "audio/*" ] ShortBreakAudioFileLoaded
+            , openFile ()
             )
 
         SkipCurrentRound ->
@@ -643,6 +641,9 @@ port playSound : String -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg
+
+
+port openFile : () -> Cmd msg
 
 
 port closeWindow : () -> Cmd msg

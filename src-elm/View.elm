@@ -584,7 +584,7 @@ settingsSettingView model =
                 ]
     in
     div [ class "container", id "settings" ]
-        [ p [ class "drawer-heading" ] [ text "Custom Sounds" ]
+        [ p [ class "drawer-heading" ] [ text "Sounds" ]
         , div [ class "setting-wrapper-multi" ]
             [ div
                 [ class "setting-wrapper"

@@ -221,7 +221,7 @@ impl Default for Config {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    run_app(tauri::Builder::default())
+    run_app(tauri::Builder::default().plugin(tauri_plugin_dialog::init()))
 }
 
 fn get_config_file_path<R: Runtime>(
@@ -252,6 +252,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;

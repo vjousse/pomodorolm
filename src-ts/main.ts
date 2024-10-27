@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import { attachConsole } from "@tauri-apps/plugin-log";
+import { open } from "@tauri-apps/plugin-dialog";
 import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
@@ -139,6 +140,25 @@ app = Elm.Main.init({
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
     tickSoundsDuringBreak: rustConfig.tick_sounds_during_break,
   },
+});
+
+app.ports.openFile.subscribe(async function () {
+  const file = await open({
+    multiple: false,
+    directory: false,
+    filters: [
+      {
+        name: "audio (mp3, wav, ogg, flac)",
+        extensions: ["mp3", "wav", "ogg", "flac"],
+      },
+    ],
+  });
+  console.log(file);
+
+  app.ports.sendMessageToElm.send({
+    session_type: "shortbreak",
+    file_path: file,
+  });
 });
 
 app.ports.playSound.subscribe(function (soundElementId: string) {

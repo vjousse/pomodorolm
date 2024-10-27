@@ -1856,6 +1856,61 @@
           "const": "core:window:deny-unminimize"
         },
         {
+          "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n",
+          "type": "string",
+          "const": "dialog:default"
+        },
+        {
+          "description": "Enables the ask command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-ask"
+        },
+        {
+          "description": "Enables the confirm command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-confirm"
+        },
+        {
+          "description": "Enables the message command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-message"
+        },
+        {
+          "description": "Enables the open command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-open"
+        },
+        {
+          "description": "Enables the save command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-save"
+        },
+        {
+          "description": "Denies the ask command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-ask"
+        },
+        {
+          "description": "Denies the confirm command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-confirm"
+        },
+        {
+          "description": "Denies the message command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-message"
+        },
+        {
+          "description": "Denies the open command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-open"
+        },
+        {
+          "description": "Denies the save command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-save"
+        },
+        {
           "description": "Allows the log command",
           "type": "string",
           "const": "log:default"

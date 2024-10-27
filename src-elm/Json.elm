@@ -135,4 +135,5 @@ externalMessageDecoder =
     Decode.oneOf
         [ rustStateDecoder |> Decode.map RustStateMsg
         , configAndThemesDecoder |> Decode.map RustConfigAndThemesMsg
+        , Decode.map2 SoundFilePath (Decode.field "session_type" sessionTypeDecoder) (Decode.field "file_path" Decode.string)
         ]
