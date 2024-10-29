@@ -26,6 +26,7 @@ type ElmState = {
 
 type Message = {
   name: string;
+  value: string;
 };
 
 type Notification = {
@@ -142,25 +143,6 @@ app = Elm.Main.init({
   },
 });
 
-app.ports.openFile.subscribe(async function () {
-  const file = await open({
-    multiple: false,
-    directory: false,
-    filters: [
-      {
-        name: "audio (mp3, wav, ogg, flac)",
-        extensions: ["mp3", "wav", "ogg", "flac"],
-      },
-    ],
-  });
-  console.log(file);
-
-  app.ports.sendMessageToElm.send({
-    session_type: "shortbreak",
-    file_path: file,
-  });
-});
-
 app.ports.playSound.subscribe(function (soundElementId: string) {
   invoke("play_sound_command", { soundId: soundElementId });
 });
@@ -191,12 +173,33 @@ app.ports.notify.subscribe(function (notification: Notification) {
   invoke("notify", { notification: notification });
 });
 
-app.ports.sendMessageFromElm.subscribe(function (message: Message) {
+app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
   console.log(`Sending message from Elm ${message}`);
-  invoke("handle_external_message", message).then((newState) => {
-    console.log(newState);
-    app.ports.sendMessageToElm.send(newState);
-  });
+  switch (message.name) {
+    case "choose_sound_file":
+      const file = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: "audio (mp3, wav, ogg, flac)",
+            extensions: ["mp3", "wav", "ogg", "flac"],
+          },
+        ],
+      });
+      console.log(file);
+      app.ports.sendMessageToElm.send({
+        session_type: message.value,
+        file_path: file,
+      });
+      break;
+
+    default:
+      invoke("handle_external_message", message).then((newState) => {
+        console.log(newState);
+        app.ports.sendMessageToElm.send(newState);
+      });
+  }
 });
 
 app.ports.updateConfig.subscribe(function (config: ElmConfig) {

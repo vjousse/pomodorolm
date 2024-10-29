@@ -10,7 +10,7 @@ import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
 import View
 
 
@@ -111,7 +111,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (NotStarted |> sessionStatusToString)
-        , sendMessageFromElm (elmMessageEncoder { name = "get-state" })
+        , sendMessageFromElm (elmMessageEncoder { name = "get-state", value = Nothing })
         , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
@@ -349,13 +349,13 @@ update msg ({ config } as model) =
             , Cmd.batch (updateCurrentState currentState :: cmds)
             )
 
-        ProcessExternalMessage (SoundFilePath audioFileType filePath) ->
+        ProcessExternalMessage (SoundFilePath sessionType path) ->
             let
                 _ =
-                    Debug.log "audioFileType" audioFileType
+                    Debug.log "SoundFilePath sessionType" sessionType
 
                 _ =
-                    Debug.log "audioFilePath" filePath
+                    Debug.log "SoundFilePath path" path
             in
             ( model, Cmd.none )
 
@@ -377,7 +377,7 @@ update msg ({ config } as model) =
             , Cmd.batch
                 [ updateCurrentState currentState
                 , updateSessionStatus (NotStarted |> sessionStatusToString)
-                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
+                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
 
@@ -396,7 +396,7 @@ update msg ({ config } as model) =
               }
             , Cmd.batch
                 [ updateSessionStatus (NotStarted |> sessionStatusToString)
-                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
+                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
 
@@ -417,12 +417,12 @@ update msg ({ config } as model) =
             -- See https://v2.tauri.app/plugin/dialog/
             ( model
               -- , File.Select.file [ "audio/*" ] ShortBreakAudioFileLoaded
-            , openFile ()
+            , sendMessageFromElm (elmMessageEncoder { name = "choose_sound_file", value = Just <| sessionTypeToString ShortBreak })
             )
 
         SkipCurrentRound ->
             ( model
-            , sendMessageFromElm (elmMessageEncoder { name = "skip" })
+            , sendMessageFromElm (elmMessageEncoder { name = "skip", value = Nothing })
             )
 
         ToggleDrawer ->
@@ -504,7 +504,7 @@ update msg ({ config } as model) =
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
                                     [ updateCurrentState currentState
-                                    , sendMessageFromElm (elmMessageEncoder { name = "pause" })
+                                    , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
                                     ]
                                 )
 
@@ -527,7 +527,7 @@ update msg ({ config } as model) =
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
                                     [ updateCurrentState currentState
-                                    , sendMessageFromElm (elmMessageEncoder { name = "play" })
+                                    , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
                                     ]
                                 )
                     )
@@ -560,7 +560,7 @@ update msg ({ config } as model) =
             ( { model | config = newConfig }
             , Cmd.batch
                 [ updateConfig newConfig
-                , sendMessageFromElm (elmMessageEncoder { name = "reset" })
+                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
 
@@ -641,9 +641,6 @@ port playSound : String -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg
-
-
-port openFile : () -> Cmd msg
 
 
 port closeWindow : () -> Cmd msg

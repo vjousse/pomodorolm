@@ -590,6 +590,7 @@ async fn update_config(
 ) -> Result<(), ()> {
     let mut state_guard = state.0.lock().await;
 
+    // @FIX: reset the pomodoro state if the duration have changed
     *state_guard = App {
         config: config.clone(),
         pomodoro: state_guard.pomodoro,

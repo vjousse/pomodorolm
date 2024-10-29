@@ -11,6 +11,11 @@ elmMessageEncoder : ElmMessage -> Encode.Value
 elmMessageEncoder elmMessage =
     Encode.object
         [ ( "name", Encode.string elmMessage.name )
+        , ( "value"
+          , elmMessage.value
+                |> Maybe.map Encode.string
+                |> Maybe.withDefault Encode.null
+          )
         ]
 
 

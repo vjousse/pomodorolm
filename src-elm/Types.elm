@@ -1,4 +1,4 @@
-module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
 
 import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
@@ -50,7 +50,9 @@ type alias Seconds =
 
 
 type alias ElmMessage =
-    { name : String }
+    { name : String
+    , value : Maybe String
+    }
 
 
 type alias Config =
@@ -157,3 +159,16 @@ type ExternalMessage
     = RustStateMsg RustState
     | RustConfigAndThemesMsg ConfigAndThemes
     | SoundFilePath SessionType String
+
+
+sessionTypeToString : SessionType -> String
+sessionTypeToString sessionType =
+    case sessionType of
+        Focus ->
+            "focus"
+
+        ShortBreak ->
+            "shortbreak"
+
+        LongBreak ->
+            "longbreak"
