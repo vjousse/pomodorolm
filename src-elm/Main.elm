@@ -351,13 +351,20 @@ update msg ({ config } as model) =
 
         ProcessExternalMessage (SoundFilePath sessionType path) ->
             let
-                _ =
-                    Debug.log "SoundFilePath sessionType" sessionType
+                newConfig =
+                    case sessionType of
+                        Focus ->
+                            config
 
-                _ =
-                    Debug.log "SoundFilePath path" path
+                        ShortBreak ->
+                            { config | shortBreakAudio = Just path }
+
+                        LongBreak ->
+                            config
             in
-            ( model, Cmd.none )
+            ( { model | config = newConfig }
+            , updateConfig newConfig
+            )
 
         Reset ->
             let
@@ -402,15 +409,15 @@ update msg ({ config } as model) =
 
         ResetShortBreakAudioFile ->
             let
-                updatedConfig =
+                newConfig =
                     { config
                         | shortBreakAudio = Nothing
                     }
             in
             ( { model
-                | config = updatedConfig
+                | config = newConfig
               }
-            , Cmd.none
+            , updateConfig newConfig
             )
 
         ShortBreakAudioFileRequested ->

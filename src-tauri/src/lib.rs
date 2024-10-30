@@ -55,6 +55,7 @@ struct Config {
     #[serde(default)]
     muted: bool,
     pomodoro_duration: u16,
+    short_break_audio: Option<String>,
     short_break_duration: u16,
     #[serde(default = "default_theme")]
     theme: String,
@@ -211,6 +212,7 @@ impl Default for Config {
             minimize_to_tray_on_close: true,
             muted: false,
             pomodoro_duration: 25 * 60,
+            short_break_audio: None,
             short_break_duration: 5 * 60,
             theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
@@ -590,7 +592,6 @@ async fn update_config(
 ) -> Result<(), ()> {
     let mut state_guard = state.0.lock().await;
 
-    // @FIX: reset the pomodoro state if the duration have changed
     *state_guard = App {
         config: config.clone(),
         pomodoro: state_guard.pomodoro,

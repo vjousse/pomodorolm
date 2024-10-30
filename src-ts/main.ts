@@ -78,6 +78,7 @@ type ElmConfig = {
   minimizeToTrayOnClose: boolean;
   muted: boolean;
   pomodoroDuration: number;
+  shortBreakAudio: string;
   shortBreakDuration: number;
   theme: string;
   tickSoundsDuringWork: boolean;
@@ -215,6 +216,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
       muted: config.muted,
       pomodoro_duration: config.pomodoroDuration,
+      short_break_audio: config.shortBreakAudio,
       short_break_duration: config.shortBreakDuration,
       theme: config.theme,
       tick_sounds_during_work: config.tickSoundsDuringWork,
