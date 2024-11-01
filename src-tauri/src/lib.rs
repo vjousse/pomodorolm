@@ -16,7 +16,7 @@ use tauri::Runtime;
 use tauri::{path::BaseDirectory, Manager};
 use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
-pub struct AppState<'a>(Arc<Mutex<App<'a>>>);
+pub struct AppState(Arc<Mutex<App>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
@@ -31,10 +31,9 @@ mod sound;
 const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct App<'a> {
+struct App {
     config: Config,
-    #[serde(borrow)]
-    pomodoro: pomodoro::Pomodoro<'a>,
+    pomodoro: pomodoro::Pomodoro,
 }
 
 struct MenuStates<R: Runtime> {
@@ -366,18 +365,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 config
             };
 
-            let pomodoro = pomodoro::Pomodoro {
-                config: pomodoro::Config {
-                    auto_start_long_break_timer: config.auto_start_break_timer,
-                    auto_start_short_break_timer: config.auto_start_break_timer,
-                    auto_start_focus_timer: config.auto_start_work_timer,
-                    focus_duration: config.pomodoro_duration,
-                    long_break_duration: config.long_break_duration,
-                    max_focus_rounds: config.max_round_number,
-                    short_break_duration: config.short_break_duration,
-                },
-                ..pomodoro::Pomodoro::default()
-            };
+            let pomodoro = pomodoro_state_from_config(&config);
 
             app.manage(AppState(Arc::new(Mutex::new(App {
                 config: config.clone(),
@@ -411,6 +399,21 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
+    pomodoro::Pomodoro {
+        config: pomodoro::Config {
+            auto_start_long_break_timer: config.auto_start_break_timer,
+            auto_start_short_break_timer: config.auto_start_break_timer,
+            auto_start_focus_timer: config.auto_start_work_timer,
+            focus_duration: config.pomodoro_duration,
+            long_break_duration: config.long_break_duration,
+            max_focus_rounds: config.max_round_number,
+            short_break_duration: config.short_break_duration,
+        },
+        ..pomodoro::Pomodoro::default()
+    }
 }
 
 fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
@@ -576,7 +579,7 @@ async fn update_session_status<R: tauri::Runtime>(
 
 #[tauri::command]
 async fn update_config(
-    state: tauri::State<'_, AppState<'_>>,
+    state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
     config: Config,
 ) -> Result<(), ()> {
@@ -584,7 +587,7 @@ async fn update_config(
 
     *state_guard = App {
         config: config.clone(),
-        pomodoro: state_guard.pomodoro,
+        pomodoro: pomodoro_state_from_config(&config),
     };
 
     match get_config_file_path(app_handle.path()) {
@@ -614,7 +617,7 @@ async fn update_config(
 
 #[tauri::command]
 async fn load_config_and_themes(
-    state: tauri::State<'_, AppState<'_>>,
+    state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(Config, Vec<Theme>), ()> {
     let mut state_guard = state.0.lock().await;
@@ -636,7 +639,7 @@ async fn load_config_and_themes(
 
             *state_guard = App {
                 config: config.clone(),
-                pomodoro: state_guard.pomodoro,
+                pomodoro: state_guard.pomodoro.clone(),
             };
 
             Ok(config)
@@ -783,7 +786,7 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
 
 #[tauri::command]
 async fn handle_external_message(
-    state: tauri::State<'_, AppState<'_>>,
+    state: tauri::State<'_, AppState>,
     name: String,
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     eprintln!("Got external message {name:?}");
