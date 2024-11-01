@@ -379,29 +379,21 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 ..pomodoro::Pomodoro::default()
             };
 
-            app.manage(AppState(Arc::new(Mutex::new(App { config, pomodoro }))));
+            app.manage(AppState(Arc::new(Mutex::new(App {
+                config: config.clone(),
+                pomodoro,
+            }))));
 
             app.manage(AppMenuStates(std::sync::Mutex::new(MenuStates {
                 toggle_visibility_menu: toggle_visibility,
                 toggle_play_menu: toggle_play,
             })));
 
-            let sound_file =
-                sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
+            let sound_file_path = sound::get_sound_file("audio-tick", app.handle(), &config)
+                .expect("Tick sound file not found.");
+            let audio_path = sound_file_path.to_string_lossy();
 
-            let resource_path =
-                resolve_resource_path(app.handle(), format!("audio/{}", sound_file));
-            let audio_path = resource_path
-                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
-
-            tauri::async_runtime::spawn(tick(
-                app.handle().clone(),
-                String::from(
-                    audio_path
-                        .to_str()
-                        .expect("Unable to convert tick audio path to string."),
-                ),
-            ));
+            tauri::async_runtime::spawn(tick(app.handle().clone(), audio_path.to_string()));
 
             Ok(())
         })
@@ -479,8 +471,6 @@ async fn tick(app_handle: AppHandle, path: String) {
                     should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
                 state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
-
-                //eprintln!("New STATE {state_guard:?}");
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
@@ -688,15 +678,22 @@ async fn load_config_and_themes(
 
 #[tauri::command]
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    match sound::get_sound_file(sound_id.as_str()) {
-        Some(sound_file) => {
-            let resource_path = resolve_resource_path(&app_handle, format!("audio/{}", sound_file));
-            let path = resource_path
-                .unwrap_or_else(|_| panic!("Unable to resolve `audio/{}` resource.", sound_file));
-            let audio_path = path.to_string_lossy();
+    let state: tauri::State<AppState> = app_handle.state();
+    let state_guard = state.0.lock().await;
 
+    match sound::get_sound_file(sound_id.as_str(), &app_handle, &state_guard.config) {
+        Some(sound_file) => {
             // Fail silently if we can't play sound file
-            let _ = sound::play_sound_file(&audio_path);
+
+            tauri::async_runtime::spawn_blocking(move || {
+                let play_sound_file_result = sound::play_sound_file(&sound_file.to_string_lossy());
+                if play_sound_file_result.is_err() {
+                    eprintln!(
+                        "Unable to play sound file {:?}: {:?}",
+                        sound_file, play_sound_file_result
+                    );
+                }
+            });
         }
         None => eprintln!("Impossible to get sound file with id {}", sound_id),
     }
@@ -835,6 +832,10 @@ fn resolve_resource_path(
                 package_info.crate_name, path_to_resolve
             )));
         }
+    }
+
+    if resolved_path.is_err() {
+        eprintln!("Unable to resolve `{}` resource.", path_to_resolve);
     }
 
     resolved_path

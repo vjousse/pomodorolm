@@ -1,13 +1,29 @@
+use crate::{resolve_resource_path, Config};
 use rodio::{Decoder, OutputStream, Sink};
 use std::fs::File;
 use std::io::BufReader;
+use std::path::PathBuf;
+use tauri::AppHandle;
 
-pub fn get_sound_file(sound_id: &str) -> Option<&str> {
+pub fn get_sound_file<'a>(
+    sound_id: &'a str,
+    app_handle: &AppHandle,
+    config: &'a Config,
+) -> Option<PathBuf> {
     match sound_id {
-        "audio-long-break" => Some("alert-long-break.mp3"),
-        "audio-short-break" => Some("alert-short-break.mp3"),
-        "audio-work" => Some("alert-work.mp3"),
-        "audio-tick" => Some("tick.mp3"),
+        "audio-long-break" => {
+            resolve_resource_path(app_handle, format!("audio/{}", "alert-long-break.mp3")).ok()
+        }
+        "audio-short-break" => match &config.short_break_audio {
+            Some(path) => Some(PathBuf::from(path)),
+            None => {
+                resolve_resource_path(app_handle, format!("audio/{}", "alert-short-break.mp3")).ok()
+            }
+        },
+        "audio-work" => {
+            resolve_resource_path(app_handle, format!("audio/{}", "alert-work.mp3")).ok()
+        }
+        "audio-tick" => resolve_resource_path(app_handle, format!("audio/{}", "tick.mp3")).ok(),
         _ => None,
     }
 }
