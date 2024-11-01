@@ -1,7 +1,7 @@
 module View exposing (drawerView, navView, timerView)
 
 import ColorHelper exposing (computeCurrentColor)
-import Html exposing (Html, a, div, h1, h2, input, nav, p, section, text)
+import Html exposing (Html, a, div, h1, h2, input, nav, p, section, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave)
 import ListWithCurrent
@@ -626,15 +626,17 @@ settingsSettingView model =
             , div
                 [ class "setting-wrapper"
                 ]
-                [ p [ class "setting-title", style "font-style" "italic" ]
-                    [ text
-                        (case model.config.shortBreakAudio of
-                            Just fileName ->
-                                "Using custom sound " ++ fileName
+                [ p [ class "setting-title" ]
+                    [ span []
+                        [ text
+                            (case model.config.shortBreakAudio of
+                                Just fileName ->
+                                    "Using custom sound " ++ fileName
 
-                            Nothing ->
-                                "Using default sound"
-                        )
+                                Nothing ->
+                                    "Using default sound"
+                            )
+                        ]
                     ]
                 ]
             ]
