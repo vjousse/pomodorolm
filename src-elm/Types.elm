@@ -25,7 +25,8 @@ type alias Model =
 
 
 type Msg
-    = CloseWindow
+    = AudioFileRequested SessionType
+    | CloseWindow
     | ChangeSettingTab SettingTab
     | ChangeSettingConfig Setting
     | ChangeTheme Theme
@@ -35,8 +36,7 @@ type Msg
     | NoOp
     | Reset
     | ResetSettings
-    | ResetShortBreakAudioFile
-    | ShortBreakAudioFileRequested
+    | ResetAudioFile SessionType
     | SkipCurrentRound
     | ToggleDrawer
     | ToggleMute
@@ -61,13 +61,13 @@ type alias Config =
     , autoStartWorkTimer : Bool
     , desktopNotifications : Bool
     , focusAudio : Maybe String
+    , focusDuration : Seconds
     , longBreakAudio : Maybe String
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
     , muted : Bool
-    , pomodoroDuration : Seconds
     , shortBreakAudio : Maybe String
     , shortBreakDuration : Seconds
     , theme : String

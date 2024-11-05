@@ -56,13 +56,13 @@ configDecoder =
         |> Pipe.required "auto_start_work_timer" Decode.bool
         |> Pipe.required "desktop_notifications" Decode.bool
         |> Pipe.optional "focus_audio" (Decode.maybe Decode.string) Nothing
+        |> Pipe.required "focus_duration" Decode.int
         |> Pipe.optional "long_break_audio" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "long_break_duration" Decode.int
         |> Pipe.required "max_round_number" Decode.int
         |> Pipe.required "minimize_to_tray" Decode.bool
         |> Pipe.required "minimize_to_tray_on_close" Decode.bool
         |> Pipe.required "muted" Decode.bool
-        |> Pipe.required "pomodoro_duration" Decode.int
         |> Pipe.optional "short_break_audio" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "short_break_duration" Decode.int
         |> Pipe.required "theme" Decode.string

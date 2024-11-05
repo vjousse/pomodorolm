@@ -396,9 +396,9 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
-                    , value <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
                     , onInput <| UpdateSetting FocusTime
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -412,13 +412,13 @@ timerSettingView model =
                     , Html.Attributes.max "90"
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
-                    , value <| String.fromFloat (toFloat model.config.pomodoroDuration / 60)
+                    , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
                     , onInput <| UpdateSetting FocusTime
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--red"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.pomodoroDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.focusDuration / 60) / 90) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -589,7 +589,7 @@ settingsSettingView model =
             [ div
                 [ class "setting-wrapper"
                 ]
-                [ p [ class "setting-title" ] [ text "Short break sound" ]
+                [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text "Short break" ], text " start sound" ]
                 , p [ class "setting-title" ]
                     [ a
                         [ class
@@ -603,7 +603,7 @@ settingsSettingView model =
                                    )
                             )
                         , title "Reset to default sound"
-                        , onClick ResetShortBreakAudioFile
+                        , onClick <| ResetAudioFile ShortBreak
                         ]
                         [ text "default" ]
                     , a
@@ -618,7 +618,7 @@ settingsSettingView model =
                                    )
                             )
                         , title "Choose custom sound"
-                        , onClick ShortBreakAudioFileRequested
+                        , onClick <| AudioFileRequested ShortBreak
                         ]
                         [ text "custom" ]
                     ]
@@ -631,10 +631,120 @@ settingsSettingView model =
                         [ text
                             (case model.config.shortBreakAudio of
                                 Just fileName ->
-                                    "Using custom sound " ++ fileName
+                                    "Using custom " ++ fileName
 
                                 Nothing ->
-                                    "Using default sound"
+                                    "Using default"
+                            )
+                        ]
+                    ]
+                ]
+            ]
+        , div [ class "setting-wrapper-multi" ]
+            [ div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text "Long break" ], text " start sound" ]
+                , p [ class "setting-title" ]
+                    [ a
+                        [ class
+                            ("setting-button left"
+                                ++ (case model.config.longBreakAudio of
+                                        Nothing ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Reset to default sound"
+                        , onClick <| ResetAudioFile LongBreak
+                        ]
+                        [ text "default" ]
+                    , a
+                        [ class
+                            ("setting-button right"
+                                ++ (case model.config.longBreakAudio of
+                                        Just _ ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Choose custom sound"
+                        , onClick <| AudioFileRequested LongBreak
+                        ]
+                        [ text "custom" ]
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title" ]
+                    [ span []
+                        [ text
+                            (case model.config.longBreakAudio of
+                                Just fileName ->
+                                    "Using custom " ++ fileName
+
+                                Nothing ->
+                                    "Using default"
+                            )
+                        ]
+                    ]
+                ]
+            ]
+        , div [ class "setting-wrapper-multi" ]
+            [ div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text "Work session" ], text " start sound" ]
+                , p [ class "setting-title" ]
+                    [ a
+                        [ class
+                            ("setting-button left"
+                                ++ (case model.config.focusAudio of
+                                        Nothing ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Reset to default sound"
+                        , onClick <| ResetAudioFile Focus
+                        ]
+                        [ text "default" ]
+                    , a
+                        [ class
+                            ("setting-button right"
+                                ++ (case model.config.focusAudio of
+                                        Just _ ->
+                                            " active"
+
+                                        _ ->
+                                            ""
+                                   )
+                            )
+                        , title "Choose custom sound"
+                        , onClick <| AudioFileRequested Focus
+                        ]
+                        [ text "custom" ]
+                    ]
+                ]
+            , div
+                [ class "setting-wrapper"
+                ]
+                [ p [ class "setting-title" ]
+                    [ span []
+                        [ text
+                            (case model.config.focusAudio of
+                                Just fileName ->
+                                    "Using custom " ++ fileName
+
+                                Nothing ->
+                                    "Using default"
                             )
                         ]
                     ]

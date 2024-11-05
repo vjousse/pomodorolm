@@ -7,7 +7,7 @@ getCurrentMaxTime : Config -> RustState -> Seconds
 getCurrentMaxTime config state =
     case state.currentSession.sessionType of
         Focus ->
-            config.pomodoroDuration
+            config.focusDuration
 
         LongBreak ->
             config.longBreakDuration

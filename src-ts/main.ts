@@ -72,13 +72,15 @@ type ElmConfig = {
   autoStartWorkTimer: boolean;
   autoStartBreakTimer: boolean;
   desktopNotifications: boolean;
+  focusAudio: string | null;
+  focusDuration: number;
+  longBreakAudio: string | null;
   longBreakDuration: number;
   maxRoundNumber: number;
   minimizeToTray: boolean;
   minimizeToTrayOnClose: boolean;
   muted: boolean;
-  pomodoroDuration: number;
-  shortBreakAudio: string;
+  shortBreakAudio: string | null;
   shortBreakDuration: number;
   theme: string;
   tickSoundsDuringWork: boolean;
@@ -90,12 +92,15 @@ type RustConfig = {
   auto_start_work_timer: boolean;
   auto_start_break_timer: boolean;
   desktop_notifications: boolean;
+  focus_audio: string | null;
+  focus_duration: number;
+  long_break_audio: string | null;
   long_break_duration: number;
   max_round_number: number;
   minimize_to_tray: boolean;
   minimize_to_tray_on_close: boolean;
   muted: boolean;
-  pomodoro_duration: number;
+  short_break_audio: string | null;
   short_break_duration: number;
   theme: string;
   tick_sounds_during_work: boolean;
@@ -109,12 +114,15 @@ let rustConfig: RustConfig = {
   auto_start_work_timer: true,
   auto_start_break_timer: true,
   desktop_notifications: true,
+  focus_audio: null,
+  focus_duration: 1500,
+  long_break_audio: null,
   long_break_duration: 1200,
   max_round_number: 4,
   minimize_to_tray: true,
   minimize_to_tray_on_close: true,
   muted: false,
-  pomodoro_duration: 1500,
+  short_break_audio: null,
   short_break_duration: 300,
   theme: "pomodorolm",
   tick_sounds_during_work: true,
@@ -131,12 +139,13 @@ app = Elm.Main.init({
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
+    focusAudio: rustConfig.focus_duration,
+    focusDuration: rustConfig.focus_duration,
     longBreakDuration: rustConfig.long_break_duration,
     maxRoundNumber: rustConfig.max_round_number,
     minimizeToTray: rustConfig.minimize_to_tray,
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
     muted: rustConfig.muted,
-    pomodoroDuration: rustConfig.pomodoro_duration,
     shortBreakDuration: rustConfig.short_break_duration,
     theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
@@ -210,12 +219,14 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       auto_start_work_timer: config.autoStartWorkTimer,
       auto_start_break_timer: config.autoStartBreakTimer,
       desktop_notifications: config.desktopNotifications,
+      focus_audio: config.focusAudio,
+      focus_duration: config.focusDuration,
+      long_break_audio: config.longBreakAudio,
       long_break_duration: config.longBreakDuration,
       max_round_number: config.maxRoundNumber,
       minimize_to_tray: config.minimizeToTray,
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
       muted: config.muted,
-      pomodoro_duration: config.pomodoroDuration,
       short_break_audio: config.shortBreakAudio,
       short_break_duration: config.shortBreakDuration,
       theme: config.theme,

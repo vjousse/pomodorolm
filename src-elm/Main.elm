@@ -48,7 +48,7 @@ type alias Flags =
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
     , muted : Bool
-    , pomodoroDuration : Seconds
+    , focusDuration : Seconds
     , shortBreakDuration : Seconds
     , theme : String
     , tickSoundsDuringWork : Bool
@@ -84,13 +84,13 @@ init flags =
             , autoStartBreakTimer = flags.autoStartBreakTimer
             , desktopNotifications = flags.desktopNotifications
             , focusAudio = Nothing
+            , focusDuration = flags.focusDuration
             , longBreakAudio = Nothing
             , longBreakDuration = flags.longBreakDuration
             , maxRoundNumber = flags.maxRoundNumber
             , minimizeToTray = flags.minimizeToTray
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
             , muted = flags.muted
-            , pomodoroDuration = flags.pomodoroDuration
             , shortBreakAudio = Nothing
             , shortBreakDuration = flags.shortBreakDuration
             , theme = flags.theme
@@ -121,6 +121,16 @@ init flags =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ config } as model) =
     case msg of
+        AudioFileRequested sessionType ->
+            ( model
+            , sendMessageFromElm
+                (elmMessageEncoder
+                    { name = "choose_sound_file"
+                    , value = Just <| sessionTypeToString sessionType
+                    }
+                )
+            )
+
         ChangeSettingConfig settingConfig ->
             let
                 newSettingsConfig =
@@ -301,7 +311,7 @@ update msg ({ config } as model) =
                                     case pomodoroState.currentSession.sessionType of
                                         Focus ->
                                             if state.currentSession.sessionType == ShortBreak then
-                                                [ notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.pomodoroDuration currentColor
+                                                [ notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.focusDuration currentColor
                                                 , if config.muted then
                                                     Cmd.none
 
@@ -310,7 +320,7 @@ update msg ({ config } as model) =
                                                 ]
 
                                             else
-                                                [ notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.pomodoroDuration currentColor
+                                                [ notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.focusDuration currentColor
                                                 , if config.muted then
                                                     Cmd.none
 
@@ -354,13 +364,13 @@ update msg ({ config } as model) =
                 newConfig =
                     case sessionType of
                         Focus ->
-                            config
+                            { config | focusAudio = Just path }
 
                         ShortBreak ->
                             { config | shortBreakAudio = Just path }
 
                         LongBreak ->
-                            config
+                            { config | longBreakAudio = Just path }
             in
             ( { model | config = newConfig }
             , updateConfig newConfig
@@ -392,7 +402,7 @@ update msg ({ config } as model) =
             let
                 newConfig =
                     { config
-                        | pomodoroDuration = defaults.pomodoroDuration
+                        | focusDuration = defaults.pomodoroDuration
                         , shortBreakDuration = defaults.shortBreakDuration
                         , longBreakDuration = defaults.longBreakDuration
                         , maxRoundNumber = defaults.maxRoundNumber
@@ -407,24 +417,23 @@ update msg ({ config } as model) =
                 ]
             )
 
-        ResetShortBreakAudioFile ->
+        ResetAudioFile sessionType ->
             let
                 newConfig =
-                    { config
-                        | shortBreakAudio = Nothing
-                    }
+                    case sessionType of
+                        Focus ->
+                            { config | focusAudio = Nothing }
+
+                        ShortBreak ->
+                            { config | shortBreakAudio = Nothing }
+
+                        LongBreak ->
+                            { config | longBreakAudio = Nothing }
             in
             ( { model
                 | config = newConfig
               }
             , updateConfig newConfig
-            )
-
-        ShortBreakAudioFileRequested ->
-            -- See https://v2.tauri.app/plugin/dialog/
-            ( model
-              -- , File.Select.file [ "audio/*" ] ShortBreakAudioFileLoaded
-            , sendMessageFromElm (elmMessageEncoder { name = "choose_sound_file", value = Just <| sessionTypeToString ShortBreak })
             )
 
         SkipCurrentRound ->
@@ -443,12 +452,12 @@ update msg ({ config } as model) =
 
                             else
                                 model.config.maxRoundNumber
-                        , pomodoroDuration =
-                            if model.config.pomodoroDuration == 0 then
+                        , focusDuration =
+                            if model.config.focusDuration == 0 then
                                 60
 
                             else
-                                model.config.pomodoroDuration
+                                model.config.focusDuration
                         , shortBreakDuration =
                             if model.config.shortBreakDuration == 0 then
                                 60
@@ -553,7 +562,7 @@ update msg ({ config } as model) =
                 newConfig =
                     case settingType of
                         FocusTime ->
-                            { config | pomodoroDuration = min (90 * 60) (value * 60) }
+                            { config | focusDuration = min (90 * 60) (value * 60) }
 
                         LongBreakTime ->
                             { config | longBreakDuration = min (90 * 60) (value * 60) }
