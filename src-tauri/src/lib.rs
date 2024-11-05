@@ -587,7 +587,7 @@ async fn update_config(
 
     *state_guard = App {
         config: config.clone(),
-        pomodoro: pomodoro_state_from_config(&config),
+        pomodoro: state_guard.pomodoro.clone(),
     };
 
     match get_config_file_path(app_handle.path()) {
