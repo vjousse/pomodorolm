@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import { attachConsole } from "@tauri-apps/plugin-log";
+import { open } from "@tauri-apps/plugin-dialog";
 import { getVersion } from "@tauri-apps/api/app";
 
 // Display logs in the webview inspector
@@ -21,7 +22,11 @@ type ElmState = {
   color: string;
   percentage: number;
   paused: boolean;
-  playTick: boolean;
+};
+
+type Message = {
+  name: string;
+  value: string;
 };
 
 type Notification = {
@@ -67,11 +72,15 @@ type ElmConfig = {
   autoStartWorkTimer: boolean;
   autoStartBreakTimer: boolean;
   desktopNotifications: boolean;
+  focusAudio: string | null;
+  focusDuration: number;
+  longBreakAudio: string | null;
   longBreakDuration: number;
   maxRoundNumber: number;
   minimizeToTray: boolean;
   minimizeToTrayOnClose: boolean;
-  pomodoroDuration: number;
+  muted: boolean;
+  shortBreakAudio: string | null;
   shortBreakDuration: number;
   theme: string;
   tickSoundsDuringWork: boolean;
@@ -83,11 +92,15 @@ type RustConfig = {
   auto_start_work_timer: boolean;
   auto_start_break_timer: boolean;
   desktop_notifications: boolean;
+  focus_audio: string | null;
+  focus_duration: number;
+  long_break_audio: string | null;
   long_break_duration: number;
   max_round_number: number;
   minimize_to_tray: boolean;
   minimize_to_tray_on_close: boolean;
-  pomodoro_duration: number;
+  muted: boolean;
+  short_break_audio: string | null;
   short_break_duration: number;
   theme: string;
   tick_sounds_during_work: boolean;
@@ -101,11 +114,15 @@ let rustConfig: RustConfig = {
   auto_start_work_timer: true,
   auto_start_break_timer: true,
   desktop_notifications: true,
+  focus_audio: null,
+  focus_duration: 1500,
+  long_break_audio: null,
   long_break_duration: 1200,
   max_round_number: 4,
   minimize_to_tray: true,
   minimize_to_tray_on_close: true,
-  pomodoro_duration: 1500,
+  muted: false,
+  short_break_audio: null,
   short_break_duration: 300,
   theme: "pomodorolm",
   tick_sounds_during_work: true,
@@ -122,11 +139,13 @@ app = Elm.Main.init({
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
     desktopNotifications: rustConfig.desktop_notifications,
+    focusAudio: rustConfig.focus_duration,
+    focusDuration: rustConfig.focus_duration,
     longBreakDuration: rustConfig.long_break_duration,
     maxRoundNumber: rustConfig.max_round_number,
     minimizeToTray: rustConfig.minimize_to_tray,
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
-    pomodoroDuration: rustConfig.pomodoro_duration,
+    muted: rustConfig.muted,
     shortBreakDuration: rustConfig.short_break_duration,
     theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
@@ -156,12 +175,41 @@ app.ports.getConfigFromRust.subscribe(function () {
       RustConfig,
       Array<RustThemeColors>
     ];
-    app.ports.loadConfigAndThemes.send({ config, themes });
+    app.ports.sendMessageToElm.send({ config, themes });
   });
 });
 
 app.ports.notify.subscribe(function (notification: Notification) {
   invoke("notify", { notification: notification });
+});
+
+app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
+  console.log(`Sending message from Elm ${message}`);
+  switch (message.name) {
+    case "choose_sound_file":
+      const file = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: "audio (mp3, wav, ogg, flac)",
+            extensions: ["mp3", "wav", "ogg", "flac"],
+          },
+        ],
+      });
+      console.log(file);
+      app.ports.sendMessageToElm.send({
+        session_type: message.value,
+        file_path: file,
+      });
+      break;
+
+    default:
+      invoke("handle_external_message", message).then((newState) => {
+        console.log(newState);
+        app.ports.sendMessageToElm.send(newState);
+      });
+  }
 });
 
 app.ports.updateConfig.subscribe(function (config: ElmConfig) {
@@ -171,11 +219,15 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       auto_start_work_timer: config.autoStartWorkTimer,
       auto_start_break_timer: config.autoStartBreakTimer,
       desktop_notifications: config.desktopNotifications,
+      focus_audio: config.focusAudio,
+      focus_duration: config.focusDuration,
+      long_break_audio: config.longBreakAudio,
       long_break_duration: config.longBreakDuration,
       max_round_number: config.maxRoundNumber,
       minimize_to_tray: config.minimizeToTray,
       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
-      pomodoro_duration: config.pomodoroDuration,
+      muted: config.muted,
+      short_break_audio: config.shortBreakAudio,
       short_break_duration: config.shortBreakDuration,
       theme: config.theme,
       tick_sounds_during_work: config.tickSoundsDuringWork,
@@ -185,7 +237,6 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
 });
 
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
-  invoke("update_play_tick", { playTick: state.playTick });
   invoke("change_icon", {
     red: hexToRgb(state.color)?.r,
     green: hexToRgb(state.color)?.g,
@@ -242,6 +293,10 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
 
 await listen("tick-event", () => {
   app.ports.tick.send(null);
+});
+
+await listen("external-message", (message) => {
+  app.ports.sendMessageToElm.send(message.payload);
 });
 
 await listen("toggle-play", () => {

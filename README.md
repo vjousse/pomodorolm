@@ -29,6 +29,7 @@
 - [x] Fully compatible with **HiDPI/4K screens**
 - [x] Linux: **Wayland** and **X11** support
 - [x] Small: size < 4Mb (no electron, no node)
+- [x] Custom sounds
 - [ ] Mini mode
 - [ ] Terminal User Interface
 - [ ] Mobile version
@@ -48,6 +49,9 @@ Download the install file for your OS from the latest release on https://github.
 <a href="https://flathub.org/apps/org.jousse.vincent.Pomodorolm">
     <img width="240" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/>
 </a>
+
+    flatpak install flathub org.jousse.vincent.Pomodorolm
+    flatpak run org.jousse.vincent.Pomodorolm
 
 ## Snap Store
 
@@ -110,7 +114,15 @@ You can try to run `pomodorolm` using this command:
 
     WEBKIT_DISABLE_DMABUF_RENDERER=1 pomodorolm
 
-Thanks to @Bad3r for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
+Thanks to [@Bad3r](https://github.com/Bad3r) for the [bug report](https://github.com/vjousse/pomodorolm/issues/62)!
+
+### `Error 71 (Protocol error) dispatching to Wayland display.`
+
+If you are using the flatpak, you can resolve this issue by using this command:
+
+    flatpak override --user --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 org.jousse.vincent.Pomodorolm
+
+This will set the environment variable for the flatpak, and you should be able to launch the application as normal from there on.
 
 ## Windows
 

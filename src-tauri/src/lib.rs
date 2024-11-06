@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -19,20 +20,20 @@ pub struct AppState(Arc<Mutex<App>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
 use futures::StreamExt;
 use hex_color::HexColor;
-use std::env;
 use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 mod icon;
+pub mod pomodoro;
 mod sound;
 
 const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
-    play_tick: bool,
     config: Config,
+    pomodoro: pomodoro::Pomodoro,
 }
 
 struct MenuStates<R: Runtime> {
@@ -46,11 +47,17 @@ struct Config {
     auto_start_work_timer: bool,
     auto_start_break_timer: bool,
     desktop_notifications: bool,
+    focus_audio: Option<String>,
+    #[serde(alias = "pomodoro_duration")]
+    focus_duration: u16,
+    long_break_audio: Option<String>,
     long_break_duration: u16,
     max_round_number: u16,
     minimize_to_tray: bool,
     minimize_to_tray_on_close: bool,
-    pomodoro_duration: u16,
+    #[serde(default)]
+    muted: bool,
+    short_break_audio: Option<String>,
     short_break_duration: u16,
     #[serde(default = "default_theme")]
     theme: String,
@@ -201,11 +208,15 @@ impl Default for Config {
             auto_start_work_timer: true,
             auto_start_break_timer: true,
             desktop_notifications: true,
+            focus_audio: None,
+            focus_duration: 25 * 60,
+            long_break_audio: None,
             long_break_duration: 20 * 60,
             max_round_number: 4u16,
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
-            pomodoro_duration: 25 * 60,
+            muted: false,
+            short_break_audio: None,
             short_break_duration: 5 * 60,
             theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
@@ -216,7 +227,7 @@ impl Default for Config {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    run_app(tauri::Builder::default())
+    run_app(tauri::Builder::default().plugin(tauri_plugin_dialog::init()))
 }
 
 fn get_config_file_path<R: Runtime>(
@@ -247,6 +258,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;
@@ -358,9 +370,11 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 config
             };
 
+            let pomodoro = pomodoro_state_from_config(&config);
+
             app.manage(AppState(Arc::new(Mutex::new(App {
-                play_tick: false,
-                config,
+                config: config.clone(),
+                pomodoro,
             }))));
 
             app.manage(AppMenuStates(std::sync::Mutex::new(MenuStates {
@@ -368,42 +382,43 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 toggle_play_menu: toggle_play,
             })));
 
-            let sound_file =
-                sound::get_sound_file("audio-tick").expect("Tick sound file not found.");
+            let sound_file_path = sound::get_sound_file("audio-tick", app.handle(), &config)
+                .expect("Tick sound file not found.");
+            let audio_path = sound_file_path.to_string_lossy();
 
-            let resource_path = resolve_resource_path(
-                app.handle(),
-                format!("audio/{}", sound_file),
-                BaseDirectory::Resource,
-            );
-            let audio_path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
-
-            tauri::async_runtime::spawn(tick(
-                app.handle().clone(),
-                String::from(
-                    audio_path
-                        .to_str()
-                        .expect("Unable to convert tick audio path to string."),
-                ),
-            ));
+            tauri::async_runtime::spawn(tick(app.handle().clone(), audio_path.to_string()));
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             change_icon,
             close_window,
+            handle_external_message,
             hide_window,
             load_config_and_themes,
             minimize_window,
             notify,
             play_sound_command,
             update_config,
-            update_play_tick,
             update_session_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
+    pomodoro::Pomodoro {
+        config: pomodoro::Config {
+            auto_start_long_break_timer: config.auto_start_break_timer,
+            auto_start_short_break_timer: config.auto_start_break_timer,
+            auto_start_focus_timer: config.auto_start_work_timer,
+            focus_duration: config.focus_duration,
+            long_break_duration: config.long_break_duration,
+            max_focus_rounds: config.max_round_number,
+            short_break_duration: config.short_break_duration,
+        },
+        ..pomodoro::Pomodoro::default()
+    }
 }
 
 fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
@@ -430,20 +445,42 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
     themes_paths_bufs
 }
 
+fn should_play_tick_sound(config: &Config, pomodoro: &Pomodoro) -> bool {
+    match (
+        pomodoro.current_session.status,
+        pomodoro.current_session.session_type,
+        config.tick_sounds_during_work,
+        config.tick_sounds_during_break,
+        config.muted,
+    ) {
+        // No tick sound configured
+        (_, _, _, _, true) => false,
+        (_, _, false, false, _) => false,
+        (SessionStatus::Running, SessionType::Focus, true, _, _) => true,
+        (SessionStatus::Running, SessionType::LongBreak, _, true, _) => true,
+        (SessionStatus::Running, SessionType::ShortBreak, _, true, _) => true,
+        _ => false,
+    }
+}
+
 async fn tick(app_handle: AppHandle, path: String) {
     let mut stream = IntervalStream::new(time::interval(Duration::from_secs(1)));
 
     match app_handle.get_webview_window("main") {
         Some(window) => {
             while let Some(_ts) = stream.next().await {
-                let _ = window.emit("tick-event", "");
+                let new_path = path.clone();
 
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
-                let state_guard = new_state.0.lock().await;
-                let play_tick: bool = state_guard.play_tick;
+                let mut state_guard = new_state.0.lock().await;
+                //let play_tick: bool = state_guard.play_tick;
+                let play_tick: bool =
+                    should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                let new_path = path.clone();
+                state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
+
+                let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
                 tauri::async_runtime::spawn_blocking(move || {
                     if play_tick {
@@ -494,8 +531,9 @@ async fn change_icon<R: tauri::Runtime>(
                     if let Some(tray) = app_handle.tray_by_id("app-tray") {
                         let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
 
-                        // Don't let tauri choose where to store the temp icon path. Setting it allows the tray icon to work
-                        // properly in sandboxes env like Flatpak where we can share XDG_DATA_HOME between the host and the sandboxed env
+                        // Don't let tauri choose where to store the temp icon path as it will by default store it to `/tmp`.
+                        // Setting it manually allows the tray icon to work properly in sandboxes env like Flatpak
+                        // where we can share XDG_DATA_HOME between the host and the sandboxed env
                         // libappindicator will add the full path of the icon to the dbus message when changing it,
                         // so the path needs to be the same between the host and the sandboxed env
                         let local_data_path = app_handle
@@ -545,18 +583,6 @@ async fn update_session_status<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-async fn update_play_tick(state: tauri::State<'_, AppState>, play_tick: bool) -> Result<(), ()> {
-    let mut state_guard = state.0.lock().await;
-
-    *state_guard = App {
-        play_tick,
-        config: state_guard.config.clone(),
-    };
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn update_config(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
@@ -565,8 +591,8 @@ async fn update_config(
     let mut state_guard = state.0.lock().await;
 
     *state_guard = App {
-        play_tick: state_guard.play_tick,
         config: config.clone(),
+        pomodoro: state_guard.pomodoro.clone(),
     };
 
     match get_config_file_path(app_handle.path()) {
@@ -617,8 +643,8 @@ async fn load_config_and_themes(
             })?;
 
             *state_guard = App {
-                play_tick: state_guard.play_tick,
                 config: config.clone(),
+                pomodoro: state_guard.pomodoro.clone(),
             };
 
             Ok(config)
@@ -629,12 +655,8 @@ async fn load_config_and_themes(
         }
     };
 
-    let theme_resource_path = resolve_resource_path(
-        &app_handle,
-        String::from("themes/"),
-        BaseDirectory::Resource,
-    )
-    .expect("Unable to resolve `themes/{}` resource.");
+    let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
+        .expect("Unable to resolve `themes/{}` resource.");
 
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
@@ -664,19 +686,22 @@ async fn load_config_and_themes(
 
 #[tauri::command]
 async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    match sound::get_sound_file(sound_id.as_str()) {
-        Some(sound_file) => {
-            let resource_path = resolve_resource_path(
-                &app_handle,
-                format!("audio/{}", sound_file),
-                BaseDirectory::Resource,
-            );
-            let path = resource_path
-                .expect(format!("Unable to resolve `audio/{}` resource.", sound_file).as_str());
-            let audio_path = path.to_string_lossy();
+    let state: tauri::State<AppState> = app_handle.state();
+    let state_guard = state.0.lock().await;
 
+    match sound::get_sound_file(sound_id.as_str(), &app_handle, &state_guard.config) {
+        Some(sound_file) => {
             // Fail silently if we can't play sound file
-            let _ = sound::play_sound_file(&audio_path);
+
+            tauri::async_runtime::spawn_blocking(move || {
+                let play_sound_file_result = sound::play_sound_file(&sound_file.to_string_lossy());
+                if play_sound_file_result.is_err() {
+                    eprintln!(
+                        "Unable to play sound file {:?}: {:?}",
+                        sound_file, play_sound_file_result
+                    );
+                }
+            });
         }
         None => eprintln!("Impossible to get sound file with id {}", sound_id),
     }
@@ -764,14 +789,44 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
     }
 }
 
+#[tauri::command]
+async fn handle_external_message(
+    state: tauri::State<'_, AppState>,
+    name: String,
+) -> Result<pomodoro::PomodoroUnborrowed, ()> {
+    eprintln!("Got external message {name:?}");
+
+    let mut app_state_guard = state.0.lock().await;
+
+    match name.as_str() {
+        "play" => {
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
+        }
+        "pause" => {
+            app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+        }
+        "reset" => {
+            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
+        }
+        "skip" => {
+            app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
+        }
+        _ => eprintln!("Unknown message"),
+    }
+
+    // Needed because Tauri doesn't play well with returning references
+    // with async commands
+    // https://v2.tauri.app/develop/calling-rust/#async-commands
+    Ok(app_state_guard.pomodoro.to_unborrowed())
+}
+
 fn resolve_resource_path(
     app_handle: &AppHandle,
     path_to_resolve: String,
-    base_directory: BaseDirectory,
 ) -> Result<PathBuf, tauri::Error> {
     let mut resolved_path = app_handle
         .path()
-        .resolve(path_to_resolve.clone(), base_directory);
+        .resolve(path_to_resolve.clone(), BaseDirectory::Resource);
 
     #[cfg(target_os = "linux")]
     {
@@ -785,6 +840,10 @@ fn resolve_resource_path(
                 package_info.crate_name, path_to_resolve
             )));
         }
+    }
+
+    if resolved_path.is_err() {
+        eprintln!("Unable to resolve `{}` resource.", path_to_resolve);
     }
 
     resolved_path

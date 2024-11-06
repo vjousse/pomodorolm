@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.0)] - 2024-11-06
+
+### 🚀 Features
+
+- Customize notification sounds ([#127](https://github.com/vjousse/pomodorolm/issues/127))
+
+### 🚜 Refactor
+
+- Manage state on the rust side ([#112](https://github.com/vjousse/pomodorolm/issues/112))
+- Simplify resource resolving ([#120](https://github.com/vjousse/pomodorolm/issues/120))
+
+### 📚 Documentation
+
+- Add a workaround for flatpak and nvidia ([#118](https://github.com/vjousse/pomodorolm/issues/118))
+- Add instructions for flatpak
+
+### ⚙️ Miscellaneous Tasks
+
+- Update to stable Tauri v2 ([#116](https://github.com/vjousse/pomodorolm/issues/116))
+- Create issue template ([#124](https://github.com/vjousse/pomodorolm/issues/124))
+- Update to Tauri stable ([#128](https://github.com/vjousse/pomodorolm/issues/128))
+
 ## [[app-v0.2.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.2)] - 2024-10-16
 
 ### 🐛 Bug Fixes

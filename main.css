@@ -485,6 +485,52 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
 
+#settings .setting-button {
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  cursor: pointer;
+  padding-bottom: 0.7vw;
+  display: inline-block;
+
+  font-size: 0.7rem;
+}
+
+#settings .setting-button.active {
+  color: var(--color-accent);
+  font-weight: bold;
+  border-bottom: 1.2vw solid var(--color-accent);
+  cursor: default;
+}
+
+#settings .setting-button.left {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  margin-right: 0.3rem;
+}
+
+#settings .setting-button.right {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  margin-left: 0.3rem;
+}
+
+#settings .setting-wrapper-multi {
+  background-color: var(--color-background);
+  border-radius: 1.1vw;
+  justify-content: space-between;
+  margin: 3.3vw 0;
+  padding: 3.3vw;
+}
+
+#settings .setting-wrapper-multi .setting-wrapper {
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  text-align: left;
+}
+
 #about h2 {
   color: var(--color-short-round);
   font-weight: 400;
