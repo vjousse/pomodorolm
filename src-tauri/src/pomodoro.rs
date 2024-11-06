@@ -41,11 +41,10 @@ impl Default for Config {
     }
 }
 
-#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
-pub struct Pomodoro<'a> {
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+pub struct Pomodoro {
     pub config: Config,
-    #[serde(borrow)]
-    pub current_session: Session<'a>,
+    pub current_session: Session,
     // A work round is a Focus + a Break (short or long)
     pub current_work_round_number: u16,
 }
@@ -65,7 +64,7 @@ pub struct SessionUnburrowed {
     status: SessionStatus,
 }
 
-impl Default for Pomodoro<'_> {
+impl Default for Pomodoro {
     fn default() -> Self {
         Pomodoro {
             config: Config {
@@ -82,8 +81,8 @@ impl Default for Pomodoro<'_> {
         }
     }
 }
-impl Pomodoro<'_> {
-    pub fn duration_of_session(&self, session: Session) -> Seconds {
+impl Pomodoro {
+    pub fn duration_of_session(&self, session: &Session) -> Seconds {
         match session.session_type {
             SessionType::Focus => self.config.focus_duration,
             SessionType::LongBreak => self.config.long_break_duration,
@@ -99,21 +98,21 @@ impl Pomodoro<'_> {
                 current_time: self.current_session.current_time,
                 session_type: self.current_session.session_type,
                 status: self.current_session.status,
-                label: self.current_session.label.map(String::from),
+                label: self.current_session.label.clone(),
             },
         }
     }
 }
 
-#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
-pub struct Session<'a> {
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+pub struct Session {
     pub current_time: Seconds,
-    pub label: Option<&'a str>,
+    pub label: Option<String>,
     pub session_type: SessionType,
     pub status: SessionStatus,
 }
 
-impl Default for Session<'_> {
+impl Default for Session {
     fn default() -> Self {
         Session {
             current_time: 0,
@@ -124,39 +123,42 @@ impl Default for Session<'_> {
     }
 }
 
-pub fn pause<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
+pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: Session {
             status: SessionStatus::Paused,
+            label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
         ..*pomodoro
     }
 }
 
-pub fn play<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
+pub fn play(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: Session {
             status: SessionStatus::Running,
+            label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
         ..*pomodoro
     }
 }
 
-pub fn reset<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
+pub fn reset(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
             current_time: 0,
+            label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
         ..*pomodoro
     }
 }
 
-pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
-    let session = pomodoro.current_session;
+pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
+    let session = pomodoro.current_session.clone();
     match session.session_type {
         SessionType::Focus => {
             if pomodoro.current_work_round_number == pomodoro.config.max_focus_rounds {
@@ -194,7 +196,7 @@ pub fn get_next_session<'a>(pomodoro: &Pomodoro<'a>) -> Session<'a> {
     }
 }
 
-pub fn next<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
+pub fn next(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: get_next_session(pomodoro),
         current_work_round_number: match pomodoro.current_session.session_type {
@@ -206,14 +208,14 @@ pub fn next<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
     }
 }
 
-pub fn tick<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
-    let session = pomodoro.current_session;
+pub fn tick(pomodoro: &Pomodoro) -> Pomodoro {
+    let session = pomodoro.current_session.clone();
 
     match session.status {
         // Tick should do something only if the current session is in running mode
         SessionStatus::Running => {
             // If it was the last tick, return the next status
-            if session.current_time + 1 == pomodoro.duration_of_session(session) {
+            if session.current_time + 1 == pomodoro.duration_of_session(&session) {
                 return next(pomodoro);
             }
 
@@ -221,11 +223,12 @@ pub fn tick<'a>(pomodoro: &Pomodoro<'a>) -> Pomodoro<'a> {
             Pomodoro {
                 current_session: Session {
                     current_time: session.current_time + 1,
+                    label: session.label,
                     ..pomodoro.current_session
                 },
                 ..*pomodoro
             }
         }
-        _ => *pomodoro,
+        _ => pomodoro.clone(),
     }
 }

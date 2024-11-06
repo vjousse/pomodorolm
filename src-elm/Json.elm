@@ -11,6 +11,11 @@ elmMessageEncoder : ElmMessage -> Encode.Value
 elmMessageEncoder elmMessage =
     Encode.object
         [ ( "name", Encode.string elmMessage.name )
+        , ( "value"
+          , elmMessage.value
+                |> Maybe.map Encode.string
+                |> Maybe.withDefault Encode.null
+          )
         ]
 
 
@@ -45,26 +50,24 @@ themesDecoder =
 
 configDecoder : Decode.Decoder Config
 configDecoder =
-    let
-        fieldSet0 =
-            Decode.map8 Config
-                (Decode.field "always_on_top" Decode.bool)
-                (Decode.field "auto_start_break_timer" Decode.bool)
-                (Decode.field "auto_start_work_timer" Decode.bool)
-                (Decode.field "desktop_notifications" Decode.bool)
-                (Decode.field "long_break_duration" Decode.int)
-                (Decode.field "max_round_number" Decode.int)
-                (Decode.field "minimize_to_tray" Decode.bool)
-                (Decode.field "minimize_to_tray_on_close" Decode.bool)
-    in
-    Decode.map7 (<|)
-        fieldSet0
-        (Decode.field "muted" Decode.bool)
-        (Decode.field "pomodoro_duration" Decode.int)
-        (Decode.field "short_break_duration" Decode.int)
-        (Decode.field "theme" Decode.string)
-        (Decode.field "tick_sounds_during_break" Decode.bool)
-        (Decode.field "tick_sounds_during_work" Decode.bool)
+    Decode.succeed Config
+        |> Pipe.required "always_on_top" Decode.bool
+        |> Pipe.required "auto_start_break_timer" Decode.bool
+        |> Pipe.required "auto_start_work_timer" Decode.bool
+        |> Pipe.required "desktop_notifications" Decode.bool
+        |> Pipe.optional "focus_audio" (Decode.maybe Decode.string) Nothing
+        |> Pipe.required "focus_duration" Decode.int
+        |> Pipe.optional "long_break_audio" (Decode.maybe Decode.string) Nothing
+        |> Pipe.required "long_break_duration" Decode.int
+        |> Pipe.required "max_round_number" Decode.int
+        |> Pipe.required "minimize_to_tray" Decode.bool
+        |> Pipe.required "minimize_to_tray_on_close" Decode.bool
+        |> Pipe.required "muted" Decode.bool
+        |> Pipe.optional "short_break_audio" (Decode.maybe Decode.string) Nothing
+        |> Pipe.required "short_break_duration" Decode.int
+        |> Pipe.required "theme" Decode.string
+        |> Pipe.required "tick_sounds_during_break" Decode.bool
+        |> Pipe.required "tick_sounds_during_work" Decode.bool
 
 
 configAndThemesDecoder : Decode.Decoder ConfigAndThemes
@@ -137,4 +140,5 @@ externalMessageDecoder =
     Decode.oneOf
         [ rustStateDecoder |> Decode.map RustStateMsg
         , configAndThemesDecoder |> Decode.map RustConfigAndThemesMsg
+        , Decode.map2 SoundFilePath (Decode.field "session_type" sessionTypeDecoder) (Decode.field "file_path" Decode.string)
         ]
