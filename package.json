@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@lydell/elm": "^0.19.1-14",
-    "@tauri-apps/cli": "^2.0.0-rc.7",
+    "@tauri-apps/cli": "^2",
     "@types/node": "^22.5.4",
     "elm-debug-transformer": "^1.2.1",
     "elm-review": "^2.12.0",
@@ -23,9 +23,9 @@
     "vite-plugin-top-level-await": "^1.4.4"
   },
   "dependencies": {
-    "@tauri-apps/api": ">=2.0.0-beta.0",
-    "@tauri-apps/plugin-dialog": "^2.0.1",
-    "@tauri-apps/plugin-log": ">=2.0.0-rc.1",
-    "@tauri-apps/plugin-shell": ">=2.0.0-rc.1"
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-log": "^2",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-shell": "^2"
   }
 }
