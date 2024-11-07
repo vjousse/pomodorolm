@@ -33,8 +33,8 @@ apps:
       - network-status
       - gsettings
       - pulseaudio
-      - opengl
       - desktop
+      - opengl
     # Add whatever plugs you need here, see https://snapcraft.io/docs/snapcraft-interfaces for more info.
     # The gnome extension already includes [ desktop, desktop-legacy, gsettings, opengl, wayland, x11, mount-observe, calendar-service ]
 
@@ -69,6 +69,7 @@ parts:
       - libasound2
       - libpulse0
       - libasound2-plugins
+      - liboss4-salsa2
 
     # For pulse/alsa see: https://forum.snapcraft.io/t/help-needed-with-bombsquad-snap/36744/2
 
@@ -82,3 +83,13 @@ parts:
       cp snapcraft/asound.conf $SNAPCRAFT_PART_INSTALL/etc/
       dpkg -x src-tauri/target/release/bundle/deb/*.deb $SNAPCRAFT_PART_INSTALL/
       sed -i -e "s|Icon=pomodorolm|Icon=/usr/share/icons/hicolor/32x32/apps/pomodorolm.png|g" $SNAPCRAFT_PART_INSTALL/usr/share/applications/pomodorolm.desktop
+
+  gpu-2404:
+    after: [build-app]
+    source: https://github.com/canonical/gpu-snap.git
+    plugin: dump
+    override-prime: |
+      craftctl default
+      ${CRAFT_PART_SRC}/bin/gpu-2404-cleanup mesa-2404 nvidia-2404
+    prime:
+      - bin/gpu-2404-wrapper
