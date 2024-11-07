@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.1)] - 2024-11-07
+
+### 🐛 Bug Fixes
+
+- LibOSSlib.so not found in snap ([#130](https://github.com/vjousse/pomodorolm/issues/130))
+- Mac osx hide behavior ([#132](https://github.com/vjousse/pomodorolm/issues/132))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update AUR checksum
+
 ## [[app-v0.3.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.0)] - 2024-11-06
 
 ### 🚀 Features
@@ -23,12 +34,13 @@ All notable changes to this project will be documented in this file.
 - Update to stable Tauri v2 ([#116](https://github.com/vjousse/pomodorolm/issues/116))
 - Create issue template ([#124](https://github.com/vjousse/pomodorolm/issues/124))
 - Update to Tauri stable ([#128](https://github.com/vjousse/pomodorolm/issues/128))
+- Bump to 0.3.0
 
 ## [[app-v0.2.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.2)] - 2024-10-16
 
 ### 🐛 Bug Fixes
 
-- Focus notification time
+- Focus notification time ([#126](https://github.com/vjousse/pomodorolm/issues/126))
 
 ## [[app-v0.2.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.2.1)] - 2024-09-29
 
