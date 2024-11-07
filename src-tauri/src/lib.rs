@@ -263,6 +263,8 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
             if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;
             }
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let toggle_visibility =
                 MenuItemBuilder::with_id("toggle_visibility", "Hide").build(app)?;
@@ -297,9 +299,14 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                     "toggle_visibility" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let new_title = if window.is_visible().unwrap_or_default() {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.hide();
+                                #[cfg(not(target_os = "macos"))]
                                 let _ = window.hide();
                                 "Show"
                             } else {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.show();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                                 "Hide"
@@ -737,6 +744,9 @@ fn hide_window<R: tauri::Runtime>(
     match state_guard {
         Ok(guard) => {
             if let Some(window) = app.get_webview_window("main") {
+                #[cfg(target_os = "macos")]
+                let _ = app.hide();
+                #[cfg(not(target_os = "macos"))]
                 let _ = window.hide();
                 let _ = guard.toggle_visibility_menu.set_text("Show");
             }
