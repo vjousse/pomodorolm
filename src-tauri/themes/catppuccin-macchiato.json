@@ -1,0 +1,15 @@
+{
+    "name": "Catppuccin Macchiato",
+    "colors": {
+        "--color-long-round": "#7dc4e4",
+        "--color-short-round": "#a6da95",
+        "--color-focus-round": "#c6a0f6",
+        "--color-background": "#24273a",
+        "--color-background-light": "#363a4f",
+        "--color-background-lightest": "#494d64",
+        "--color-foreground": "#cad3f5",
+        "--color-foreground-darker": "#b8c0e0",
+        "--color-foreground-darkest": "#a5adcb",
+        "--color-accent": "#b7bdf8"
+    }
+}
