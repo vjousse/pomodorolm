@@ -16,8 +16,6 @@ confinement: strict
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1:
     bind: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1
-  # /usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
-  #   bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1
   /usr/lib/pomodorolm:
     symlink: $SNAP/usr/lib/pomodorolm
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib:
@@ -37,8 +35,6 @@ apps:
     environment:
       LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/blas:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/lapack:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/samba:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/vdpau:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/dri
       ALWAYS_USE_PULSEAUDIO: "1"
-    # environment:
-    #   ALSA_CONFIG_PATH: "$SNAP/etc/asound.conf"
     plugs:
       - home
       - browser-support
@@ -49,8 +45,6 @@ apps:
       - opengl
       - alsa
       - audio-playback
-    # Add whatever plugs you need here, see https://snapcraft.io/docs/snapcraft-interfaces for more info.
-    # The gnome extension already includes [ desktop, desktop-legacy, gsettings, opengl, wayland, x11, mount-observe, calendar-service ]
 
 package-repositories:
   - type: apt
@@ -82,8 +76,6 @@ parts:
     stage-packages:
       - libwebkit2gtk-4.1-0
       - libayatana-appindicator3-1
-
-    # For pulse/alsa see: https://forum.snapcraft.io/t/help-needed-with-bombsquad-snap/36744/2
 
     source: .
 
