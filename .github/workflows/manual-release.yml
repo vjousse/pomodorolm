@@ -7,7 +7,8 @@ jobs:
   create-release:
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
     outputs:
       release_id: ${{ steps.create-release.outputs.result }}
 
