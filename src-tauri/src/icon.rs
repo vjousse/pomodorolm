@@ -48,39 +48,34 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
     }
 
     if icon.paused {
-        // Define parameters for the pause icon
-        let icon_width = (icon.width as f32 * 0.3) as i32; // Width of the pause bars
-        let icon_height = (icon.height as f32 * 0.6) as i32; // Height of the pause bars
-        let bar_thickness = (icon.width as f32 * 0.15) as i32; // Thickness of the pause bars
-        let bar_spacing = (icon.width as f32 * 0.01) as i32; // Spacing between the pause bars
-                                                             //
-                                                             // Calculate positions for the pause bars
-        let first_bar_x = (icon.width as i32 - bar_spacing - icon_width) / 2;
-        let second_bar_x = first_bar_x + bar_spacing + icon_width;
+        let bar_height = (icon.height as f32 * 0.6) as i32; // Height of the pause bars
+        let bar_thickness = (icon.width as f32 * 0.175) as i32; // Thickness of the pause bars
+        let bar_spacing = (icon.width as f32 * 0.15) as i32; // Spacing between the pause bars
 
-        let bar_y = (icon.height as i32 - icon_height) / 2;
+        let first_bar_x = (icon.width / 2) as i32 - bar_spacing / 2 - bar_thickness;
+        let second_bar_x = first_bar_x + bar_thickness + bar_spacing;
+
+        let bar_y = (icon.height as i32 - bar_height) / 2;
 
         // Draw the first pause bar
-        for y in bar_y..bar_y + icon_height {
+        for y in bar_y..bar_y + bar_height {
             for x in first_bar_x..first_bar_x + bar_thickness {
                 imgbuf.put_pixel(
                     x as u32,
                     y as u32,
                     Rgba([icon.red, icon.green, icon.blue, 255]),
                 );
-                // Fill with white
             }
         }
 
         // Draw the second pause bar
-        for y in bar_y..bar_y + icon_height {
+        for y in bar_y..bar_y + bar_height {
             for x in second_bar_x..second_bar_x + bar_thickness {
                 imgbuf.put_pixel(
                     x as u32,
                     y as u32,
                     Rgba([icon.red, icon.green, icon.blue, 255]),
                 );
-                // Fill with white
             }
         }
     } else {
