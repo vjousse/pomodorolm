@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.3](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.3)] - 2025-01-11
+
+### 🐛 Bug Fixes
+
+- Bad pause icon rendering ([#144](https://github.com/vjousse/pomodorolm/issues/144))
+
 ## [[app-v0.3.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.2)] - 2025-01-11
 
 ### 🐛 Bug Fixes
@@ -18,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Upgrade gh workflow ([#142](https://github.com/vjousse/pomodorolm/issues/142))
+- Bump version number to 0.3.2
 
 ## [[app-v0.3.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.1)] - 2024-11-07
 
