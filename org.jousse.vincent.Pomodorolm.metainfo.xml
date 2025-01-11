@@ -24,6 +24,9 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.3.2" date="2025-01-11">
+      <url type="details">https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.2</url>
+    </release>
     <release version="0.3.1" date="2024-11-07">
       <url type="details">https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.1</url>
     </release>

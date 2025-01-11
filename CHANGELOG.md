@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.2)] - 2025-01-11
+
+### 🐛 Bug Fixes
+
+- *(Arch Linux)* Add `libayatana-appindicator` as dependency in PKGBUILD ([#137](https://github.com/vjousse/pomodorolm/issues/137)) ([#138](https://github.com/vjousse/pomodorolm/issues/138))
+- Move PKGBUILD in its own directory ([#139](https://github.com/vjousse/pomodorolm/issues/139))
+- Sound on ubuntu with snapcraft ([#143](https://github.com/vjousse/pomodorolm/issues/143))
+
+### 🎨 Styling
+
+- Add catppuccin latte and mocha ([#140](https://github.com/vjousse/pomodorolm/issues/140))
+- Implement all catppuccin themes ([#141](https://github.com/vjousse/pomodorolm/issues/141))
+
+### ⚙️ Miscellaneous Tasks
+
+- Upgrade gh workflow ([#142](https://github.com/vjousse/pomodorolm/issues/142))
+
 ## [[app-v0.3.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.1)] - 2024-11-07
 
 ### 🐛 Bug Fixes
@@ -12,6 +29,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update AUR checksum
+- Bump version to 0.3.1
 
 ## [[app-v0.3.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.0)] - 2024-11-06
 
