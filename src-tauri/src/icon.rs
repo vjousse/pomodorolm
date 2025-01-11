@@ -108,8 +108,6 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
     // Create a temporary file path
     let temp_path = Path::new(path_name);
 
-    println!("Saving icon to {:?}", temp_path);
-
     // Save the DynamicImage to the temporary file
     imgbuf
         .save(temp_path)
