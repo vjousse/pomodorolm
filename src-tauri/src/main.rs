@@ -24,10 +24,8 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(command) => match command {
-            Commands::Cli => {
-                println!("--> CLI mode");
-            }
+            Commands::Cli => pomodorolm_lib::cli::run(),
         },
-        None => pomodorolm_lib::run(),
+        None => pomodorolm_lib::run_gui(),
     }
 }
