@@ -17,6 +17,8 @@ enum Commands {
     Cli,
 }
 
+const CONFIG_DIR_NAME: &str = "pomodorolm";
+
 fn main() {
     let cli = Cli::parse();
 
@@ -24,8 +26,8 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(command) => match command {
-            Commands::Cli => pomodorolm_lib::cli::run(),
+            Commands::Cli => pomodorolm_lib::cli::run(CONFIG_DIR_NAME),
         },
-        None => pomodorolm_lib::run_gui(),
+        None => pomodorolm_lib::run_gui(CONFIG_DIR_NAME),
     }
 }

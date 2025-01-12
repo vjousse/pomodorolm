@@ -28,11 +28,10 @@ use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 
-const CONFIG_DIR_NAME: &str = "pomodorolm";
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
     config: Config,
+    config_dir_name: String,
     pomodoro: pomodoro::Pomodoro,
 }
 
@@ -226,30 +225,35 @@ impl Default for Config {
 }
 
 fn get_config_file_path<R: Runtime>(
+    config_dir_name: &str,
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
     path.resolve(
-        format!("{}/config.toml", CONFIG_DIR_NAME),
+        format!("{}/config.toml", config_dir_name),
         BaseDirectory::Config,
     )
 }
 
 fn get_config_dir<R: Runtime>(
+    config_dir_name: &str,
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
-    path.resolve(format!("{}/", CONFIG_DIR_NAME), BaseDirectory::Config)
+    path.resolve(format!("{}/", config_dir_name), BaseDirectory::Config)
 }
 
 fn get_config_theme_dir<R: Runtime>(
+    config_dir_name: &str,
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
     path.resolve(
-        format!("{}/themes/", CONFIG_DIR_NAME),
+        format!("{}/themes/", config_dir_name),
         BaseDirectory::Config,
     )
 }
 
-pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
+pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
+    let config_dir_name_owned = config_dir_name.to_string();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
@@ -340,16 +344,16 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 })
                 .build(app);
 
-            let config_file_path = get_config_file_path(app.path())?;
+            let config_file_path = get_config_file_path(&config_dir_name_owned, app.path())?;
 
             let metadata = fs::metadata(&config_file_path);
-            let config_theme_dir = get_config_theme_dir(app.path())?;
+            let config_theme_dir = get_config_theme_dir(&config_dir_name_owned, app.path())?;
             let _ = fs::create_dir_all(config_theme_dir);
             let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
             let config = if metadata.is_err() {
                 // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
                 // Application Support/pomodorolm directory has to be created by hand
-                let _ = fs::create_dir_all(get_config_dir(app.path())?);
+                let _ = fs::create_dir_all(get_config_dir(&config_dir_name_owned, app.path())?);
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -376,6 +380,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
             app.manage(AppState(Arc::new(Mutex::new(App {
                 config: config.clone(),
+                config_dir_name: config_dir_name_owned,
                 pomodoro,
             }))));
 
@@ -594,10 +599,11 @@ async fn update_config(
 
     *state_guard = App {
         config: config.clone(),
+        config_dir_name: state_guard.config_dir_name.clone(),
         pomodoro: state_guard.pomodoro.clone(),
     };
 
-    match get_config_file_path(app_handle.path()) {
+    match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
@@ -629,7 +635,7 @@ async fn load_config_and_themes(
 ) -> Result<(Config, Vec<Theme>), ()> {
     let mut state_guard = state.0.lock().await;
 
-    let config = match get_config_file_path(app_handle.path()) {
+    let config = match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
@@ -646,6 +652,7 @@ async fn load_config_and_themes(
 
             *state_guard = App {
                 config: config.clone(),
+                config_dir_name: state_guard.config_dir_name.clone(),
                 pomodoro: state_guard.pomodoro.clone(),
             };
 
@@ -663,7 +670,7 @@ async fn load_config_and_themes(
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
     let custom_themes_path = app_handle.path().resolve(
-        format!("{}/themes/", CONFIG_DIR_NAME),
+        format!("{}/themes/", &state_guard.config_dir_name),
         BaseDirectory::Config,
     );
 
