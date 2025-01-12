@@ -86,6 +86,10 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first a
 
     npm run dev
 
+## Running the CLI
+
+    npm run tauri dev -- -- -- --help
+
 # 🔨 Build
 
 If you're using Linux be sure to set the `NO_STRIP` env var to `true` (see https://github.com/tauri-apps/tauri/issues/8929 ) if the build is failing.
