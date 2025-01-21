@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
+// Fix for https://github.com/tauri-apps/tauri/issues/12382
+#![allow(deprecated)]
 use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
