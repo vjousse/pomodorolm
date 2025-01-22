@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.4](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.4)] - 2025-01-22
+
+### ⚙️ Miscellaneous Tasks
+
+- Update AUR checksum
+- Update to latest Tauri ([#150](https://github.com/vjousse/pomodorolm/issues/150))
+
 ## [[app-v0.3.3](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.3)] - 2025-01-11
 
 ### 🐛 Bug Fixes
 
 - Bad pause icon rendering ([#144](https://github.com/vjousse/pomodorolm/issues/144))
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version to 0.3.3
 
 ## [[app-v0.3.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.2)] - 2025-01-11
 
