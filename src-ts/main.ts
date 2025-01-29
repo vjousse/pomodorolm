@@ -233,6 +233,8 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       tick_sounds_during_work: config.tickSoundsDuringWork,
       tick_sounds_during_break: config.tickSoundsDuringBreak,
     },
+  }).then((newState) => {
+    app.ports.sendMessageToElm.send(newState);
   });
 });
 
