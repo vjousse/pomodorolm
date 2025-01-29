@@ -820,7 +820,6 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
 
 #[tauri::command]
 async fn handle_external_message(
-    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     name: String,
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
