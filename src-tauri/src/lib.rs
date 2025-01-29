@@ -346,37 +346,7 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 })
                 .build(app);
 
-            let config_file_path = get_config_file_path(app.path())?;
-
-            let metadata = fs::metadata(&config_file_path);
-            let config_theme_dir = get_config_theme_dir(app.path())?;
-            let _ = fs::create_dir_all(config_theme_dir);
-            let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
-            let config = if metadata.is_err() {
-                // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
-                // Application Support/pomodorolm directory has to be created by hand
-                let _ = fs::create_dir_all(get_config_dir(app.path())?);
-
-                let mut file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(config_file_path)?;
-
-                let default_config = Config {
-                    ..Default::default()
-                };
-
-                file.write_all(toml::to_string(&default_config)?.as_bytes())?;
-                default_config
-            } else {
-                // Open the file
-                let toml_str = fs::read_to_string(config_file_path)?;
-                let config: Config = toml::from_str(toml_str.as_str())?;
-
-                config
-            };
+            let config = read_config_from_disk(app.path())?;
 
             let pomodoro = pomodoro_state_from_config(&config);
 
@@ -414,17 +384,57 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
+fn read_config_from_disk<R: Runtime>(
+    app_path: &tauri::path::PathResolver<R>,
+) -> Result<Config, Box<dyn std::error::Error>> {
+    let config_file_path = get_config_file_path(app_path)?;
+
+    let metadata = fs::metadata(&config_file_path);
+    let config_theme_dir = get_config_theme_dir(app_path)?;
+    let _ = fs::create_dir_all(config_theme_dir);
+    let _ = fs::create_dir_all(app_path.app_data_dir().unwrap());
+    Ok(if metadata.is_err() {
+        // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
+        // Application Support/pomodorolm directory has to be created by hand
+        let _ = fs::create_dir_all(get_config_dir(app_path)?);
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(config_file_path)?;
+
+        let default_config = Config {
+            ..Default::default()
+        };
+
+        file.write_all(toml::to_string(&default_config)?.as_bytes())?;
+        default_config
+    } else {
+        // Open the file
+        let toml_str = fs::read_to_string(config_file_path)?;
+        let config: Config = toml::from_str(toml_str.as_str())?;
+
+        config
+    })
+}
+
+fn pomodoro_config(config: &Config) -> pomodoro::Config {
+    pomodoro::Config {
+        auto_start_long_break_timer: config.auto_start_break_timer,
+        auto_start_short_break_timer: config.auto_start_break_timer,
+        auto_start_focus_timer: config.auto_start_work_timer,
+        focus_duration: config.focus_duration,
+        long_break_duration: config.long_break_duration,
+        max_focus_rounds: config.max_round_number,
+        short_break_duration: config.short_break_duration,
+    }
+}
+
 fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
     pomodoro::Pomodoro {
-        config: pomodoro::Config {
-            auto_start_long_break_timer: config.auto_start_break_timer,
-            auto_start_short_break_timer: config.auto_start_break_timer,
-            auto_start_focus_timer: config.auto_start_work_timer,
-            focus_duration: config.focus_duration,
-            long_break_duration: config.long_break_duration,
-            max_focus_rounds: config.max_round_number,
-            short_break_duration: config.short_break_duration,
-        },
+        config: pomodoro_config(config),
         ..pomodoro::Pomodoro::default()
     }
 }
@@ -595,14 +605,10 @@ async fn update_config(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
     config: Config,
-) -> Result<(), ()> {
+) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut state_guard = state.0.lock().await;
 
-    *state_guard = App {
-        config: config.clone(),
-        pomodoro: state_guard.pomodoro.clone(),
-    };
-
+    // config: pomodoro_config(config),
     match get_config_file_path(app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -614,8 +620,20 @@ async fn update_config(
                 .truncate(true)
                 .open(config_file_path);
 
-            let _ = match file {
-                Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
+            // FIX: We should not fail silently and we should hanlde the errors properly
+            let _: Result<(), _> = match file {
+                Ok(mut f) => {
+                    let _ = f.write_all(toml::to_string(&config).unwrap().as_bytes());
+
+                    *state_guard = App {
+                        config: config.clone(),
+                        pomodoro: pomodoro::Pomodoro {
+                            config: pomodoro_config(&config),
+                            ..state_guard.pomodoro.clone()
+                        },
+                    };
+                    Ok::<(), ()>(())
+                }
                 Err(_) => {
                     println!("Error opening config file on update");
                     Ok(())
@@ -625,7 +643,7 @@ async fn update_config(
         Err(e) => eprintln!("Unable to get config file path: {:?}.", e),
     }
 
-    Ok(())
+    Ok(state_guard.pomodoro.to_unborrowed())
 }
 
 #[tauri::command]
@@ -810,11 +828,11 @@ async fn handle_external_message(
     let mut app_state_guard = state.0.lock().await;
 
     match name.as_str() {
-        "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
-        }
         "pause" => {
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+        }
+        "play" => {
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
         }
         "reset" => {
             app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
