@@ -104,6 +104,18 @@ Build files will be placed in the `target/` directory.
 
 # 💀 Troubleshooting
 
+## macOS
+
+### `pomodorolm` is damaged and can’t be opened
+
+<p align="center">
+  <img src="docs/macOS-damaged-error.png">
+</p>
+
+Check the following issue: https://github.com/vjousse/pomodorolm/issues/149
+
+TLDR, in a terminal: `sudo xattr -cr /Applications/pomodorolm.app`.
+
 ## Linux
 
 ### `Failed to create GBM buffer of size…`
