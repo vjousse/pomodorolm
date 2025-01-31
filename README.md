@@ -108,8 +108,8 @@ Build files will be placed in the `target/` directory.
 
 ### `pomodorolm` is damaged and can’t be opened
 
-<p align="center">
-  <img src="docs/macOS-damaged-error.png">
+<p>
+  <img style="width: 25%" src="docs/macOS-damaged-error.png">
 </p>
 
 Check the following issue: https://github.com/vjousse/pomodorolm/issues/149
