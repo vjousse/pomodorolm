@@ -17,3 +17,4 @@ jobs:
           bundle: org.jousse.vincent.Pomodorolm
           manifest-path: flatpak/org.jousse.vincent.Pomodorolm.yml
           cache-key: flatpak-builder-${{ github.sha }}
+          upload-artifact: false
