@@ -12,7 +12,7 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v4
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6.3
         with:
           bundle: org.jousse.vincent.Pomodorolm
           manifest-path: flatpak/org.jousse.vincent.Pomodorolm.yml
@@ -22,6 +22,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.B_BUILD_TYPE == 'Release'
         with:
-          name: input-leap-flatpak-x86_64
-          path: input-leap.flatpak
+          name: org.jousse.vincent.Pomodorolm-x86_64
+          path: org.jousse.vincent.Pomodorolm
           if-no-files-found: error
