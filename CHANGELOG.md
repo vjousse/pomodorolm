@@ -2,12 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.5](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.5)] - 2025-03-14
+
+### 🐛 Bug Fixes
+
+- Update pomodoro config on config change ([#152](https://github.com/vjousse/pomodorolm/issues/152))
+- Notification settings ([#161](https://github.com/vjousse/pomodorolm/issues/161))
+
+### 📚 Documentation
+
+- Add macOS troubleshooting section ([#153](https://github.com/vjousse/pomodorolm/issues/153))
+
 ## [[app-v0.3.4](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.4)] - 2025-01-22
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update AUR checksum
 - Update to latest Tauri ([#150](https://github.com/vjousse/pomodorolm/issues/150))
+- Bump version to 0.3.4
 
 ## [[app-v0.3.3](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.3)] - 2025-01-11
 
