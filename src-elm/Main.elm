@@ -311,7 +311,11 @@ update msg ({ config } as model) =
                                     case pomodoroState.currentSession.sessionType of
                                         Focus ->
                                             if state.currentSession.sessionType == ShortBreak then
-                                                [ notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.focusDuration currentColor
+                                                [ if config.desktopNotifications then
+                                                    notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.focusDuration currentColor
+
+                                                  else
+                                                    Cmd.none
                                                 , if config.muted then
                                                     Cmd.none
 
@@ -320,7 +324,11 @@ update msg ({ config } as model) =
                                                 ]
 
                                             else
-                                                [ notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.focusDuration currentColor
+                                                [ if config.desktopNotifications then
+                                                    notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.focusDuration currentColor
+
+                                                  else
+                                                    Cmd.none
                                                 , if config.muted then
                                                     Cmd.none
 
@@ -329,7 +337,11 @@ update msg ({ config } as model) =
                                                 ]
 
                                         LongBreak ->
-                                            [ notify <| getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration currentColor
+                                            [ if config.desktopNotifications then
+                                                notify <| getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration currentColor
+
+                                              else
+                                                Cmd.none
                                             , if config.muted then
                                                 Cmd.none
 
@@ -338,7 +350,11 @@ update msg ({ config } as model) =
                                             ]
 
                                         ShortBreak ->
-                                            [ notify <| getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration currentColor
+                                            [ if config.desktopNotifications then
+                                                notify <| getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration currentColor
+
+                                              else
+                                                Cmd.none
                                             , if config.muted then
                                                 Cmd.none
 
