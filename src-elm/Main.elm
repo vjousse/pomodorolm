@@ -287,6 +287,20 @@ update msg ({ config } as model) =
                     , blue = b
                     }
 
+                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> List (Cmd Msg)
+                getCmds { desktopNotifications, muted } soundName title body name duration rgb =
+                    [ if desktopNotifications then
+                        notify <| getNotification title body name duration rgb
+
+                      else
+                        Cmd.none
+                    , if muted then
+                        Cmd.none
+
+                      else
+                        playSound soundName
+                    ]
+
                 maxTime =
                     getCurrentMaxTime config pomodoroState
 
@@ -310,41 +324,39 @@ update msg ({ config } as model) =
                                 if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
                                     case pomodoroState.currentSession.sessionType of
                                         Focus ->
-                                            if state.currentSession.sessionType == ShortBreak then
-                                                [ notify <| getNotification "Short break completed" "focus round" "start_focus" model.config.focusDuration currentColor
-                                                , if config.muted then
-                                                    Cmd.none
+                                            getCmds
+                                                config
+                                                "audio-work"
+                                                (if state.currentSession.sessionType == ShortBreak then
+                                                    "Short break completed"
 
-                                                  else
-                                                    playSound "audio-work"
-                                                ]
-
-                                            else
-                                                [ notify <| getNotification "Long break completed" "focus round" "start_focus" model.config.focusDuration currentColor
-                                                , if config.muted then
-                                                    Cmd.none
-
-                                                  else
-                                                    playSound "audio-work"
-                                                ]
+                                                 else
+                                                    "Long break completed"
+                                                )
+                                                "focus round"
+                                                "start_focus"
+                                                model.config.focusDuration
+                                                currentColor
 
                                         LongBreak ->
-                                            [ notify <| getNotification "Focus round completed" "long break" "start_long_break" model.config.longBreakDuration currentColor
-                                            , if config.muted then
-                                                Cmd.none
-
-                                              else
-                                                playSound "audio-long-break"
-                                            ]
+                                            getCmds
+                                                config
+                                                "audio-long-break"
+                                                "Focus round completed"
+                                                "long break"
+                                                "start_long_break"
+                                                model.config.longBreakDuration
+                                                currentColor
 
                                         ShortBreak ->
-                                            [ notify <| getNotification "Focus round completed" "short break" "start_short_break" model.config.shortBreakDuration currentColor
-                                            , if config.muted then
-                                                Cmd.none
-
-                                              else
-                                                playSound "audio-short-break"
-                                            ]
+                                            getCmds
+                                                config
+                                                "audio-short-break"
+                                                "Focus round completed"
+                                                "short break"
+                                                "start_short_break"
+                                                model.config.shortBreakDuration
+                                                currentColor
 
                                 else
                                     []
