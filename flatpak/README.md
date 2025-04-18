@@ -2,7 +2,7 @@
 
 ## Build
 
-    flatpak-builder --force-clean --user --repo=repo --install builddir org.jousse.vincent.Pomodorolm.yml
+    flatpak-builder --force-clean --user --repo=repo --install-deps-from "flathub" --install builddir org.jousse.vincent.Pomodorolm.yml
 
 ## Run
 
