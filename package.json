@@ -15,7 +15,7 @@
     "@tauri-apps/cli": "^2",
     "@types/node": "^22.5.4",
     "elm-debug-transformer": "^1.2.1",
-    "elm-review": "^2.13.2",
+    "elm-review": "^2.12.0",
     "elm-tooling": "^1.15.1",
     "typescript": "^5.6.2",
     "vite": "^5.4.5",
