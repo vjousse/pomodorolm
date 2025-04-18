@@ -50,6 +50,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://github.com/jfmengels/elm-review/archive/2.15.1.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/jfmengels/elm-review/2.15.1/",
+        "strip-components": 1,
+        "sha512": "32b483ccbc426ed34ce58eecf0d9c2f8aa6057d2ad2ce2e8501c89868a1e0b3572ddcb519349c89e0a877305355fb8f55587c0f4821042aa308ffc75a3b6c4d1"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://github.com/rtfeldman/elm-hex/archive/1.0.0.tar.gz",
         "dest": "elm-stuff/home/.elm/0.19.1/packages/rtfeldman/elm-hex/1.0.0/",
         "strip-components": 1,
@@ -62,6 +70,38 @@
         "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/bytes/1.0.8/",
         "strip-components": 1,
         "sha512": "c652c4a91c315a37d0aeeb40d6c03dc68ea8cf65f1dd6dcb7b0e53b64703f3488a89787af0f3d19415226e67a97b4181fbf8ca8f3be48115b6648f63aae48beb"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/elm/parser/archive/1.1.0.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/parser/1.1.0/",
+        "strip-components": 1,
+        "sha512": "1d88bfaae67ff669bcf0b116fc4547575e4394cc227ad04b55bfa7b720f1f372c8d9a77347e339afd6106a0423f00920607aa33320f72d05f5f883ec2cacef06"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/elm/project-metadata-utils/archive/1.0.2.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/project-metadata-utils/1.0.2/",
+        "strip-components": 1,
+        "sha512": "9711a7217ac67c17777394933ca8c4ce71624b1225b21222635bdfc7b59aa80d1e3ba9ce4d83ab73c223a681998454b27fbc735e5e90f96699fc8263fc19b7bb"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/elm/random/archive/1.0.0.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/random/1.0.0/",
+        "strip-components": 1,
+        "sha512": "a1d8f3bd29f3c7a4af984423690e0e45a64faa441a9f00786ff22af2a64bf89b424b004c9c15389305beb6507fe191a8ecc991c4aad0a87b23d72afcb9fed74d"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/elm/regex/archive/1.0.0.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/regex/1.0.0/",
+        "strip-components": 1,
+        "sha512": "883fc2ad04dabb6a9a89d2e6e73e469ce493f734d55c64b68c30fe1ecf4e6d6baf3e26f61794a076f960f1f1367521260e5f9188d65140cec8242362faa560df"
     },
     {
         "type": "archive",
@@ -86,5 +126,29 @@
         "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/virtual-dom/1.0.3/",
         "strip-components": 1,
         "sha512": "02009b9f0e706f24b86a9ca686dd045979b6cb67207dd1a61a88ae955a7008957b9349f0bec3b48851fcf80f2bdac8b5c9a47f4b1d1afd19f9b47975be588f37"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/elm-explorations/test/archive/2.2.0.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm-explorations/test/2.2.0/",
+        "strip-components": 1,
+        "sha512": "bcd9e9dce8206d8c44145c9e44b36c5cdc1dbc3352d7668950ab0511d0543d75cfce8d06010fdaf89883d6acade2452d3078f1c4d21c52a881c713dfc736986f"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/stil4m/elm-syntax/archive/7.3.8.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/stil4m/elm-syntax/7.3.8/",
+        "strip-components": 1,
+        "sha512": "94f30f3856aafed47d19c27025d3372e6cdde698c163e960580a2d40ff4fa5062d3caec0f400a8494063abb230ef1f2793f5b8e2be982301d0f8a6a462aec937"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://github.com/stil4m/structured-writer/archive/1.0.3.tar.gz",
+        "dest": "elm-stuff/home/.elm/0.19.1/packages/stil4m/structured-writer/1.0.3/",
+        "strip-components": 1,
+        "sha512": "a516602d2f35792f703cb62b54aa15e76be1b38991150fa696709d6cb573e36598cde661f1e1eeb713137861de47b7189474576c27f15f887417883e9ed3f0bc"
     }
 ]
