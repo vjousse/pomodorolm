@@ -56,6 +56,8 @@ package-repositories:
 parts:
   build-app:
     plugin: dump
+    build-environment:
+      - LD_LIBRARY_PATH: $CRAFT_STAGE/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR
     after:
       - alsa-mixin
     build-snaps:
