@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.3.6](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.6)] - 2025-04-18
+
+### ⚙️ Miscellaneous Tasks
+
+- Update deps ([#164](https://github.com/vjousse/pomodorolm/issues/164))
+
 ## [[app-v0.3.5](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.5)] - 2025-03-14
 
 ### 🐛 Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Add macOS troubleshooting section ([#153](https://github.com/vjousse/pomodorolm/issues/153))
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump 0.3.5
 
 ## [[app-v0.3.4](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.4)] - 2025-01-22
 
