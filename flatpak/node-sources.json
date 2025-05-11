@@ -615,6 +615,13 @@
     },
     {
         "type": "file",
+        "url": "https://registry.npmjs.org/@tauri-apps/plugin-autostart/-/plugin-autostart-2.3.0.tgz",
+        "sha512": "cb1413a5ce0da254f5af7d7bca329586b1be6300963c13a3ee9fbbd26fead30d491dce77a467079936e801b03790663a3d0fbdcbda04edc7661eaecf1fdcff49",
+        "dest-filename": "13a5ce0da254f5af7d7bca329586b1be6300963c13a3ee9fbbd26fead30d491dce77a467079936e801b03790663a3d0fbdcbda04edc7661eaecf1fdcff49",
+        "dest": "flatpak-node/npm-cache/_cacache/content-v2/sha512/cb/14"
+    },
+    {
+        "type": "file",
         "url": "https://registry.npmjs.org/@tauri-apps/plugin-dialog/-/plugin-dialog-2.2.1.tgz",
         "sha512": "c19982a2ea383e04e8b21fd4a1e8cfc3d0cfb3a465952e4fa777ee395d89a1b0aedfa991e405d4d8ccd4f4d66255a162ff965f73c44dd0885c6479e4b09d68f0",
         "dest-filename": "82a2ea383e04e8b21fd4a1e8cfc3d0cfb3a465952e4fa777ee395d89a1b0aedfa991e405d4d8ccd4f4d66255a162ff965f73c44dd0885c6479e4b09d68f0",
@@ -3189,6 +3196,12 @@
         "contents": "c36a4344f60f78677eb2a507571ca18431f911b6\t{\"key\": \"make-fetch-happen:request-cache:https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz\", \"integrity\": \"sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==\", \"time\": 0, \"size\": 1503, \"metadata\": {\"url\": \"https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz\", \"reqHeaders\": {}, \"resHeaders\": {}}}",
         "dest-filename": "b652af7d985d655c33bbc6261689ea2f5a550b485dde76ad3aefbe2591eb",
         "dest": "flatpak-node/npm-cache/_cacache/index-v5/03/af"
+    },
+    {
+        "type": "inline",
+        "contents": "c39d00c97c84416222fa96f0ce252394eeccd4bb\t{\"key\": \"make-fetch-happen:request-cache:https://registry.npmjs.org/@tauri-apps/plugin-autostart/-/plugin-autostart-2.3.0.tgz\", \"integrity\": \"sha512-yxQTpc4NolT1r317yjKVhrG+YwCWPBOj7p+70m/q0w1JHc53pGcHmTboAbA3kGY6PQ+9y9oE7cdmHq7PH9z/SQ==\", \"time\": 0, \"size\": 2459, \"metadata\": {\"url\": \"https://registry.npmjs.org/@tauri-apps/plugin-autostart/-/plugin-autostart-2.3.0.tgz\", \"reqHeaders\": {}, \"resHeaders\": {}}}",
+        "dest-filename": "d8058ba283c0e0a9ebe2ad8410706c2a5e7c892b800c2b0b84194bf9020c",
+        "dest": "flatpak-node/npm-cache/_cacache/index-v5/9f/d9"
     },
     {
         "type": "inline",

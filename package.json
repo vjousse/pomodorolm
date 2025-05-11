@@ -23,9 +23,10 @@
     "vite-plugin-top-level-await": "^1.4.4"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-autostart": "^2.3.0",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-log": "^2",
-    "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-shell": "^2"
   }
 }

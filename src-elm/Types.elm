@@ -70,6 +70,7 @@ type alias Config =
     , muted : Bool
     , shortBreakAudio : Maybe String
     , shortBreakDuration : Seconds
+    , systemStartupAutoStart : Bool
     , theme : String
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
@@ -119,11 +120,12 @@ type Setting
     = AlwaysOnTop
     | AutoStartWorkTimer
     | AutoStartBreakTimer
-    | TickSoundsDuringWork
-    | TickSoundsDuringBreak
     | DesktopNotifications
     | MinimizeToTray
     | MinimizeToTrayOnClose
+    | SystemStartupAutoStart
+    | TickSoundsDuringWork
+    | TickSoundsDuringBreak
 
 
 type alias Defaults =

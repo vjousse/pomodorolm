@@ -50,6 +50,7 @@ type alias Flags =
     , muted : Bool
     , focusDuration : Seconds
     , shortBreakDuration : Seconds
+    , systemStartupAutoStart : Bool
     , theme : String
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
@@ -93,6 +94,7 @@ init flags =
             , muted = flags.muted
             , shortBreakAudio = Nothing
             , shortBreakDuration = flags.shortBreakDuration
+            , systemStartupAutoStart = flags.systemStartupAutoStart
             , theme = flags.theme
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
@@ -144,12 +146,6 @@ update msg ({ config } as model) =
                         AutoStartWorkTimer ->
                             { config | autoStartWorkTimer = not config.autoStartWorkTimer }
 
-                        TickSoundsDuringWork ->
-                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
-
-                        TickSoundsDuringBreak ->
-                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
-
                         DesktopNotifications ->
                             { config | desktopNotifications = not config.desktopNotifications }
 
@@ -158,6 +154,15 @@ update msg ({ config } as model) =
 
                         MinimizeToTrayOnClose ->
                             { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
+
+                        SystemStartupAutoStart ->
+                            { config | systemStartupAutoStart = not config.systemStartupAutoStart }
+
+                        TickSoundsDuringWork ->
+                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
+
+                        TickSoundsDuringBreak ->
+                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
             in
             ( { model | config = newSettingsConfig }
             , updateConfig newSettingsConfig
