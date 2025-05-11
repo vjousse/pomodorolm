@@ -9,7 +9,7 @@ license=('MIT')
 depends=('alsa-lib' 'gtk3' 'hicolor-icon-theme' 'glibc' 'webkit2gtk-4.1' 'libsoup' 'cairo' 'glib2' 'pango' 'gcc-libs' 'gdk-pixbuf2' 'libayatana-appindicator')
 provides=('pomodorolm')
 source=("https://github.com/vjousse/pomodorolm/releases/download/app-v$pkgver/pomodorolm_${pkgver}_amd64.deb")
-sha256sums=('ba67bd0de61f5a0266cdd5aa8266e77fe678cbcd8f5ca2747d2565f03c52e47a')
+sha256sums=('a305656175c425a1ec1dbef37c45fe951eb04442a2eeca1456a563880b36270f')
 
 package() {
   bsdtar -xf "$srcdir/data.tar.gz" -C "$pkgdir"
