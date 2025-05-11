@@ -50,6 +50,7 @@ type alias Flags =
     , muted : Bool
     , focusDuration : Seconds
     , shortBreakDuration : Seconds
+    , startMinimized : Bool
     , systemStartupAutoStart : Bool
     , theme : String
     , tickSoundsDuringWork : Bool
@@ -94,6 +95,7 @@ init flags =
             , muted = flags.muted
             , shortBreakAudio = Nothing
             , shortBreakDuration = flags.shortBreakDuration
+            , startMinimized = flags.startMinimized
             , systemStartupAutoStart = flags.systemStartupAutoStart
             , theme = flags.theme
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
@@ -154,6 +156,9 @@ update msg ({ config } as model) =
 
                         MinimizeToTrayOnClose ->
                             { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
+
+                        StartMinimized ->
+                            { config | startMinimized = not config.startMinimized }
 
                         SystemStartupAutoStart ->
                             { config | systemStartupAutoStart = not config.systemStartupAutoStart }

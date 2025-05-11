@@ -82,6 +82,7 @@ type ElmConfig = {
   muted: boolean;
   shortBreakAudio: string | null;
   shortBreakDuration: number;
+  startMinimized: boolean;
   systemStartupAutoStart: boolean;
   theme: string;
   tickSoundsDuringWork: boolean;
@@ -103,6 +104,7 @@ type RustConfig = {
   muted: boolean;
   short_break_audio: string | null;
   short_break_duration: number;
+  start_minimized: boolean;
   system_startup_auto_start: boolean;
   theme: string;
   tick_sounds_during_work: boolean;
@@ -126,6 +128,7 @@ let rustConfig: RustConfig = {
   muted: false,
   short_break_audio: null,
   short_break_duration: 300,
+  start_minimized: true,
   system_startup_auto_start: false,
   theme: "pomodorolm",
   tick_sounds_during_work: true,
@@ -150,6 +153,7 @@ app = Elm.Main.init({
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
     muted: rustConfig.muted,
     shortBreakDuration: rustConfig.short_break_duration,
+    startMinimized: rustConfig.start_minimized,
     systemStartupAutoStart: rustConfig.system_startup_auto_start,
     theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
@@ -233,6 +237,7 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       muted: config.muted,
       short_break_audio: config.shortBreakAudio,
       short_break_duration: config.shortBreakDuration,
+      start_minimized: config.startMinimized,
       system_startup_auto_start: config.systemStartupAutoStart,
       theme: config.theme,
       tick_sounds_during_work: config.tickSoundsDuringWork,

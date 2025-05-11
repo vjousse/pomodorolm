@@ -61,6 +61,8 @@ struct Config {
     short_break_audio: Option<String>,
     short_break_duration: u16,
     #[serde(default)]
+    start_minimized: bool,
+    #[serde(default)]
     system_startup_auto_start: bool,
     #[serde(default = "default_theme")]
     theme: String,
@@ -221,6 +223,7 @@ impl Default for Config {
             muted: false,
             short_break_audio: None,
             short_break_duration: 5 * 60,
+            start_minimized: false,
             system_startup_auto_start: false,
             theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
@@ -350,6 +353,16 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
                 .build(app);
 
             let config = read_config_from_disk(app.path())?;
+
+            if let Some(window) = app.get_webview_window("main") {
+                if config.start_minimized {
+                    #[cfg(target_os = "macos")]
+                    let _ = app.hide();
+                    #[cfg(not(target_os = "macos"))]
+                    let _ = window.hide();
+                    let _ = toggle_visibility.set_text("Show");
+                }
+            }
 
             let pomodoro = pomodoro_state_from_config(&config);
 

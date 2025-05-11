@@ -65,6 +65,7 @@ configDecoder =
         |> Pipe.required "muted" Decode.bool
         |> Pipe.optional "short_break_audio" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "short_break_duration" Decode.int
+        |> Pipe.required "start_minimized" Decode.bool
         |> Pipe.required "system_startup_auto_start" Decode.bool
         |> Pipe.required "theme" Decode.string
         |> Pipe.required "tick_sounds_during_break" Decode.bool
