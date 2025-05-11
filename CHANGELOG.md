@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.4.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.4.0)] - 2025-05-11
+
+### 🚀 Features
+
+- Add system auto start ([#168](https://github.com/vjousse/pomodorolm/issues/168))
+- Add start minimized to tray option ([#169](https://github.com/vjousse/pomodorolm/issues/169))
+
 ## [[app-v0.3.6](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.6)] - 2025-04-18
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update deps ([#164](https://github.com/vjousse/pomodorolm/issues/164))
+- Bump to 0.3.6
 
 ## [[app-v0.3.5](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.5)] - 2025-03-14
 
