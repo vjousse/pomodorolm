@@ -60,6 +60,8 @@ struct Config {
     muted: bool,
     short_break_audio: Option<String>,
     short_break_duration: u16,
+    #[serde(default)]
+    system_startup_auto_start: bool,
     #[serde(default = "default_theme")]
     theme: String,
     tick_sounds_during_work: bool,
@@ -219,6 +221,7 @@ impl Default for Config {
             muted: false,
             short_break_audio: None,
             short_break_duration: 5 * 60,
+            system_startup_auto_start: false,
             theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
@@ -366,6 +369,17 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
 
             tauri::async_runtime::spawn(tick(app.handle().clone(), audio_path.to_string()));
 
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_autostart::MacosLauncher;
+
+                app.handle().plugin(tauri_plugin_autostart::init(
+                    MacosLauncher::LaunchAgent,
+                    Some(vec![]),
+                ))?;
+                manage_autostart(app.handle(), config.system_startup_auto_start)?;
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -382,6 +396,28 @@ pub fn run_app<R: Runtime>(_builder: tauri::Builder<R>) {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn manage_autostart(
+    app_handle: &AppHandle,
+    system_startup_auto_start: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(desktop)]
+    {
+        use tauri_plugin_autostart::ManagerExt;
+
+        // Get the autostart manager
+        let autostart_manager = app_handle.autolaunch();
+
+        if system_startup_auto_start != autostart_manager.is_enabled()? {
+            if system_startup_auto_start {
+                let _ = autostart_manager.enable();
+            } else {
+                let _ = autostart_manager.disable();
+            }
+        }
+    }
+    Ok(())
 }
 
 fn read_config_from_disk<R: Runtime>(
@@ -632,6 +668,10 @@ async fn update_config(
                             ..state_guard.pomodoro.clone()
                         },
                     };
+
+                    // Manage autostart status
+                    let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
+
                     Ok::<(), ()>(())
                 }
                 Err(_) => {
