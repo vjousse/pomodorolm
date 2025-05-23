@@ -8,8 +8,5 @@ mod sound;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run_gui(config_dir_name: &str) {
-    gui::run_app(
-        config_dir_name,
-        tauri::Builder::default().plugin(tauri_plugin_dialog::init()),
-    )
+    gui::run_app(config_dir_name, tauri::Builder::default())
 }

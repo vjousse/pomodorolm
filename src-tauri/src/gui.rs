@@ -1,5 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Fix for https://github.com/tauri-apps/tauri/issues/12382
+#![allow(deprecated)]
 
 use crate::icon;
 use crate::pomodoro;
@@ -12,8 +14,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
-use tauri::tray::TrayIconEvent;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
+use tauri::tray::TrayIconBuilder;
 use tauri::AppHandle;
 use tauri::Runtime;
 use tauri::{path::BaseDirectory, Manager};
@@ -27,6 +28,8 @@ use std::path::PathBuf;
 use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
+
+const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
@@ -58,6 +61,10 @@ struct Config {
     muted: bool,
     short_break_audio: Option<String>,
     short_break_duration: u16,
+    #[serde(default)]
+    start_minimized: bool,
+    #[serde(default)]
+    system_startup_auto_start: bool,
     #[serde(default = "default_theme")]
     theme: String,
     tick_sounds_during_work: bool,
@@ -217,6 +224,8 @@ impl Default for Config {
             muted: false,
             short_break_audio: None,
             short_break_duration: 5 * 60,
+            start_minimized: false,
+            system_startup_auto_start: false,
             theme: "pomotroid".to_string(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
@@ -258,6 +267,12 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let window = app.get_webview_window("main").expect("no main window");
+
+            let _ = window.show();
+            let _ = window.set_focus();
+        }))
         .setup(|app| {
             if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;
@@ -281,100 +296,69 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
-                .on_menu_event(move |app, event| match event.id().as_ref() {
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    "toggle_play" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("toggle-play", "");
+                .on_menu_event(move |app, event| {
+                    println!("On menu event {:?}", event);
+                    match event.id().as_ref() {
+                        "quit" => {
+                            app.exit(0);
                         }
-                    }
-                    "skip" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("skip", "");
+                        "toggle_play" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.emit("toggle-play", "");
+                            }
                         }
-                    }
-                    "toggle_visibility" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let new_title = if window.is_visible().unwrap_or_default() {
-                                #[cfg(target_os = "macos")]
-                                let _ = app.hide();
-                                #[cfg(not(target_os = "macos"))]
-                                let _ = window.hide();
-                                "Show"
-                            } else {
-                                #[cfg(target_os = "macos")]
-                                let _ = app.show();
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                                "Hide"
-                            };
+                        "skip" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.emit("skip", "");
+                            }
+                        }
+                        "toggle_visibility" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let new_title = if window.is_visible().unwrap_or_default() {
+                                    #[cfg(target_os = "macos")]
+                                    let _ = app.hide();
+                                    #[cfg(not(target_os = "macos"))]
+                                    let _ = window.hide();
+                                    "Show"
+                                } else {
+                                    #[cfg(target_os = "macos")]
+                                    let _ = app.show();
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                    "Hide"
+                                };
 
-                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
+                                let state: tauri::State<'_, AppMenuStates<R>> = app.state();
 
-                            let state_guard = state.0.lock();
-                            match state_guard {
-                                Ok(guard) => {
-                                    let set_text_result =
-                                        guard.toggle_visibility_menu.set_text(new_title);
-                                    if let Err(e) = set_text_result {
-                                        eprintln!("Error setting MenuItem title: {:?}.", e);
+                                let state_guard = state.0.lock();
+                                match state_guard {
+                                    Ok(guard) => {
+                                        let set_text_result =
+                                            guard.toggle_visibility_menu.set_text(new_title);
+                                        if let Err(e) = set_text_result {
+                                            eprintln!("Error setting MenuItem title: {:?}.", e);
+                                        }
                                     }
-                                }
-                                Err(e) => eprintln!("Error getting state lock: {:?}.", e),
-                            };
+                                    Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+                                };
+                            }
                         }
-                    }
-                    _ => (),
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        if let Some(webview_window) = app.get_webview_window("main") {
-                            let _ = webview_window.show();
-                            let _ = webview_window.set_focus();
-                        }
+                        _ => (),
                     }
                 })
                 .build(app);
 
-            let config_file_path = get_config_file_path(&config_dir_name_owned, app.path())?;
+            let config = read_config_from_disk(&config_dir_name_owned, app.path())?;
 
-            let metadata = fs::metadata(&config_file_path);
-            let config_theme_dir = get_config_theme_dir(&config_dir_name_owned, app.path())?;
-            let _ = fs::create_dir_all(config_theme_dir);
-            let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
-            let config = if metadata.is_err() {
-                // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
-                // Application Support/pomodorolm directory has to be created by hand
-                let _ = fs::create_dir_all(get_config_dir(&config_dir_name_owned, app.path())?);
-
-                let mut file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(config_file_path)?;
-
-                let default_config = Config {
-                    ..Default::default()
-                };
-
-                file.write_all(toml::to_string(&default_config)?.as_bytes())?;
-                default_config
-            } else {
-                // Open the file
-                let toml_str = fs::read_to_string(config_file_path)?;
-                let config: Config = toml::from_str(toml_str.as_str())?;
-
-                config
-            };
+            if let Some(window) = app.get_webview_window("main") {
+                if config.start_minimized {
+                    #[cfg(target_os = "macos")]
+                    let _ = app.hide();
+                    #[cfg(not(target_os = "macos"))]
+                    let _ = window.hide();
+                    let _ = toggle_visibility.set_text("Show");
+                }
+            }
 
             let pomodoro = pomodoro_state_from_config(&config);
 
@@ -395,6 +379,17 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             tauri::async_runtime::spawn(tick(app.handle().clone(), audio_path.to_string()));
 
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_autostart::MacosLauncher;
+
+                app.handle().plugin(tauri_plugin_autostart::init(
+                    MacosLauncher::LaunchAgent,
+                    Some(vec![]),
+                ))?;
+                manage_autostart(app.handle(), config.system_startup_auto_start)?;
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -413,17 +408,80 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
+fn manage_autostart(
+    app_handle: &AppHandle,
+    system_startup_auto_start: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(desktop)]
+    {
+        use tauri_plugin_autostart::ManagerExt;
+
+        // Get the autostart manager
+        let autostart_manager = app_handle.autolaunch();
+
+        if system_startup_auto_start != autostart_manager.is_enabled()? {
+            if system_startup_auto_start {
+                let _ = autostart_manager.enable();
+            } else {
+                let _ = autostart_manager.disable();
+            }
+        }
+    }
+    Ok(())
+}
+
+fn read_config_from_disk<R: Runtime>(
+    config_dir_name: &str,
+    app_path: &tauri::path::PathResolver<R>,
+) -> Result<Config, Box<dyn std::error::Error>> {
+    let config_file_path = get_config_file_path(config_dir_name, app_path)?;
+
+    let metadata = fs::metadata(&config_file_path);
+    let config_theme_dir = get_config_theme_dir(config_dir_name, app_path)?;
+    let _ = fs::create_dir_all(config_theme_dir);
+    let _ = fs::create_dir_all(app_path.app_data_dir().unwrap());
+    Ok(if metadata.is_err() {
+        // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
+        // Application Support/pomodorolm directory has to be created by hand
+        let _ = fs::create_dir_all(get_config_dir(config_dir_name, app_path)?);
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(config_file_path)?;
+
+        let default_config = Config {
+            ..Default::default()
+        };
+
+        file.write_all(toml::to_string(&default_config)?.as_bytes())?;
+        default_config
+    } else {
+        // Open the file
+        let toml_str = fs::read_to_string(config_file_path)?;
+        let config: Config = toml::from_str(toml_str.as_str())?;
+
+        config
+    })
+}
+
+fn pomodoro_config(config: &Config) -> pomodoro::Config {
+    pomodoro::Config {
+        auto_start_long_break_timer: config.auto_start_break_timer,
+        auto_start_short_break_timer: config.auto_start_break_timer,
+        auto_start_focus_timer: config.auto_start_work_timer,
+        focus_duration: config.focus_duration,
+        long_break_duration: config.long_break_duration,
+        max_focus_rounds: config.max_round_number,
+        short_break_duration: config.short_break_duration,
+    }
+}
+
 fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
     pomodoro::Pomodoro {
-        config: pomodoro::Config {
-            auto_start_long_break_timer: config.auto_start_break_timer,
-            auto_start_short_break_timer: config.auto_start_break_timer,
-            auto_start_focus_timer: config.auto_start_work_timer,
-            focus_duration: config.focus_duration,
-            long_break_duration: config.long_break_duration,
-            max_focus_rounds: config.max_round_number,
-            short_break_duration: config.short_break_duration,
-        },
+        config: pomodoro_config(config),
         ..pomodoro::Pomodoro::default()
     }
 }
@@ -594,15 +652,10 @@ async fn update_config(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
     config: Config,
-) -> Result<(), ()> {
+) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut state_guard = state.0.lock().await;
 
-    *state_guard = App {
-        config: config.clone(),
-        config_dir_name: state_guard.config_dir_name.clone(),
-        pomodoro: state_guard.pomodoro.clone(),
-    };
-
+    // config: pomodoro_config(config),
     match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -614,8 +667,25 @@ async fn update_config(
                 .truncate(true)
                 .open(config_file_path);
 
-            let _ = match file {
-                Ok(mut f) => f.write_all(toml::to_string(&config).unwrap().as_bytes()),
+            // FIX: We should not fail silently and we should hanlde the errors properly
+            let _: Result<(), _> = match file {
+                Ok(mut f) => {
+                    let _ = f.write_all(toml::to_string(&config).unwrap().as_bytes());
+
+                    *state_guard = App {
+                        config: config.clone(),
+                        config_dir_name: state_guard.config_dir_name.clone(),
+                        pomodoro: pomodoro::Pomodoro {
+                            config: pomodoro_config(&config),
+                            ..state_guard.pomodoro.clone()
+                        },
+                    };
+
+                    // Manage autostart status
+                    let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
+
+                    Ok::<(), ()>(())
+                }
                 Err(_) => {
                     println!("Error opening config file on update");
                     Ok(())
@@ -625,7 +695,7 @@ async fn update_config(
         Err(e) => eprintln!("Unable to get config file path: {:?}.", e),
     }
 
-    Ok(())
+    Ok(state_guard.pomodoro.to_unborrowed())
 }
 
 #[tauri::command]
@@ -670,7 +740,7 @@ async fn load_config_and_themes(
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
     let custom_themes_path = app_handle.path().resolve(
-        format!("{}/themes/", &state_guard.config_dir_name),
+        format!("{}/themes/", CONFIG_DIR_NAME),
         BaseDirectory::Config,
     );
 
@@ -811,11 +881,11 @@ async fn handle_external_message(
     let mut app_state_guard = state.0.lock().await;
 
     match name.as_str() {
-        "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
-        }
         "pause" => {
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+        }
+        "play" => {
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
         }
         "reset" => {
             app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
