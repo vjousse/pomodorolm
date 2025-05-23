@@ -13,9 +13,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Adds files to myapp
+    /// Run the CLI version of the app
     Cli,
 }
+
+const CONFIG_DIR_NAME: &str = "pomodorolm";
 
 fn main() {
     let cli = Cli::parse();
@@ -24,10 +26,8 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(command) => match command {
-            Commands::Cli => {
-                println!("--> CLI mode");
-            }
+            Commands::Cli => pomodorolm_lib::cli::run(CONFIG_DIR_NAME),
         },
-        None => pomodorolm_lib::run(),
+        None => pomodorolm_lib::run_gui(CONFIG_DIR_NAME),
     }
 }
