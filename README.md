@@ -65,6 +65,47 @@ Pomodorolm provides many themes. It's also theme-able, allowing you to customize
 
 Visit the [theme documentation](./docs/themes/themes.md) to view the full list of official themes and for instruction on creating your own.
 
+# Command Line Interface
+
+> [!WARNING]
+> This is still a huge Work In Progress and only supports Pomodoro creation/reset/stop. Nothing else is handled for now (no breaks, no sound, no config change, …).
+
+By default, Pomodorolm will start the GUI version, but there is a CLI interface available if you want (mainly a proof of concept for now). To get the available commands you can run the help:
+
+    pomodorolm --help
+
+You can run the current cli program with:
+
+    pomodorolm cli
+
+You should see the following output looping forever:
+
+```
+P -
+P -
+P -
+```
+
+The cli is based on https://github.com/dattanchu/pymodoro. It will look for the presence of the file `~/.cache/pomodoro_session`.
+
+To start or reset a Pomodoro:
+
+    touch ~/.cache/pomodoro_session
+
+To stop the Pomodoro:
+
+    rm ~/.cache/pomodoro_session
+
+You can add a Waybar/i3bar module if you want to:
+
+```
+  "custom/pomodorolm": {
+    "exec": "pomodorolm cli",
+  },
+```
+
+And add keybindings in your Sway/i3 config to touch and/or remove the session file.
+
 # 💻 Dev
 
 You will need to [install rust](https://www.rust-lang.org/tools/install) first and [https://github.com/astral-sh/uv](uv) for the`pre-commit` hooks and the release script.
@@ -87,9 +128,6 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first a
     npm run dev
 
 ## Running the CLI
-
-> [!WARNING]
-> This is WIP, nothing to expect here
 
     npm run tauri dev -- -- -- cli
 
