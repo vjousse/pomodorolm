@@ -174,40 +174,12 @@ struct ElmNotification {
     blue: u8,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            always_on_top: true,
-            auto_start_work_timer: true,
-            auto_start_break_timer: true,
-            desktop_notifications: true,
-            focus_audio: None,
-            focus_duration: 25 * 60,
-            long_break_audio: None,
-            long_break_duration: 20 * 60,
-            max_round_number: 4u16,
-            minimize_to_tray: true,
-            minimize_to_tray_on_close: true,
-            muted: false,
-            short_break_audio: None,
-            short_break_duration: 5 * 60,
-            start_minimized: false,
-            system_startup_auto_start: false,
-            theme: "pomotroid".to_string(),
-            tick_sounds_during_work: true,
-            tick_sounds_during_break: true,
-        }
-    }
-}
-
 fn get_config_file_path<R: Runtime>(
     config_dir_name: &str,
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
-    path.resolve(
-        format!("{}/config.toml", config_dir_name),
-        BaseDirectory::Config,
-    )
+    let config_dir = get_config_dir(config_dir_name, path)?;
+    Ok(Config::get_config_file_path(&config_dir, None))
 }
 
 fn get_config_dir<R: Runtime>(
@@ -215,16 +187,6 @@ fn get_config_dir<R: Runtime>(
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
     path.resolve(format!("{}/", config_dir_name), BaseDirectory::Config)
-}
-
-fn get_config_theme_dir<R: Runtime>(
-    config_dir_name: &str,
-    path: &tauri::path::PathResolver<R>,
-) -> Result<PathBuf, tauri::Error> {
-    path.resolve(
-        format!("{}/themes/", config_dir_name),
-        BaseDirectory::Config,
-    )
 }
 
 pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
@@ -403,7 +365,7 @@ fn read_config_from_disk<R: Runtime>(
 ) -> Result<Config, Box<dyn std::error::Error>> {
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
-    Config::get_or_create_from_disk(&config_dir, Some("config.toml".to_string()))
+    Config::get_or_create_from_disk(&config_dir, None)
 }
 
 fn pomodoro_config(config: &Config) -> pomodoro::Config {

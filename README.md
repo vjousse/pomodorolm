@@ -88,7 +88,10 @@ You will need to [install rust](https://www.rust-lang.org/tools/install) first a
 
 ## Running the CLI
 
-    npm run tauri dev -- -- -- --help
+> [!WARNING]
+> This is WIP, nothing to expect here
+
+    npm run tauri dev -- -- -- cli
 
 # 🔨 Build
 
