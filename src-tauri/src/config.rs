@@ -42,7 +42,7 @@ impl Config {
     }
 
     pub fn get_or_create_from_disk(
-        config_dir: &PathBuf,
+        config_dir: &Path,
         config_file_name: Option<String>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
