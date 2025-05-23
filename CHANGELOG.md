@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.5.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.5.0)] - 2025-05-23
+
+### 🚀 Features
+
+- Ensure only one instance is running ([#171](https://github.com/vjousse/pomodorolm/issues/171))
+- Add minimal CLI version ([#146](https://github.com/vjousse/pomodorolm/issues/146))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update AUR checksum for 0.4.0
+
 ## [[app-v0.4.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.4.0)] - 2025-05-11
 
 ### 🚀 Features
 
 - Add system auto start ([#168](https://github.com/vjousse/pomodorolm/issues/168))
 - Add start minimized to tray option ([#169](https://github.com/vjousse/pomodorolm/issues/169))
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to 0.4.0
 
 ## [[app-v0.3.6](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.3.6)] - 2025-04-18
 
