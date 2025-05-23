@@ -3,6 +3,7 @@
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
 
+use crate::config::Config;
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
@@ -29,8 +30,6 @@ use tauri::Emitter;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tokio_stream::wrappers::IntervalStream;
 
-const CONFIG_DIR_NAME: &str = "pomodorolm";
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct App {
     config: Config,
@@ -41,38 +40,6 @@ struct App {
 struct MenuStates<R: Runtime> {
     toggle_visibility_menu: tauri::menu::MenuItem<R>,
     toggle_play_menu: tauri::menu::MenuItem<R>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct Config {
-    always_on_top: bool,
-    auto_start_work_timer: bool,
-    auto_start_break_timer: bool,
-    desktop_notifications: bool,
-    focus_audio: Option<String>,
-    #[serde(alias = "pomodoro_duration")]
-    focus_duration: u16,
-    long_break_audio: Option<String>,
-    long_break_duration: u16,
-    max_round_number: u16,
-    minimize_to_tray: bool,
-    minimize_to_tray_on_close: bool,
-    #[serde(default)]
-    muted: bool,
-    short_break_audio: Option<String>,
-    short_break_duration: u16,
-    #[serde(default)]
-    start_minimized: bool,
-    #[serde(default)]
-    system_startup_auto_start: bool,
-    #[serde(default = "default_theme")]
-    theme: String,
-    tick_sounds_during_work: bool,
-    tick_sounds_during_break: bool,
-}
-
-fn default_theme() -> String {
-    "pomotroid".to_string()
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -434,37 +401,9 @@ fn read_config_from_disk<R: Runtime>(
     config_dir_name: &str,
     app_path: &tauri::path::PathResolver<R>,
 ) -> Result<Config, Box<dyn std::error::Error>> {
-    let config_file_path = get_config_file_path(config_dir_name, app_path)?;
+    let config_dir = get_config_dir(config_dir_name, app_path)?;
 
-    let metadata = fs::metadata(&config_file_path);
-    let config_theme_dir = get_config_theme_dir(config_dir_name, app_path)?;
-    let _ = fs::create_dir_all(config_theme_dir);
-    let _ = fs::create_dir_all(app_path.app_data_dir().unwrap());
-    Ok(if metadata.is_err() {
-        // Be sure to create the directory if it doesn't exist. It seems that on Mac, the
-        // Application Support/pomodorolm directory has to be created by hand
-        let _ = fs::create_dir_all(get_config_dir(config_dir_name, app_path)?);
-
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(config_file_path)?;
-
-        let default_config = Config {
-            ..Default::default()
-        };
-
-        file.write_all(toml::to_string(&default_config)?.as_bytes())?;
-        default_config
-    } else {
-        // Open the file
-        let toml_str = fs::read_to_string(config_file_path)?;
-        let config: Config = toml::from_str(toml_str.as_str())?;
-
-        config
-    })
+    Config::get_or_create_from_disk(&config_dir, Some("config.toml".to_string()))
 }
 
 fn pomodoro_config(config: &Config) -> pomodoro::Config {
@@ -740,7 +679,7 @@ async fn load_config_and_themes(
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
     let custom_themes_path = app_handle.path().resolve(
-        format!("{}/themes/", CONFIG_DIR_NAME),
+        format!("{}/themes/", state_guard.config_dir_name),
         BaseDirectory::Config,
     );
 
