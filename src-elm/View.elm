@@ -12,8 +12,8 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (Model, Msg(..), RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText =
+dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
+dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText shortBreakText longBreakText =
     let
         remainingPercent =
             toFloat (maxTime - currentTime) / toFloat maxTime
@@ -39,13 +39,13 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText =
                             focusText
 
                         ShortBreak ->
-                            "Short break"
+                            shortBreakText
 
                         LongBreak ->
-                            "Long break"
+                            longBreakText
                     )
                 , style "color" color
-                , onInput <| UpdateFocusText
+                , onInput <| UpdateLabel sessionType
                 ]
                 []
             ]
@@ -271,12 +271,12 @@ footerView model =
 
 
 timerView : Model -> Html Msg
-timerView ({ config, strokeDasharray, theme, pomodoroState, focusText } as model) =
+timerView ({ config, strokeDasharray, theme, pomodoroState, focusText, shortBreakText, longBreakText } as model) =
     pomodoroState
         |> Maybe.map
             (\state ->
                 div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusText
+                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusText shortBreakText longBreakText
                     , playPauseView state.currentSession.status
                     , footerView model
                     ]
