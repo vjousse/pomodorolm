@@ -14,8 +14,11 @@ type alias Model =
     , currentColor : RGB
     , currentState : CurrentState
     , drawerOpen : Bool
+    , focusText : String
+    , longBreakText : String
     , pomodoroState : Maybe RustState
     , settingTab : SettingTab
+    , shortBreakText : String
     , strokeDasharray : Float
     , theme : Theme
     , themes : ListWithCurrent Theme
@@ -41,6 +44,7 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus
+    | UpdateLabel SessionType String
     | UpdateSetting SettingType String
     | UpdateVolume String
 

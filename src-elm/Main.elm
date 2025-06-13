@@ -104,8 +104,11 @@ init flags =
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
+      , focusText = "Focus"
+      , longBreakText = "Long break"
       , pomodoroState = Nothing
       , settingTab = TimerTab
+      , shortBreakText = "Short break"
       , strokeDasharray = 691.3321533203125
       , theme = theme
       , themes = EmptyListWithCurrent
@@ -570,6 +573,19 @@ update msg ({ config } as model) =
                                 )
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
+
+        UpdateLabel sessionType label ->
+            ( case sessionType of
+                Focus ->
+                    { model | focusText = label }
+
+                ShortBreak ->
+                    { model | shortBreakText = label }
+
+                LongBreak ->
+                    { model | longBreakText = label }
+            , Cmd.none
+            )
 
         UpdateSetting settingType v ->
             let

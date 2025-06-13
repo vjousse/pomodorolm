@@ -12,8 +12,8 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (Model, Msg(..), RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray theme =
+dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
+dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText shortBreakText longBreakText =
     let
         remainingPercent =
             toFloat (maxTime - currentTime) / toFloat maxTime
@@ -31,16 +31,23 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme =
         [ p [ class "dial-time" ]
             [ text <| secondsToString (maxTime - currentTime) ]
         , p [ class "dial-label", style "color" color ]
-            [ text <|
-                case sessionType of
-                    Focus ->
-                        "Focus"
+            [ input
+                [ type_ "text"
+                , value
+                    (case sessionType of
+                        Focus ->
+                            focusText
 
-                    ShortBreak ->
-                        "Short break"
+                        ShortBreak ->
+                            shortBreakText
 
-                    LongBreak ->
-                        "Long break"
+                        LongBreak ->
+                            longBreakText
+                    )
+                , style "color" color
+                , onInput <| UpdateLabel sessionType
+                ]
+                []
             ]
         , svg
             [ SvgAttr.version "1.2"
@@ -264,12 +271,12 @@ footerView model =
 
 
 timerView : Model -> Html Msg
-timerView ({ config, strokeDasharray, theme, pomodoroState } as model) =
+timerView ({ config, strokeDasharray, theme, pomodoroState, focusText, shortBreakText, longBreakText } as model) =
     pomodoroState
         |> Maybe.map
             (\state ->
                 div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme
+                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusText shortBreakText longBreakText
                     , playPauseView state.currentSession.status
                     , footerView model
                     ]
