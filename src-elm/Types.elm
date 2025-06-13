@@ -14,6 +14,7 @@ type alias Model =
     , currentColor : RGB
     , currentState : CurrentState
     , drawerOpen : Bool
+    , focusText : String
     , pomodoroState : Maybe RustState
     , settingTab : SettingTab
     , strokeDasharray : Float
@@ -41,6 +42,7 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus
+    | UpdateFocusText String
     | UpdateSetting SettingType String
     | UpdateVolume String
 

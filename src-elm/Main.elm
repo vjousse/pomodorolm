@@ -104,6 +104,7 @@ init flags =
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
+      , focusText = "Focus"
       , pomodoroState = Nothing
       , settingTab = TimerTab
       , strokeDasharray = 691.3321533203125
@@ -570,6 +571,11 @@ update msg ({ config } as model) =
                                 )
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
+
+        UpdateFocusText focusText ->
+            ( { model | focusText = focusText }
+            , Cmd.none
+            )
 
         UpdateSetting settingType v ->
             let
