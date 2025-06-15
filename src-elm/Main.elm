@@ -11,7 +11,9 @@ import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
-import View
+import View.Drawer
+import View.Nav
+import View.Timer
 
 
 main : Program Flags Model Msg
@@ -651,12 +653,12 @@ update msg ({ config } as model) =
 view : Model -> Html Msg
 view model =
     div [ id "app" ]
-        [ View.navView model
+        [ View.Nav.navView model
         , if model.drawerOpen then
-            View.drawerView model
+            View.Drawer.drawerView model
 
           else
-            View.timerView model
+            View.Timer.timerView model
         ]
 
 
