@@ -14,11 +14,11 @@ type alias Model =
     , currentColor : RGB
     , currentState : CurrentState
     , drawerOpen : Bool
-    , focusText : String
-    , longBreakText : String
+    , focusLabel : String
+    , longBreakLabel : String
     , pomodoroState : Maybe RustState
     , settingTab : SettingTab
-    , shortBreakText : String
+    , shortBreakLabel : String
     , strokeDasharray : Float
     , theme : Theme
     , themes : ListWithCurrent Theme
@@ -63,6 +63,9 @@ type alias Config =
     { alwaysOnTop : Bool
     , autoStartBreakTimer : Bool
     , autoStartWorkTimer : Bool
+    , defaultFocusLabel : String
+    , defaultLongBreakLabel : String
+    , defaultShortBreakLabel : String
     , desktopNotifications : Bool
     , focusAudio : Maybe String
     , focusDuration : Seconds

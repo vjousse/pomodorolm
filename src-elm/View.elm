@@ -13,7 +13,7 @@ import Types exposing (Model, Msg(..), RGB(..), Seconds, SessionStatus(..), Sess
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText shortBreakText longBreakText =
+dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
     let
         remainingPercent =
             toFloat (maxTime - currentTime) / toFloat maxTime
@@ -36,13 +36,13 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusText shor
                 , value
                     (case sessionType of
                         Focus ->
-                            focusText
+                            focusLabel
 
                         ShortBreak ->
-                            shortBreakText
+                            shortBreakLabel
 
                         LongBreak ->
-                            longBreakText
+                            longBreakLabel
                     )
                 , style "color" color
                 , onInput <| UpdateLabel sessionType
@@ -271,12 +271,12 @@ footerView model =
 
 
 timerView : Model -> Html Msg
-timerView ({ config, strokeDasharray, theme, pomodoroState, focusText, shortBreakText, longBreakText } as model) =
+timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
     pomodoroState
         |> Maybe.map
             (\state ->
                 div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusText shortBreakText longBreakText
+                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusLabel shortBreakLabel longBreakLabel
                     , playPauseView state.currentSession.status
                     , footerView model
                     ]

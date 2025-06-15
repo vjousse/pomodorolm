@@ -42,6 +42,9 @@ type alias Flags =
     , appVersion : String
     , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
+    , defaultFocusLabel : String
+    , defaultShortBreakLabel : String
+    , defaultLongBreakLabel : String
     , desktopNotifications : Bool
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
@@ -84,6 +87,9 @@ init flags =
             { alwaysOnTop = flags.alwaysOnTop
             , autoStartWorkTimer = flags.autoStartWorkTimer
             , autoStartBreakTimer = flags.autoStartBreakTimer
+            , defaultFocusLabel = flags.defaultFocusLabel
+            , defaultLongBreakLabel = flags.defaultLongBreakLabel
+            , defaultShortBreakLabel = flags.defaultShortBreakLabel
             , desktopNotifications = flags.desktopNotifications
             , focusAudio = Nothing
             , focusDuration = flags.focusDuration
@@ -104,11 +110,11 @@ init flags =
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
-      , focusText = "Focus"
-      , longBreakText = "Long break"
+      , focusLabel = flags.defaultFocusLabel
+      , longBreakLabel = flags.defaultLongBreakLabel
       , pomodoroState = Nothing
       , settingTab = TimerTab
-      , shortBreakText = "Short break"
+      , shortBreakLabel = flags.defaultShortBreakLabel
       , strokeDasharray = 691.3321533203125
       , theme = theme
       , themes = EmptyListWithCurrent
@@ -259,6 +265,9 @@ update msg ({ config } as model) =
                 newModel =
                     { model
                         | config = c.config
+                        , focusLabel = c.config.defaultFocusLabel
+                        , longBreakLabel = c.config.defaultLongBreakLabel
+                        , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
             in
@@ -577,13 +586,13 @@ update msg ({ config } as model) =
         UpdateLabel sessionType label ->
             ( case sessionType of
                 Focus ->
-                    { model | focusText = label }
+                    { model | focusLabel = label }
 
                 ShortBreak ->
-                    { model | shortBreakText = label }
+                    { model | shortBreakLabel = label }
 
                 LongBreak ->
-                    { model | longBreakText = label }
+                    { model | longBreakLabel = label }
             , Cmd.none
             )
 
