@@ -284,7 +284,7 @@ timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBre
         |> Maybe.withDefault
             (div
                 [ class "timer-wrapper" ]
-                [ div [] [ text "Loading state from Rust..." ], footerView model ]
+                [ div [] [ text "" ], footerView model ]
             )
 
 
@@ -746,17 +746,23 @@ drawerView model =
         [ id "drawer"
         ]
         [ case model.settingTab of
+            AboutTab ->
+                aboutSettingView model.appVersion
+
+            SettingsTab ->
+                settingsSettingView model
+
+            SoundsTab ->
+                aboutSettingView model.appVersion
+
+            TextTab ->
+                aboutSettingView model.appVersion
+
             ThemeTab ->
                 themeSettingView model
 
             TimerTab ->
                 timerSettingView model
-
-            SettingsTab ->
-                settingsSettingView model
-
-            AboutTab ->
-                aboutSettingView model.appVersion
         , div
             [ class "drawer-menu"
             ]
@@ -874,6 +880,160 @@ drawerView model =
                     ]
                 ]
             , div
+                [ title "Sounds"
+                , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == SoundsTab then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab SoundsTab
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ div
+                        [ class "icon-wrapper"
+                        ]
+                        [ svg
+                            [ SvgAttr.version "1.2"
+                            , SvgAttr.id "Layer_1"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "0 0 12.3 12"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.height "4vw"
+                            , SvgAttr.class "icon--mute"
+                            , SvgAttr.baseProfile "tiny"
+                            ]
+                            [ path
+                                [ SvgAttr.fill "var(--color-background-lightest)"
+                                , SvgAttr.d "M0,3.9v4.1h2.7l3.4,3.4V0.5L2.7,3.9H0z M9.2,6c0-1.2-0.7-2.3-1.7-2.8v5.5C8.5,8.3,9.2,7.2,9.2,6z M7.5,0v1.4 c2,0.6,3.4,2.4,3.4,4.6s-1.4,4-3.4,4.6V12c2.7-0.6,4.8-3.1,4.8-6S10.3,0.6,7.5,0z"
+                                ]
+                                []
+                            ]
+                        ]
+                    ]
+                ]
+            , div
+                [ title "Text"
+                , class "drawer-menu-wrapper"
+                , class
+                    (if model.settingTab == TextTab then
+                        "is-active"
+
+                     else
+                        ""
+                    )
+                , onClick <| ChangeSettingTab TextTab
+                ]
+                [ div
+                    [ class "drawer-menu-button"
+                    ]
+                    [ div
+                        [ class "icon-wrapper"
+                        ]
+                        [ svg
+                            [ SvgAttr.version "1.1"
+                            , SvgAttr.id "Icons"
+                            , SvgAttr.width "6.6vw"
+                            , SvgAttr.height "6.6vw"
+                            , SvgAttr.viewBox "0 0 32 32"
+                            , SvgAttr.class "icon"
+                            , SvgAttr.xmlSpace "preserve"
+                            ]
+                            [ Svg.style
+                                [ SvgAttr.type_ "text/css"
+                                ]
+                                [ text " .st0{fill:var(--color-background-lightest);stroke:var(--color-background-lightest);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;} " ]
+                            , Svg.circle
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.cx "6"
+                                , SvgAttr.cy "6"
+                                , SvgAttr.r "3"
+                                ]
+                                []
+                            , Svg.circle
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.cx "26"
+                                , SvgAttr.cy "6"
+                                , SvgAttr.r "3"
+                                ]
+                                []
+                            , Svg.circle
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.cx "6"
+                                , SvgAttr.cy "26"
+                                , SvgAttr.r "3"
+                                ]
+                                []
+                            , Svg.circle
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.cx "26"
+                                , SvgAttr.cy "26"
+                                , SvgAttr.r "3"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "6"
+                                , SvgAttr.y1 "9"
+                                , SvgAttr.x2 "6"
+                                , SvgAttr.y2 "23"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "26"
+                                , SvgAttr.y1 "9"
+                                , SvgAttr.x2 "26"
+                                , SvgAttr.y2 "23"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "9"
+                                , SvgAttr.y1 "26"
+                                , SvgAttr.x2 "23"
+                                , SvgAttr.y2 "26"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "9"
+                                , SvgAttr.y1 "6"
+                                , SvgAttr.x2 "23"
+                                , SvgAttr.y2 "6"
+                                ]
+                                []
+                            , Svg.polyline
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.points "11,13 11,11 21,11 21,13 "
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "14"
+                                , SvgAttr.y1 "21"
+                                , SvgAttr.x2 "18"
+                                , SvgAttr.y2 "21"
+                                ]
+                                []
+                            , Svg.line
+                                [ SvgAttr.class "st0"
+                                , SvgAttr.x1 "16"
+                                , SvgAttr.y1 "21"
+                                , SvgAttr.x2 "16"
+                                , SvgAttr.y2 "11"
+                                ]
+                                []
+                            ]
+                        ]
+                    ]
+                ]
+            , div
                 [ title "About"
                 , class "drawer-menu-wrapper"
                 , class
@@ -886,7 +1046,7 @@ drawerView model =
                 , onClick <| ChangeSettingTab AboutTab
                 ]
                 [ div
-                    [ class "Drawer-menu-button"
+                    [ class "drawer-menu-button"
                     ]
                     [ div
                         [ class "icon-wrapper"

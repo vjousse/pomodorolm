@@ -121,6 +121,8 @@ type SettingTab
     = TimerTab
     | ThemeTab
     | SettingsTab
+    | SoundsTab
+    | TextTab
     | AboutTab
 
 
