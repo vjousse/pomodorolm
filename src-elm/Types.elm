@@ -14,8 +14,11 @@ type alias Model =
     , currentColor : RGB
     , currentState : CurrentState
     , drawerOpen : Bool
+    , focusLabel : String
+    , longBreakLabel : String
     , pomodoroState : Maybe RustState
     , settingTab : SettingTab
+    , shortBreakLabel : String
     , strokeDasharray : Float
     , theme : Theme
     , themes : ListWithCurrent Theme
@@ -41,6 +44,7 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus
+    | UpdateLabel SessionType String
     | UpdateSetting SettingType String
     | UpdateVolume String
 
@@ -59,6 +63,9 @@ type alias Config =
     { alwaysOnTop : Bool
     , autoStartBreakTimer : Bool
     , autoStartWorkTimer : Bool
+    , defaultFocusLabel : String
+    , defaultLongBreakLabel : String
+    , defaultShortBreakLabel : String
     , desktopNotifications : Bool
     , focusAudio : Maybe String
     , focusDuration : Seconds
@@ -114,6 +121,8 @@ type SettingTab
     = TimerTab
     | ThemeTab
     | SettingsTab
+    | SoundsTab
+    | TextTab
     | AboutTab
 
 

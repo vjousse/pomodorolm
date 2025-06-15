@@ -11,7 +11,9 @@ import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
-import View
+import View.Drawer
+import View.Nav
+import View.Timer
 
 
 main : Program Flags Model Msg
@@ -42,6 +44,9 @@ type alias Flags =
     , appVersion : String
     , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
+    , defaultFocusLabel : String
+    , defaultShortBreakLabel : String
+    , defaultLongBreakLabel : String
     , desktopNotifications : Bool
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
@@ -84,6 +89,9 @@ init flags =
             { alwaysOnTop = flags.alwaysOnTop
             , autoStartWorkTimer = flags.autoStartWorkTimer
             , autoStartBreakTimer = flags.autoStartBreakTimer
+            , defaultFocusLabel = flags.defaultFocusLabel
+            , defaultLongBreakLabel = flags.defaultLongBreakLabel
+            , defaultShortBreakLabel = flags.defaultShortBreakLabel
             , desktopNotifications = flags.desktopNotifications
             , focusAudio = Nothing
             , focusDuration = flags.focusDuration
@@ -104,8 +112,11 @@ init flags =
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
+      , focusLabel = flags.defaultFocusLabel
+      , longBreakLabel = flags.defaultLongBreakLabel
       , pomodoroState = Nothing
       , settingTab = TimerTab
+      , shortBreakLabel = flags.defaultShortBreakLabel
       , strokeDasharray = 691.3321533203125
       , theme = theme
       , themes = EmptyListWithCurrent
@@ -256,6 +267,9 @@ update msg ({ config } as model) =
                 newModel =
                     { model
                         | config = c.config
+                        , focusLabel = c.config.defaultFocusLabel
+                        , longBreakLabel = c.config.defaultLongBreakLabel
+                        , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
             in
@@ -571,6 +585,19 @@ update msg ({ config } as model) =
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
 
+        UpdateLabel sessionType label ->
+            ( case sessionType of
+                Focus ->
+                    { model | focusLabel = label }
+
+                ShortBreak ->
+                    { model | shortBreakLabel = label }
+
+                LongBreak ->
+                    { model | longBreakLabel = label }
+            , Cmd.none
+            )
+
         UpdateSetting settingType v ->
             let
                 value =
@@ -626,12 +653,12 @@ update msg ({ config } as model) =
 view : Model -> Html Msg
 view model =
     div [ id "app" ]
-        [ View.navView model
+        [ View.Nav.navView model
         , if model.drawerOpen then
-            View.drawerView model
+            View.Drawer.drawerView model
 
           else
-            View.timerView model
+            View.Timer.timerView model
         ]
 
 

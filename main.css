@@ -145,8 +145,22 @@ body {
   letter-spacing: 0.1em;
   position: absolute;
   top: 66%;
-  text-transform: uppercase;
+  z-index: 1000;
 }
+.dial-label input {
+  background-color: var(--color-background);
+  border: none;
+  text-transform: uppercase;
+  width: 8rem;
+  text-align: center;
+
+  font-size: 1.1rem;
+}
+
+input:focus {
+  outline: 0;
+}
+
 .dial-bg {
   stroke: var(--color-background-lightest);
 }

@@ -54,6 +54,9 @@ configDecoder =
         |> Pipe.required "always_on_top" Decode.bool
         |> Pipe.required "auto_start_break_timer" Decode.bool
         |> Pipe.required "auto_start_work_timer" Decode.bool
+        |> Pipe.required "default_focus_label" Decode.string
+        |> Pipe.required "default_long_break_label" Decode.string
+        |> Pipe.required "default_short_break_label" Decode.string
         |> Pipe.required "desktop_notifications" Decode.bool
         |> Pipe.optional "focus_audio" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "focus_duration" Decode.int
