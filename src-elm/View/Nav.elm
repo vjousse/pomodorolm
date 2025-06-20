@@ -5,7 +5,7 @@ import Html.Attributes exposing (attribute, class, style, title)
 import Html.Events exposing (onClick)
 import Svg exposing (svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model, Msg(..), RGB(..), SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Model, Msg(..))
 
 
 navView : Model -> Html Msg

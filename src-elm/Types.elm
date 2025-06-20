@@ -31,7 +31,6 @@ type Msg
     = AudioFileRequested SessionType
     | CloseWindow
     | ChangeSettingTab SettingTab
-    | ChangeSettingConfig Setting
     | ChangeTheme Theme
     | HideVolumeBar
     | ProcessExternalMessage ExternalMessage
@@ -45,7 +44,7 @@ type Msg
     | ToggleMute
     | TogglePlayStatus
     | UpdateLabel SessionType String
-    | UpdateSetting SettingType String
+    | UpdateSetting SettingType
     | UpdateVolume String
 
 
@@ -148,10 +147,12 @@ type alias Defaults =
 
 
 type SettingType
-    = FocusTime
-    | LongBreakTime
-    | Rounds
-    | ShortBreakTime
+    = FocusTime String
+    | Label SessionType String
+    | LongBreakTime String
+    | Rounds String
+    | ShortBreakTime String
+    | Toggle Setting
 
 
 type alias RustSession =

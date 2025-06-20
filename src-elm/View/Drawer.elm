@@ -6,7 +6,86 @@ import Html.Events exposing (onClick, onInput)
 import ListWithCurrent
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model, Msg(..), RGB(..), SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Model, Msg(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
+
+
+settingWrapper : String -> Msg -> Bool -> Html Msg
+settingWrapper title msg settingActive =
+    div
+        [ class "setting-wrapper"
+        , onClick msg
+        ]
+        [ p [ class "setting-title" ] [ text title ]
+        , div
+            [ class "checkbox"
+            , class <|
+                if settingActive then
+                    "is-active"
+
+                else
+                    "is-inactive"
+            ]
+            []
+        ]
+
+
+audioFileWrapper : Maybe String -> SessionType -> String -> Html Msg
+audioFileWrapper audioFile sessionType soundTitle =
+    div [ class "setting-wrapper-multi" ]
+        [ div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text soundTitle ], text " start sound" ]
+            , p [ class "setting-title" ]
+                [ a
+                    [ class
+                        ("setting-button left"
+                            ++ (case audioFile of
+                                    Nothing ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    , title "Reset to default sound"
+                    , onClick <| ResetAudioFile sessionType
+                    ]
+                    [ text "default" ]
+                , a
+                    [ class
+                        ("setting-button right"
+                            ++ (case audioFile of
+                                    Just _ ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    , title "Choose custom sound"
+                    , onClick <| AudioFileRequested sessionType
+                    ]
+                    [ text "custom" ]
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title" ]
+                [ span []
+                    [ text
+                        (case audioFile of
+                            Just fileName ->
+                                "Using custom " ++ fileName
+
+                            Nothing ->
+                                "Using default"
+                        )
+                    ]
+                ]
+            ]
+        ]
 
 
 drawerView : Model -> Html Msg
@@ -22,10 +101,10 @@ drawerView model =
                 settingsSettingView model
 
             SoundsTab ->
-                aboutSettingView model.appVersion
+                soundsSettingView model
 
             TextTab ->
-                aboutSettingView model.appVersion
+                textSettingView model
 
             ThemeTab ->
                 themeSettingView model
@@ -289,7 +368,7 @@ timerSettingView model =
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
                     , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
-                    , onInput <| UpdateSetting FocusTime
+                    , onInput <| FocusTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
                     ]
                     []
@@ -305,7 +384,7 @@ timerSettingView model =
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
                     , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
-                    , onInput <| UpdateSetting FocusTime
+                    , onInput <| FocusTime >> UpdateSetting
                     ]
                     []
                 , div
@@ -331,7 +410,7 @@ timerSettingView model =
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
                     , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
-                    , onInput <| UpdateSetting ShortBreakTime
+                    , onInput <| ShortBreakTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)) ++ "ch"
                     ]
                     []
@@ -347,7 +426,7 @@ timerSettingView model =
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
                     , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
-                    , onInput <| UpdateSetting ShortBreakTime
+                    , onInput <| ShortBreakTime >> UpdateSetting
                     ]
                     []
                 , div
@@ -373,7 +452,7 @@ timerSettingView model =
                     , Html.Attributes.min "1"
                     , Html.Attributes.max "90"
                     , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
-                    , onInput <| UpdateSetting LongBreakTime
+                    , onInput <| LongBreakTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.longBreakDuration / 60)) ++ "ch"
                     ]
                     []
@@ -389,7 +468,7 @@ timerSettingView model =
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
                     , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
-                    , onInput <| UpdateSetting LongBreakTime
+                    , onInput <| LongBreakTime >> UpdateSetting
                     ]
                     []
                 , div
@@ -416,7 +495,7 @@ timerSettingView model =
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
                     , value <| String.fromInt model.config.maxRoundNumber
-                    , onInput <| UpdateSetting Rounds
+                    , onInput <| Rounds >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromInt model.config.maxRoundNumber) ++ "ch"
                     ]
                     []
@@ -431,7 +510,7 @@ timerSettingView model =
                     , Html.Attributes.step "1"
                     , class "slider"
                     , value <| String.fromInt model.config.maxRoundNumber
-                    , onInput <| UpdateSetting Rounds
+                    , onInput <| Rounds >> UpdateSetting
                     ]
                     []
                 , div
@@ -455,103 +534,109 @@ timerSettingView model =
 
 settingsSettingView : Model -> Html Msg
 settingsSettingView model =
-    let
-        settingWrapper : String -> Msg -> Bool -> Html Msg
-        settingWrapper title msg settingActive =
-            div
-                [ class "setting-wrapper"
-                , onClick msg
-                ]
-                [ p [ class "setting-title" ] [ text title ]
-                , div
-                    [ class "checkbox"
-                    , class <|
-                        if settingActive then
-                            "is-active"
-
-                        else
-                            "is-inactive"
-                    ]
-                    []
-                ]
-
-        audioFileWrapper : Maybe String -> SessionType -> String -> Html Msg
-        audioFileWrapper audioFile sessionType soundTitle =
-            div [ class "setting-wrapper-multi" ]
-                [ div
-                    [ class "setting-wrapper"
-                    ]
-                    [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text soundTitle ], text " start sound" ]
-                    , p [ class "setting-title" ]
-                        [ a
-                            [ class
-                                ("setting-button left"
-                                    ++ (case audioFile of
-                                            Nothing ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            , title "Reset to default sound"
-                            , onClick <| ResetAudioFile sessionType
-                            ]
-                            [ text "default" ]
-                        , a
-                            [ class
-                                ("setting-button right"
-                                    ++ (case audioFile of
-                                            Just _ ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            , title "Choose custom sound"
-                            , onClick <| AudioFileRequested sessionType
-                            ]
-                            [ text "custom" ]
-                        ]
-                    ]
-                , div
-                    [ class "setting-wrapper"
-                    ]
-                    [ p [ class "setting-title" ]
-                        [ span []
-                            [ text
-                                (case audioFile of
-                                    Just fileName ->
-                                        "Using custom " ++ fileName
-
-                                    Nothing ->
-                                        "Using default"
-                                )
-                            ]
-                        ]
-                    ]
-                ]
-    in
     div [ class "container", id "settings" ]
         [ p
             [ class "drawer-heading"
             ]
             [ text "General Settings" ]
-        , settingWrapper "Always On Top" (ChangeSettingConfig AlwaysOnTop) model.config.alwaysOnTop
-        , settingWrapper "Auto-start Work Timer" (ChangeSettingConfig AutoStartWorkTimer) model.config.autoStartWorkTimer
-        , settingWrapper "Auto-start Break Timer" (ChangeSettingConfig AutoStartBreakTimer) model.config.autoStartBreakTimer
-        , settingWrapper "Auto-start the app on system startup" (ChangeSettingConfig SystemStartupAutoStart) model.config.systemStartupAutoStart
-        , settingWrapper "Desktop Notifications" (ChangeSettingConfig DesktopNotifications) model.config.desktopNotifications
-        , settingWrapper "Minimize to Tray" (ChangeSettingConfig MinimizeToTray) model.config.minimizeToTray
-        , settingWrapper "Minimize to Tray on Close" (ChangeSettingConfig MinimizeToTrayOnClose) model.config.minimizeToTrayOnClose
-        , settingWrapper "Start minimized to Tray" (ChangeSettingConfig StartMinimized) model.config.startMinimized
-        , p [ class "drawer-heading" ] [ text "Sound Settings" ]
-        , settingWrapper "Tick Sounds - Break" (ChangeSettingConfig TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
-        , settingWrapper "Tick Sounds - Work" (ChangeSettingConfig TickSoundsDuringWork) model.config.tickSoundsDuringWork
+        , settingWrapper "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) model.config.alwaysOnTop
+        , settingWrapper "Auto-start Work Timer" (UpdateSetting <| Toggle AutoStartWorkTimer) model.config.autoStartWorkTimer
+        , settingWrapper "Auto-start Break Timer" (UpdateSetting <| Toggle AutoStartBreakTimer) model.config.autoStartBreakTimer
+        , settingWrapper "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) model.config.systemStartupAutoStart
+        , settingWrapper "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) model.config.desktopNotifications
+        , settingWrapper "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) model.config.minimizeToTray
+        , settingWrapper "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) model.config.minimizeToTrayOnClose
+        , settingWrapper "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) model.config.startMinimized
+        ]
+
+
+soundsSettingView : Model -> Html Msg
+soundsSettingView model =
+    div [ class "container", id "sound-settings" ]
+        [ p
+            [ class "drawer-heading"
+            ]
+            [ text "Sound Settings" ]
+        , settingWrapper "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
+        , settingWrapper "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) model.config.tickSoundsDuringWork
         , audioFileWrapper model.config.shortBreakAudio ShortBreak "Short break"
         , audioFileWrapper model.config.longBreakAudio LongBreak "Long break"
         , audioFileWrapper model.config.focusAudio Focus "Work session"
+        ]
+
+
+textSettingView : Model -> Html Msg
+textSettingView model =
+    div [ class "container", id "text-settings" ]
+        [ p
+            [ class "drawer-heading"
+            ]
+            [ text "Text Settings" ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Default focus label" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , value model.config.defaultFocusLabel
+                    , onInput <| Label Focus >> UpdateSetting
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Default short break label" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , value model.config.defaultShortBreakLabel
+                    , onInput <| Label ShortBreak >> UpdateSetting
+
+                    -- , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
+                    ]
+                    []
+
+                -- , text ":00"
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p
+                [ class "setting-title"
+                ]
+                [ text "Default long break label" ]
+            , p
+                [ class "setting-value"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-input"
+                    , value model.config.defaultLongBreakLabel
+                    , onInput <| Label LongBreak >> UpdateSetting
+
+                    -- , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
+                    ]
+                    []
+
+                -- , text ":00"
+                ]
+            ]
         ]
 
 

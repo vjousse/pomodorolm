@@ -146,44 +146,6 @@ update msg ({ config } as model) =
                 )
             )
 
-        ChangeSettingConfig settingConfig ->
-            let
-                newSettingsConfig =
-                    case settingConfig of
-                        AlwaysOnTop ->
-                            { config | alwaysOnTop = not config.alwaysOnTop }
-
-                        AutoStartBreakTimer ->
-                            { config | autoStartBreakTimer = not config.autoStartBreakTimer }
-
-                        AutoStartWorkTimer ->
-                            { config | autoStartWorkTimer = not config.autoStartWorkTimer }
-
-                        DesktopNotifications ->
-                            { config | desktopNotifications = not config.desktopNotifications }
-
-                        MinimizeToTray ->
-                            { config | minimizeToTray = not config.minimizeToTray }
-
-                        MinimizeToTrayOnClose ->
-                            { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
-
-                        StartMinimized ->
-                            { config | startMinimized = not config.startMinimized }
-
-                        SystemStartupAutoStart ->
-                            { config | systemStartupAutoStart = not config.systemStartupAutoStart }
-
-                        TickSoundsDuringWork ->
-                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
-
-                        TickSoundsDuringBreak ->
-                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
-            in
-            ( { model | config = newSettingsConfig }
-            , updateConfig newSettingsConfig
-            )
-
         ChangeSettingTab settingTab ->
             ( { model | settingTab = settingTab }, Cmd.none )
 
@@ -598,10 +560,10 @@ update msg ({ config } as model) =
             , Cmd.none
             )
 
-        UpdateSetting settingType v ->
+        UpdateSetting settingType ->
             let
-                value =
-                    case String.toInt v of
+                toInt value =
+                    case String.toInt value of
                         Nothing ->
                             0
 
@@ -610,17 +572,60 @@ update msg ({ config } as model) =
 
                 newConfig =
                     case settingType of
-                        FocusTime ->
-                            { config | focusDuration = min (90 * 60) (value * 60) }
+                        FocusTime value ->
+                            { config | focusDuration = min (90 * 60) (toInt value * 60) }
 
-                        LongBreakTime ->
-                            { config | longBreakDuration = min (90 * 60) (value * 60) }
+                        Label sessionType label ->
+                            case sessionType of
+                                Focus ->
+                                    { config | defaultFocusLabel = label }
 
-                        Rounds ->
-                            { config | maxRoundNumber = min 12 value }
+                                ShortBreak ->
+                                    { config | defaultShortBreakLabel = label }
 
-                        ShortBreakTime ->
-                            { config | shortBreakDuration = min (90 * 60) (value * 60) }
+                                LongBreak ->
+                                    { config | defaultLongBreakLabel = label }
+
+                        LongBreakTime value ->
+                            { config | longBreakDuration = min (90 * 60) (toInt value * 60) }
+
+                        Rounds value ->
+                            { config | maxRoundNumber = min 12 (toInt value) }
+
+                        ShortBreakTime value ->
+                            { config | shortBreakDuration = min (90 * 60) (toInt value * 60) }
+
+                        Toggle value ->
+                            case value of
+                                AlwaysOnTop ->
+                                    { config | alwaysOnTop = not config.alwaysOnTop }
+
+                                AutoStartBreakTimer ->
+                                    { config | autoStartBreakTimer = not config.autoStartBreakTimer }
+
+                                AutoStartWorkTimer ->
+                                    { config | autoStartWorkTimer = not config.autoStartWorkTimer }
+
+                                DesktopNotifications ->
+                                    { config | desktopNotifications = not config.desktopNotifications }
+
+                                MinimizeToTray ->
+                                    { config | minimizeToTray = not config.minimizeToTray }
+
+                                MinimizeToTrayOnClose ->
+                                    { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
+
+                                StartMinimized ->
+                                    { config | startMinimized = not config.startMinimized }
+
+                                SystemStartupAutoStart ->
+                                    { config | systemStartupAutoStart = not config.systemStartupAutoStart }
+
+                                TickSoundsDuringWork ->
+                                    { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
+
+                                TickSoundsDuringBreak ->
+                                    { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
             in
             ( { model | config = newConfig }
             , Cmd.batch
