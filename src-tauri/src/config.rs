@@ -9,6 +9,13 @@ pub struct Config {
     pub always_on_top: bool,
     pub auto_start_work_timer: bool,
     pub auto_start_break_timer: bool,
+
+    #[serde(default = "default_focus_label")]
+    pub default_focus_label: String,
+    #[serde(default = "default_long_break_label")]
+    pub default_long_break_label: String,
+    #[serde(default = "default_short_break_label")]
+    pub default_short_break_label: String,
     pub desktop_notifications: bool,
     pub focus_audio: Option<String>,
     #[serde(alias = "pomodoro_duration")]
@@ -32,6 +39,15 @@ pub struct Config {
     pub tick_sounds_during_break: bool,
 }
 
+fn default_focus_label() -> String {
+    "Focus".to_string()
+}
+fn default_long_break_label() -> String {
+    "Long break".to_string()
+}
+fn default_short_break_label() -> String {
+    "Short break".to_string()
+}
 fn default_theme() -> String {
     "pomotroid".to_string()
 }
@@ -82,6 +98,9 @@ impl Default for Config {
             always_on_top: true,
             auto_start_work_timer: true,
             auto_start_break_timer: true,
+            default_focus_label: "Focus".to_string(),
+            default_long_break_label: "Long break".to_string(),
+            default_short_break_label: "Short break".to_string(),
             desktop_notifications: true,
             focus_audio: None,
             focus_duration: 25 * 60,

@@ -14,8 +14,11 @@ type alias Model =
     , currentColor : RGB
     , currentState : CurrentState
     , drawerOpen : Bool
+    , focusLabel : String
+    , longBreakLabel : String
     , pomodoroState : Maybe RustState
     , settingTab : SettingTab
+    , shortBreakLabel : String
     , strokeDasharray : Float
     , theme : Theme
     , themes : ListWithCurrent Theme
@@ -28,7 +31,6 @@ type Msg
     = AudioFileRequested SessionType
     | CloseWindow
     | ChangeSettingTab SettingTab
-    | ChangeSettingConfig Setting
     | ChangeTheme Theme
     | HideVolumeBar
     | ProcessExternalMessage ExternalMessage
@@ -41,7 +43,8 @@ type Msg
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus
-    | UpdateSetting SettingType String
+    | UpdateLabel SessionType String
+    | UpdateSetting SettingType
     | UpdateVolume String
 
 
@@ -59,6 +62,9 @@ type alias Config =
     { alwaysOnTop : Bool
     , autoStartBreakTimer : Bool
     , autoStartWorkTimer : Bool
+    , defaultFocusLabel : String
+    , defaultLongBreakLabel : String
+    , defaultShortBreakLabel : String
     , desktopNotifications : Bool
     , focusAudio : Maybe String
     , focusDuration : Seconds
@@ -114,6 +120,8 @@ type SettingTab
     = TimerTab
     | ThemeTab
     | SettingsTab
+    | SoundsTab
+    | TextTab
     | AboutTab
 
 
@@ -139,10 +147,12 @@ type alias Defaults =
 
 
 type SettingType
-    = FocusTime
-    | LongBreakTime
-    | Rounds
-    | ShortBreakTime
+    = FocusTime String
+    | Label SessionType String
+    | LongBreakTime String
+    | Rounds String
+    | ShortBreakTime String
+    | Toggle Setting
 
 
 type alias RustSession =
