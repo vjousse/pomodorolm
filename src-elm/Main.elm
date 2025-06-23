@@ -11,7 +11,9 @@ import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
-import View
+import View.Drawer
+import View.Nav
+import View.Timer
 
 
 main : Program Flags Model Msg
@@ -42,6 +44,9 @@ type alias Flags =
     , appVersion : String
     , autoStartWorkTimer : Bool
     , autoStartBreakTimer : Bool
+    , defaultFocusLabel : String
+    , defaultShortBreakLabel : String
+    , defaultLongBreakLabel : String
     , desktopNotifications : Bool
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
@@ -84,6 +89,9 @@ init flags =
             { alwaysOnTop = flags.alwaysOnTop
             , autoStartWorkTimer = flags.autoStartWorkTimer
             , autoStartBreakTimer = flags.autoStartBreakTimer
+            , defaultFocusLabel = flags.defaultFocusLabel
+            , defaultLongBreakLabel = flags.defaultLongBreakLabel
+            , defaultShortBreakLabel = flags.defaultShortBreakLabel
             , desktopNotifications = flags.desktopNotifications
             , focusAudio = Nothing
             , focusDuration = flags.focusDuration
@@ -104,8 +112,11 @@ init flags =
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
+      , focusLabel = flags.defaultFocusLabel
+      , longBreakLabel = flags.defaultLongBreakLabel
       , pomodoroState = Nothing
       , settingTab = TimerTab
+      , shortBreakLabel = flags.defaultShortBreakLabel
       , strokeDasharray = 691.3321533203125
       , theme = theme
       , themes = EmptyListWithCurrent
@@ -133,44 +144,6 @@ update msg ({ config } as model) =
                     , value = Just <| sessionTypeToString sessionType
                     }
                 )
-            )
-
-        ChangeSettingConfig settingConfig ->
-            let
-                newSettingsConfig =
-                    case settingConfig of
-                        AlwaysOnTop ->
-                            { config | alwaysOnTop = not config.alwaysOnTop }
-
-                        AutoStartBreakTimer ->
-                            { config | autoStartBreakTimer = not config.autoStartBreakTimer }
-
-                        AutoStartWorkTimer ->
-                            { config | autoStartWorkTimer = not config.autoStartWorkTimer }
-
-                        DesktopNotifications ->
-                            { config | desktopNotifications = not config.desktopNotifications }
-
-                        MinimizeToTray ->
-                            { config | minimizeToTray = not config.minimizeToTray }
-
-                        MinimizeToTrayOnClose ->
-                            { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
-
-                        StartMinimized ->
-                            { config | startMinimized = not config.startMinimized }
-
-                        SystemStartupAutoStart ->
-                            { config | systemStartupAutoStart = not config.systemStartupAutoStart }
-
-                        TickSoundsDuringWork ->
-                            { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
-
-                        TickSoundsDuringBreak ->
-                            { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
-            in
-            ( { model | config = newSettingsConfig }
-            , updateConfig newSettingsConfig
             )
 
         ChangeSettingTab settingTab ->
@@ -256,6 +229,9 @@ update msg ({ config } as model) =
                 newModel =
                     { model
                         | config = c.config
+                        , focusLabel = c.config.defaultFocusLabel
+                        , longBreakLabel = c.config.defaultLongBreakLabel
+                        , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
             in
@@ -571,10 +547,23 @@ update msg ({ config } as model) =
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
 
-        UpdateSetting settingType v ->
+        UpdateLabel sessionType label ->
+            ( case sessionType of
+                Focus ->
+                    { model | focusLabel = label }
+
+                ShortBreak ->
+                    { model | shortBreakLabel = label }
+
+                LongBreak ->
+                    { model | longBreakLabel = label }
+            , Cmd.none
+            )
+
+        UpdateSetting settingType ->
             let
-                value =
-                    case String.toInt v of
+                toInt value =
+                    case String.toInt value of
                         Nothing ->
                             0
 
@@ -583,17 +572,60 @@ update msg ({ config } as model) =
 
                 newConfig =
                     case settingType of
-                        FocusTime ->
-                            { config | focusDuration = min (90 * 60) (value * 60) }
+                        FocusTime value ->
+                            { config | focusDuration = min (90 * 60) (toInt value * 60) }
 
-                        LongBreakTime ->
-                            { config | longBreakDuration = min (90 * 60) (value * 60) }
+                        Label sessionType label ->
+                            case sessionType of
+                                Focus ->
+                                    { config | defaultFocusLabel = label }
 
-                        Rounds ->
-                            { config | maxRoundNumber = min 12 value }
+                                ShortBreak ->
+                                    { config | defaultShortBreakLabel = label }
 
-                        ShortBreakTime ->
-                            { config | shortBreakDuration = min (90 * 60) (value * 60) }
+                                LongBreak ->
+                                    { config | defaultLongBreakLabel = label }
+
+                        LongBreakTime value ->
+                            { config | longBreakDuration = min (90 * 60) (toInt value * 60) }
+
+                        Rounds value ->
+                            { config | maxRoundNumber = min 12 (toInt value) }
+
+                        ShortBreakTime value ->
+                            { config | shortBreakDuration = min (90 * 60) (toInt value * 60) }
+
+                        Toggle value ->
+                            case value of
+                                AlwaysOnTop ->
+                                    { config | alwaysOnTop = not config.alwaysOnTop }
+
+                                AutoStartBreakTimer ->
+                                    { config | autoStartBreakTimer = not config.autoStartBreakTimer }
+
+                                AutoStartWorkTimer ->
+                                    { config | autoStartWorkTimer = not config.autoStartWorkTimer }
+
+                                DesktopNotifications ->
+                                    { config | desktopNotifications = not config.desktopNotifications }
+
+                                MinimizeToTray ->
+                                    { config | minimizeToTray = not config.minimizeToTray }
+
+                                MinimizeToTrayOnClose ->
+                                    { config | minimizeToTrayOnClose = not config.minimizeToTrayOnClose }
+
+                                StartMinimized ->
+                                    { config | startMinimized = not config.startMinimized }
+
+                                SystemStartupAutoStart ->
+                                    { config | systemStartupAutoStart = not config.systemStartupAutoStart }
+
+                                TickSoundsDuringWork ->
+                                    { config | tickSoundsDuringWork = not config.tickSoundsDuringWork }
+
+                                TickSoundsDuringBreak ->
+                                    { config | tickSoundsDuringBreak = not config.tickSoundsDuringBreak }
             in
             ( { model | config = newConfig }
             , Cmd.batch
@@ -626,12 +658,12 @@ update msg ({ config } as model) =
 view : Model -> Html Msg
 view model =
     div [ id "app" ]
-        [ View.navView model
+        [ View.Nav.navView model
         , if model.drawerOpen then
-            View.drawerView model
+            View.Drawer.drawerView model
 
           else
-            View.timerView model
+            View.Timer.timerView model
         ]
 
 

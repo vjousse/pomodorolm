@@ -145,8 +145,22 @@ body {
   letter-spacing: 0.1em;
   position: absolute;
   top: 66%;
-  text-transform: uppercase;
+  z-index: 1000;
 }
+.dial-label input {
+  background-color: var(--color-background);
+  border: none;
+  text-transform: uppercase;
+  width: 8rem;
+  text-align: center;
+
+  font-size: 1.1rem;
+}
+
+input:focus {
+  outline: 0;
+}
+
 .dial-bg {
   stroke: var(--color-background-lightest);
 }
@@ -393,6 +407,19 @@ input[type="range"]::-webkit-slider-thumb {
   margin: 3.3vw 0;
 }
 
+#text-settings .setting-wrapper {
+  text-align: left;
+}
+
+#text-settings .setting-value {
+  display: block;
+  margin-top: 1.6vw;
+}
+
+#text-settings .setting-value input {
+  width: 100%;
+}
+
 .setting-title {
   color: var(--color-foreground-darker);
   font-size: 0.7rem;
@@ -475,7 +502,8 @@ input[type="range"]::-webkit-slider-thumb {
   border-color: var(--color-background-lightest);
 }
 
-#settings .setting-wrapper {
+#settings .setting-wrapper,
+#sound-settings .setting-wrapper {
   background-color: var(--color-background);
   border-radius: 1.1vw;
   display: flex;
@@ -485,7 +513,8 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
 
-#settings .setting-button {
+#settings .setting-button,
+#sound-settings .setting-button {
   color: var(--color-foreground);
   background-color: var(--color-background);
   cursor: pointer;
@@ -495,28 +524,32 @@ input[type="range"]::-webkit-slider-thumb {
   font-size: 0.7rem;
 }
 
-#settings .setting-button.active {
+#settings .setting-button.active,
+#sound-settings .setting-button.active {
   color: var(--color-accent);
   font-weight: bold;
   border-bottom: 1.2vw solid var(--color-accent);
   cursor: default;
 }
 
-#settings .setting-button.left {
+#settings .setting-button.left,
+#sound-settings .setting-button.left {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   border-right: none;
   margin-right: 0.3rem;
 }
 
-#settings .setting-button.right {
+#settings .setting-button.right,
+#sound-settings .setting-button.right {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   border-left: none;
   margin-left: 0.3rem;
 }
 
-#settings .setting-wrapper-multi {
+#settings .setting-wrapper-multi,
+#sound-settings .setting-wrapper-multi {
   background-color: var(--color-background);
   border-radius: 1.1vw;
   justify-content: space-between;
@@ -524,7 +557,8 @@ input[type="range"]::-webkit-slider-thumb {
   padding: 3.3vw;
 }
 
-#settings .setting-wrapper-multi .setting-wrapper {
+#settings .setting-wrapper-multi .setting-wrapper,
+#sound-settings .setting-wrapper-multi .setting-wrapper {
   margin: 0;
   padding: 0;
   cursor: default;

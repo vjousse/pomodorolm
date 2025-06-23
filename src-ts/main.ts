@@ -71,6 +71,9 @@ type ElmConfig = {
   alwaysOnTop: boolean;
   autoStartWorkTimer: boolean;
   autoStartBreakTimer: boolean;
+  defaultFocusLabel: string;
+  defaultLongBreakLabel: string;
+  defaultShortBreakLabel: string;
   desktopNotifications: boolean;
   focusAudio: string | null;
   focusDuration: number;
@@ -93,6 +96,9 @@ type RustConfig = {
   always_on_top: boolean;
   auto_start_work_timer: boolean;
   auto_start_break_timer: boolean;
+  default_focus_label: string;
+  default_long_break_label: string;
+  default_short_break_label: string;
   desktop_notifications: boolean;
   focus_audio: string | null;
   focus_duration: number;
@@ -117,6 +123,9 @@ let rustConfig: RustConfig = {
   always_on_top: true,
   auto_start_work_timer: true,
   auto_start_break_timer: true,
+  default_focus_label: "Focus",
+  default_long_break_label: "Long break",
+  default_short_break_label: "Short break",
   desktop_notifications: true,
   focus_audio: null,
   focus_duration: 1500,
@@ -144,6 +153,9 @@ app = Elm.Main.init({
     appVersion: await getAppVersion(),
     autoStartWorkTimer: rustConfig.auto_start_work_timer,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
+    defaultFocusLabel: rustConfig.default_focus_label,
+    defaultLongBreakLabel: rustConfig.default_long_break_label,
+    defaultShortBreakLabel: rustConfig.default_short_break_label,
     desktopNotifications: rustConfig.desktop_notifications,
     focusAudio: rustConfig.focus_duration,
     focusDuration: rustConfig.focus_duration,
@@ -226,6 +238,9 @@ app.ports.updateConfig.subscribe(function (config: ElmConfig) {
       always_on_top: config.alwaysOnTop,
       auto_start_work_timer: config.autoStartWorkTimer,
       auto_start_break_timer: config.autoStartBreakTimer,
+      default_focus_label: config.defaultFocusLabel,
+      default_long_break_label: config.defaultLongBreakLabel,
+      default_short_break_label: config.defaultShortBreakLabel,
       desktop_notifications: config.desktopNotifications,
       focus_audio: config.focusAudio,
       focus_duration: config.focusDuration,
