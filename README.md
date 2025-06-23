@@ -15,6 +15,7 @@
 # 🌟 Features
 
 - [x] **Customize round numbers, focus and break times**
+- [x] **Customize current and default session labels**
 - [x] **Auto-start round** (optional)
 - [x] **Desktop notifications** (optional)
 - [x] **Built-in [themes](#-themes)**
