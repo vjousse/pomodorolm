@@ -33,14 +33,19 @@ async fn run_pomodoro_checker(config: Config) {
                 fs::read_to_string(&file_path).expect("Unable to read the session file");
 
             // Session file format should be
-            // current label|time
+            // current label;time
             //
             // `current label` can be any type of string
-            // `|` is the separator
+            // `;` is the separator
             // `time` is by default the number of mintes of the current session. You provide an int
             // in seconds, but you need to suffix it with the letter `s`
+            //
+            // To start a new session with the label working and a time of 20 minutes, do the
+            // following:
+            //
+            // echo "working;20" > ~/.cache/pomodoro_session
 
-            let parts = contents.trim().split("|").collect::<Vec<&str>>();
+            let parts = contents.trim().split(";").collect::<Vec<&str>>();
 
             // Default values
             let mut focus_duration = config.focus_duration as u64;
