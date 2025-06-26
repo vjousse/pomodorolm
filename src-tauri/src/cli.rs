@@ -29,10 +29,44 @@ async fn run_pomodoro_checker(config: Config) {
         interval.tick().await;
 
         if file_exists(&file_path).await {
-            if let Some(remaining_time) =
-                get_remaining_time(&file_path, config.focus_duration as u64).await
-            {
-                let total_seconds = config.focus_duration as u64; // Total time for Pomodoro in seconds
+            let contents: String =
+                fs::read_to_string(&file_path).expect("Unable to read the session file");
+
+            // Session file format should be
+            // current label|time
+            //
+            // `current label` can be any type of string
+            // `|` is the separator
+            // `time` is by default the number of mintes of the current session. You provide an int
+            // in seconds, but you need to suffix it with the letter `s`
+
+            let parts = contents.trim().split("|").collect::<Vec<&str>>();
+
+            // Default values
+            let mut focus_duration = config.focus_duration as u64;
+            let mut focus_label = "focus";
+
+            if parts.len() == 2 {
+                focus_label = parts[0];
+                // Time specified in seconds, value ending with an `s`
+                if parts[1].ends_with("s") {
+                    focus_duration = parts[1]
+                        .replace("s", "")
+                        .parse::<u16>()
+                        .unwrap_or(config.focus_duration)
+                        as u64;
+                } else {
+                    // Default time specified in minutes
+                    focus_duration = parts[1]
+                        .parse::<u16>()
+                        .unwrap_or(config.focus_duration / 60)
+                        as u64;
+
+                    focus_duration *= 60;
+                }
+            }
+            if let Some(remaining_time) = get_remaining_time(&file_path, focus_duration).await {
+                let total_seconds = focus_duration; // Total time for Pomodoro in seconds
                 let remaining_seconds = remaining_time.as_secs();
                 let elapsed_seconds = total_seconds - remaining_seconds;
 
@@ -49,7 +83,7 @@ async fn run_pomodoro_checker(config: Config) {
                     continue;
                 }
 
-                println!("{progress_bar} {formatted_time}");
+                println!("{progress_bar} {formatted_time} {focus_label}");
             }
         } else {
             println!("P -");
