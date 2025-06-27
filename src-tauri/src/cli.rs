@@ -71,15 +71,17 @@ fn parse_session_info(line: String) -> Result<SessionInfo> {
 async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()> {
     let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
 
-    let file_path = cache_dir.join("pomodoro_session");
+    let session_file_path = cache_dir.join("pomodoro_session");
     let mut interval = interval(Duration::from_secs(1));
 
+    let mut running = false;
     loop {
         interval.tick().await;
 
-        if file_exists(&file_path).await {
-            let contents: String =
-                fs::read_to_string(&file_path).context("Unable to read the session file")?;
+        if file_exists(&session_file_path).await {
+            running = true;
+            let contents: String = fs::read_to_string(&session_file_path)
+                .context("Unable to read the session file")?;
 
             let session_info = match parse_session_info(contents) {
                 Ok(info) => info,
@@ -92,11 +94,16 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 }
             };
 
-            if let Some(remaining_time) = get_remaining_time(&file_path, session_info.seconds).await
+            if let Some(remaining_time) =
+                get_remaining_time(&session_file_path, session_info.seconds).await
             {
                 let total_seconds = session_info.seconds; // Total time for Pomodoro in seconds
                 let remaining_seconds = remaining_time.as_secs();
                 let elapsed_seconds = total_seconds - remaining_seconds;
+                if elapsed_seconds == 1 {
+                    // The pomodoro was just created
+                    println!("-> New pomodoro created")
+                }
 
                 // Create the progress bar
                 let progress_bar = create_progress_bar(total_seconds, elapsed_seconds);
@@ -105,9 +112,9 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 // Check if remaining time is zero
                 if remaining_seconds == 0 {
                     // Delete the session file
-                    if let Err(e) = fs::remove_file(&file_path) {
-                        eprintln!("Failed to delete session file: {e}");
-                    }
+                    fs::remove_file(&session_file_path).context("Failed to delete session file")?;
+                    println!("-> Pomodoro ended normally");
+                    running = false;
                     continue;
                 }
 
@@ -118,6 +125,10 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 }
             }
         } else {
+            if running {
+                println!("-> Pomodoro stopped outside of the app");
+                running = false;
+            }
             println!("P -");
         }
     }
