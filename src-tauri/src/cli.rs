@@ -7,7 +7,7 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tokio::time::interval;
 
-pub fn run(config_dir_name: &str) -> Result<()> {
+pub fn run(config_dir_name: &str, display_label: bool) -> Result<()> {
     let config_dir = dirs::config_dir()
         .expect("Error while getting the config directory")
         .join(config_dir_name);
@@ -17,7 +17,7 @@ pub fn run(config_dir_name: &str) -> Result<()> {
 
     // Initialize the Tokio runtime
     let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(run_pomodoro_checker(config))
+    rt.block_on(run_pomodoro_checker(config, display_label))
 }
 
 #[derive(Debug)]
@@ -25,6 +25,19 @@ struct SessionInfo {
     label: String,
     seconds: u64,
 }
+
+// Session file format should be
+// current label;time
+//
+// `current label` can be any type of string
+// `;` is the separator
+// `time` is by default the number of mintes of the current session. You provide an int
+// in seconds, but you need to suffix it with the letter `s`
+//
+// To start a new session with the label working and a time of 20 minutes, do the
+// following:
+//
+// echo "working;20" > ~/.cache/pomodoro_session
 
 fn parse_session_info(line: String) -> Result<SessionInfo> {
     let parts = line.trim().split(";").collect::<Vec<&str>>();
@@ -55,7 +68,7 @@ fn parse_session_info(line: String) -> Result<SessionInfo> {
         seconds: focus_duration,
     })
 }
-async fn run_pomodoro_checker(config: Config) -> Result<()> {
+async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()> {
     let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
 
     let file_path = cache_dir.join("pomodoro_session");
@@ -67,19 +80,6 @@ async fn run_pomodoro_checker(config: Config) -> Result<()> {
         if file_exists(&file_path).await {
             let contents: String =
                 fs::read_to_string(&file_path).context("Unable to read the session file")?;
-
-            // Session file format should be
-            // current label;time
-            //
-            // `current label` can be any type of string
-            // `;` is the separator
-            // `time` is by default the number of mintes of the current session. You provide an int
-            // in seconds, but you need to suffix it with the letter `s`
-            //
-            // To start a new session with the label working and a time of 20 minutes, do the
-            // following:
-            //
-            // echo "working;20" > ~/.cache/pomodoro_session
 
             let session_info = match parse_session_info(contents) {
                 Ok(info) => info,
@@ -111,7 +111,11 @@ async fn run_pomodoro_checker(config: Config) -> Result<()> {
                     continue;
                 }
 
-                println!("{progress_bar} {formatted_time} {}", session_info.label);
+                if display_label {
+                    println!("{progress_bar} {formatted_time} {}", session_info.label);
+                } else {
+                    println!("{progress_bar} {formatted_time}");
+                }
             }
         } else {
             println!("P -");
