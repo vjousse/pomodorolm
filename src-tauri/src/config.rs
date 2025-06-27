@@ -1,4 +1,5 @@
 use crate::pomodoro;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -69,7 +70,7 @@ impl Config {
     pub fn get_or_create_from_disk(
         config_dir: &Path,
         config_file_name: Option<String>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
 
         // Create the config dir and the themes one if they don’t exist
