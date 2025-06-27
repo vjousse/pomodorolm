@@ -23,6 +23,7 @@ use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
+use anyhow::Result;
 use futures::StreamExt;
 use hex_color::HexColor;
 use std::path::PathBuf;
@@ -234,55 +235,52 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
-                .on_menu_event(move |app, event| {
-                    println!("On menu event {event:?}");
-                    match event.id().as_ref() {
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        "toggle_play" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("toggle-play", "");
-                            }
-                        }
-                        "skip" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("skip", "");
-                            }
-                        }
-                        "toggle_visibility" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let new_title = if window.is_visible().unwrap_or_default() {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.hide();
-                                    #[cfg(not(target_os = "macos"))]
-                                    let _ = window.hide();
-                                    "Show"
-                                } else {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.show();
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                    "Hide"
-                                };
-
-                                let state: tauri::State<'_, AppMenuStates<R>> = app.state();
-
-                                let state_guard = state.0.lock();
-                                match state_guard {
-                                    Ok(guard) => {
-                                        let set_text_result =
-                                            guard.toggle_visibility_menu.set_text(new_title);
-                                        if let Err(e) = set_text_result {
-                                            eprintln!("Error setting MenuItem title: {e:?}.");
-                                        }
-                                    }
-                                    Err(e) => eprintln!("Error getting state lock: {e:?}."),
-                                };
-                            }
-                        }
-                        _ => (),
+                .on_menu_event(move |app, event| match event.id().as_ref() {
+                    "quit" => {
+                        app.exit(0);
                     }
+                    "toggle_play" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("toggle-play", "");
+                        }
+                    }
+                    "skip" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("skip", "");
+                        }
+                    }
+                    "toggle_visibility" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let new_title = if window.is_visible().unwrap_or_default() {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.hide();
+                                #[cfg(not(target_os = "macos"))]
+                                let _ = window.hide();
+                                "Show"
+                            } else {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.show();
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                "Hide"
+                            };
+
+                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
+
+                            let state_guard = state.0.lock();
+                            match state_guard {
+                                Ok(guard) => {
+                                    let set_text_result =
+                                        guard.toggle_visibility_menu.set_text(new_title);
+                                    if let Err(e) = set_text_result {
+                                        eprintln!("Error setting MenuItem title: {e:?}.");
+                                    }
+                                }
+                                Err(e) => eprintln!("Error getting state lock: {e:?}."),
+                            };
+                        }
+                    }
+                    _ => (),
                 })
                 .build(app);
 
@@ -374,7 +372,7 @@ fn manage_autostart(
 fn read_config_from_disk<R: Runtime>(
     config_dir_name: &str,
     app_path: &tauri::path::PathResolver<R>,
-) -> Result<Config, Box<dyn std::error::Error>> {
+) -> Result<Config> {
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
     Config::get_or_create_from_disk(&config_dir, None)

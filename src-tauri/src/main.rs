@@ -1,7 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use clap::Parser;
-
 use clap::Subcommand;
+
+use anyhow::Result;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -19,7 +20,7 @@ enum Commands {
 
 const CONFIG_DIR_NAME: &str = "pomodorolm";
 
-fn main() {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // You can check for the existence of subcommands, and if found use their
