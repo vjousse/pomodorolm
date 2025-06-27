@@ -1,26 +1,62 @@
 extern crate dirs;
 use crate::config::Config;
 
+use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tokio::time::interval;
 
-pub fn run(config_dir_name: &str) {
+pub fn run(config_dir_name: &str) -> Result<()> {
     let config_dir = dirs::config_dir()
         .expect("Error while getting the config directory")
         .join(config_dir_name);
 
     let config =
-        Config::get_or_create_from_disk(&config_dir, None).expect("Unable to get config file");
+        Config::get_or_create_from_disk(&config_dir, None).context("Unable to get config file")?;
 
     // Initialize the Tokio runtime
     let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(run_pomodoro_checker(config));
+    rt.block_on(run_pomodoro_checker(config))
 }
 
-async fn run_pomodoro_checker(config: Config) {
-    let cache_dir = dirs::cache_dir().expect("Error while getting the cache directory");
+#[derive(Debug)]
+struct SessionInfo {
+    label: String,
+    seconds: u64,
+}
+
+fn parse_session_info(line: String) -> Result<SessionInfo> {
+    let parts = line.trim().split(";").collect::<Vec<&str>>();
+
+    if parts.len() != 2 {
+        return Err(anyhow!(
+            "Unable to read session line, it should have only 2 parts between a ;"
+        ));
+    }
+
+    let focus_label = parts[0];
+
+    // Time specified in seconds, value ending with an `s`
+    let focus_duration = if parts[1].ends_with("s") {
+        parts[1]
+            .replace("s", "")
+            .parse::<u64>()
+            .context("Unable to parse time from session line")?
+    } else {
+        // Default time specified in minutes
+        parts[1]
+            .parse::<u64>()
+            .context("Unable to parse time from session line")?
+            * 60
+    };
+    Ok(SessionInfo {
+        label: focus_label.to_owned(),
+        seconds: focus_duration,
+    })
+}
+async fn run_pomodoro_checker(config: Config) -> Result<()> {
+    let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
 
     let file_path = cache_dir.join("pomodoro_session");
     let mut interval = interval(Duration::from_secs(1));
@@ -30,7 +66,7 @@ async fn run_pomodoro_checker(config: Config) {
 
         if file_exists(&file_path).await {
             let contents: String =
-                fs::read_to_string(&file_path).expect("Unable to read the session file");
+                fs::read_to_string(&file_path).context("Unable to read the session file")?;
 
             // Session file format should be
             // current label;time
@@ -45,33 +81,20 @@ async fn run_pomodoro_checker(config: Config) {
             //
             // echo "working;20" > ~/.cache/pomodoro_session
 
-            let parts = contents.trim().split(";").collect::<Vec<&str>>();
-
-            // Default values
-            let mut focus_duration = config.focus_duration as u64;
-            let mut focus_label = "focus";
-
-            if parts.len() == 2 {
-                focus_label = parts[0];
-                // Time specified in seconds, value ending with an `s`
-                if parts[1].ends_with("s") {
-                    focus_duration = parts[1]
-                        .replace("s", "")
-                        .parse::<u16>()
-                        .unwrap_or(config.focus_duration)
-                        as u64;
-                } else {
-                    // Default time specified in minutes
-                    focus_duration = parts[1]
-                        .parse::<u16>()
-                        .unwrap_or(config.focus_duration / 60)
-                        as u64;
-
-                    focus_duration *= 60;
+            let session_info = match parse_session_info(contents) {
+                Ok(info) => info,
+                Err(e) => {
+                    eprintln!("Unable to parse session line: {e}. Fallback to defaults focus/25.");
+                    SessionInfo {
+                        label: "focus".to_owned(),
+                        seconds: config.focus_duration as u64,
+                    }
                 }
-            }
-            if let Some(remaining_time) = get_remaining_time(&file_path, focus_duration).await {
-                let total_seconds = focus_duration; // Total time for Pomodoro in seconds
+            };
+
+            if let Some(remaining_time) = get_remaining_time(&file_path, session_info.seconds).await
+            {
+                let total_seconds = session_info.seconds; // Total time for Pomodoro in seconds
                 let remaining_seconds = remaining_time.as_secs();
                 let elapsed_seconds = total_seconds - remaining_seconds;
 
@@ -88,7 +111,7 @@ async fn run_pomodoro_checker(config: Config) {
                     continue;
                 }
 
-                println!("{progress_bar} {formatted_time} {focus_label}");
+                println!("{progress_bar} {formatted_time} {}", session_info.label);
             }
         } else {
             println!("P -");
@@ -132,4 +155,33 @@ fn format_time(seconds: u64) -> String {
     let minutes = seconds / 60;
     let remaining_seconds = seconds % 60;
     format!("{minutes:02}:{remaining_seconds:02}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parsing_error() {
+        let result = parse_session_info("invalid line".to_owned());
+        let error = result.unwrap_err();
+        assert_eq!(
+            format!("{error}"),
+            "Unable to read session line, it should have only 2 parts between a ;"
+        );
+    }
+
+    #[test]
+    fn parsing_ok_in_minutes() {
+        let result = parse_session_info("label;25".to_owned()).unwrap();
+        assert_eq!(result.label, "label");
+        assert_eq!(result.seconds, 25 * 60);
+    }
+
+    #[test]
+    fn parsing_ok_in_seconds() {
+        let result = parse_session_info("label;3600s".to_owned()).unwrap();
+        assert_eq!(result.label, "label");
+        assert_eq!(result.seconds, 3600);
+    }
 }
