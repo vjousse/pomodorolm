@@ -281,39 +281,6 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
   }
 });
 
-// app.ports.updateConfig.subscribe(function (config: ElmConfig) {
-//   invoke("update_config", {
-//     config: {
-//       always_on_top: config.alwaysOnTop,
-//       auto_quit: config.autoQuit,
-//       auto_start_break_timer: config.autoStartBreakTimer,
-//       auto_start_on_app_startup: config.autoStartOnAppStartup,
-//       auto_start_work_timer: config.autoStartWorkTimer,
-//       default_focus_label: config.defaultFocusLabel,
-//       default_long_break_label: config.defaultLongBreakLabel,
-//       default_short_break_label: config.defaultShortBreakLabel,
-//       desktop_notifications: config.desktopNotifications,
-//       focus_audio: config.focusAudio,
-//       focus_duration: config.focusDuration,
-//       long_break_audio: config.longBreakAudio,
-//       long_break_duration: config.longBreakDuration,
-//       max_round_number: config.maxRoundNumber,
-//       minimize_to_tray: config.minimizeToTray,
-//       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
-//       muted: config.muted,
-//       short_break_audio: config.shortBreakAudio,
-//       short_break_duration: config.shortBreakDuration,
-//       start_minimized: config.startMinimized,
-//       system_startup_auto_start: config.systemStartupAutoStart,
-//       theme: config.theme,
-//       tick_sounds_during_work: config.tickSoundsDuringWork,
-//       tick_sounds_during_break: config.tickSoundsDuringBreak,
-//     },
-//   }).then((newState) => {
-//     app.ports.sendMessageToElm.send(newState);
-//   });
-// });
-
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   invoke("change_icon", {
     red: hexToRgb(state.color)?.r,
