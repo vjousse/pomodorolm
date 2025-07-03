@@ -1,3 +1,4 @@
+use crate::pomodoro;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -7,9 +8,11 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub always_on_top: bool,
-    pub auto_start_work_timer: bool,
+    pub auto_quit: Option<pomodoro::SessionType>,
     pub auto_start_break_timer: bool,
-
+    #[serde(default)]
+    pub auto_start_on_app_startup: bool,
+    pub auto_start_work_timer: bool,
     #[serde(default = "default_focus_label")]
     pub default_focus_label: String,
     #[serde(default = "default_long_break_label")]
@@ -96,8 +99,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             always_on_top: true,
-            auto_start_work_timer: true,
+            auto_quit: None,
             auto_start_break_timer: true,
+            auto_start_on_app_startup: false,
+            auto_start_work_timer: true,
             default_focus_label: "Focus".to_string(),
             default_long_break_label: "Long break".to_string(),
             default_short_break_label: "Short break".to_string(),

@@ -1,10 +1,10 @@
-module Json exposing (elmMessageEncoder, externalMessageDecoder)
+module Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
 import Themes exposing (Theme, ThemeColors)
-import Types exposing (Config, ConfigAndThemes, ElmMessage, ExternalMessage(..), RustSession, RustState, SessionStatus(..), SessionType(..))
+import Types exposing (Config, ConfigAndThemes, ElmMessage, ExternalMessage(..), RustSession, RustState, SessionStatus(..), SessionType(..), sessionTypeToString)
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value
@@ -15,6 +15,16 @@ elmMessageEncoder elmMessage =
           , elmMessage.value
                 |> Maybe.map Encode.string
                 |> Maybe.withDefault Encode.null
+          )
+        ]
+
+
+elmMessageBuilder : String -> a -> (a -> Encode.Value) -> Encode.Value
+elmMessageBuilder name value valueEncoder =
+    Encode.object
+        [ ( "name", Encode.string name )
+        , ( "value"
+          , value |> valueEncoder
           )
         ]
 
@@ -48,11 +58,59 @@ themesDecoder =
     Decode.list themeDecoder
 
 
+configEncoder : Config -> Encode.Value
+configEncoder config =
+    Encode.object
+        [ ( "alwaysOnTop", Encode.bool config.alwaysOnTop )
+        , ( "autoQuit"
+          , config.autoQuit
+                |> Maybe.map (\c -> Encode.string (sessionTypeToString c))
+                |> Maybe.withDefault Encode.null
+          )
+        , ( "autoStartBreakTimer", Encode.bool config.autoStartBreakTimer )
+        , ( "autoStartOnAppStartup", Encode.bool config.autoStartOnAppStartup )
+        , ( "autoStartWorkTimer", Encode.bool config.autoStartWorkTimer )
+        , ( "defaultFocusLabel", Encode.string config.defaultFocusLabel )
+        , ( "defaultLongBreakLabel", Encode.string config.defaultLongBreakLabel )
+        , ( "defaultShortBreakLabel", Encode.string config.defaultShortBreakLabel )
+        , ( "desktopNotifications", Encode.bool config.desktopNotifications )
+        , ( "focusAudio"
+          , config.focusAudio
+                |> Maybe.map Encode.string
+                |> Maybe.withDefault Encode.null
+          )
+        , ( "focusDuration", Encode.int config.focusDuration )
+        , ( "longBreakAudio"
+          , config.longBreakAudio
+                |> Maybe.map Encode.string
+                |> Maybe.withDefault Encode.null
+          )
+        , ( "longBreakDuration", Encode.int config.longBreakDuration )
+        , ( "maxRoundNumber", Encode.int config.maxRoundNumber )
+        , ( "minimizeToTray", Encode.bool config.minimizeToTray )
+        , ( "minimizeToTrayOnClose", Encode.bool config.minimizeToTrayOnClose )
+        , ( "muted", Encode.bool config.muted )
+        , ( "shortBreakAudio"
+          , config.shortBreakAudio
+                |> Maybe.map Encode.string
+                |> Maybe.withDefault Encode.null
+          )
+        , ( "shortBreakDuration", Encode.int config.shortBreakDuration )
+        , ( "startMinimized", Encode.bool config.startMinimized )
+        , ( "systemStartupAutoStart", Encode.bool config.systemStartupAutoStart )
+        , ( "theme", Encode.string config.theme )
+        , ( "tickSoundsDuringBreak", Encode.bool config.tickSoundsDuringBreak )
+        , ( "tickSoundsDuringWork", Encode.bool config.tickSoundsDuringWork )
+        ]
+
+
 configDecoder : Decode.Decoder Config
 configDecoder =
     Decode.succeed Config
         |> Pipe.required "always_on_top" Decode.bool
+        |> Pipe.optional "auto_quit" (Decode.maybe sessionTypeDecoder) Nothing
         |> Pipe.required "auto_start_break_timer" Decode.bool
+        |> Pipe.required "auto_start_on_app_startup" Decode.bool
         |> Pipe.required "auto_start_work_timer" Decode.bool
         |> Pipe.required "default_focus_label" Decode.string
         |> Pipe.required "default_long_break_label" Decode.string

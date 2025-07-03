@@ -26,7 +26,7 @@ type ElmState = {
 
 type Message = {
   name: string;
-  value: string;
+  value: string | ElmConfig;
 };
 
 type Notification = {
@@ -69,8 +69,10 @@ type ThemeColors = {
 
 type ElmConfig = {
   alwaysOnTop: boolean;
-  autoStartWorkTimer: boolean;
+  autoQuit: string | null;
   autoStartBreakTimer: boolean;
+  autoStartOnAppStartup: boolean;
+  autoStartWorkTimer: boolean;
   defaultFocusLabel: string;
   defaultLongBreakLabel: string;
   defaultShortBreakLabel: string;
@@ -94,8 +96,10 @@ type ElmConfig = {
 
 type RustConfig = {
   always_on_top: boolean;
-  auto_start_work_timer: boolean;
+  auto_quit: string | null;
   auto_start_break_timer: boolean;
+  auto_start_on_app_startup: boolean;
+  auto_start_work_timer: boolean;
   default_focus_label: string;
   default_long_break_label: string;
   default_short_break_label: string;
@@ -121,8 +125,10 @@ const root = document.querySelector("#app div");
 
 let rustConfig: RustConfig = {
   always_on_top: true,
-  auto_start_work_timer: true,
+  auto_quit: null,
   auto_start_break_timer: true,
+  auto_start_on_app_startup: false,
+  auto_start_work_timer: true,
   default_focus_label: "Focus",
   default_long_break_label: "Long break",
   default_short_break_label: "Short break",
@@ -151,8 +157,10 @@ app = Elm.Main.init({
   flags: {
     alwaysOnTop: rustConfig.always_on_top,
     appVersion: await getAppVersion(),
-    autoStartWorkTimer: rustConfig.auto_start_work_timer,
+    autoQuit: rustConfig.auto_quit,
     autoStartBreakTimer: rustConfig.auto_start_break_timer,
+    autoStartOnAppStartup: rustConfig.auto_start_on_app_startup,
+    autoStartWorkTimer: rustConfig.auto_start_work_timer,
     defaultFocusLabel: rustConfig.default_focus_label,
     defaultLongBreakLabel: rustConfig.default_long_break_label,
     defaultShortBreakLabel: rustConfig.default_short_break_label,
@@ -223,6 +231,47 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
         file_path: file,
       });
       break;
+    case "update_config":
+      console.log("Should update config");
+
+      console.log(message);
+
+      let config: ElmConfig = message.value as ElmConfig;
+
+      console.log(config);
+      // break;
+
+      invoke("update_config", {
+        config: {
+          always_on_top: config.alwaysOnTop,
+          auto_quit: config.autoQuit,
+          auto_start_break_timer: config.autoStartBreakTimer,
+          auto_start_on_app_startup: config.autoStartOnAppStartup,
+          auto_start_work_timer: config.autoStartWorkTimer,
+          default_focus_label: config.defaultFocusLabel,
+          default_long_break_label: config.defaultLongBreakLabel,
+          default_short_break_label: config.defaultShortBreakLabel,
+          desktop_notifications: config.desktopNotifications,
+          focus_audio: config.focusAudio,
+          focus_duration: config.focusDuration,
+          long_break_audio: config.longBreakAudio,
+          long_break_duration: config.longBreakDuration,
+          max_round_number: config.maxRoundNumber,
+          minimize_to_tray: config.minimizeToTray,
+          minimize_to_tray_on_close: config.minimizeToTrayOnClose,
+          muted: config.muted,
+          short_break_audio: config.shortBreakAudio,
+          short_break_duration: config.shortBreakDuration,
+          start_minimized: config.startMinimized,
+          system_startup_auto_start: config.systemStartupAutoStart,
+          theme: config.theme,
+          tick_sounds_during_work: config.tickSoundsDuringWork,
+          tick_sounds_during_break: config.tickSoundsDuringBreak,
+        },
+      }).then((newState) => {
+        app.ports.sendMessageToElm.send(newState);
+      });
+      break;
 
     default:
       invoke("handle_external_message", message).then((newState) => {
@@ -232,36 +281,38 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
   }
 });
 
-app.ports.updateConfig.subscribe(function (config: ElmConfig) {
-  invoke("update_config", {
-    config: {
-      always_on_top: config.alwaysOnTop,
-      auto_start_work_timer: config.autoStartWorkTimer,
-      auto_start_break_timer: config.autoStartBreakTimer,
-      default_focus_label: config.defaultFocusLabel,
-      default_long_break_label: config.defaultLongBreakLabel,
-      default_short_break_label: config.defaultShortBreakLabel,
-      desktop_notifications: config.desktopNotifications,
-      focus_audio: config.focusAudio,
-      focus_duration: config.focusDuration,
-      long_break_audio: config.longBreakAudio,
-      long_break_duration: config.longBreakDuration,
-      max_round_number: config.maxRoundNumber,
-      minimize_to_tray: config.minimizeToTray,
-      minimize_to_tray_on_close: config.minimizeToTrayOnClose,
-      muted: config.muted,
-      short_break_audio: config.shortBreakAudio,
-      short_break_duration: config.shortBreakDuration,
-      start_minimized: config.startMinimized,
-      system_startup_auto_start: config.systemStartupAutoStart,
-      theme: config.theme,
-      tick_sounds_during_work: config.tickSoundsDuringWork,
-      tick_sounds_during_break: config.tickSoundsDuringBreak,
-    },
-  }).then((newState) => {
-    app.ports.sendMessageToElm.send(newState);
-  });
-});
+// app.ports.updateConfig.subscribe(function (config: ElmConfig) {
+//   invoke("update_config", {
+//     config: {
+//       always_on_top: config.alwaysOnTop,
+//       auto_quit: config.autoQuit,
+//       auto_start_break_timer: config.autoStartBreakTimer,
+//       auto_start_on_app_startup: config.autoStartOnAppStartup,
+//       auto_start_work_timer: config.autoStartWorkTimer,
+//       default_focus_label: config.defaultFocusLabel,
+//       default_long_break_label: config.defaultLongBreakLabel,
+//       default_short_break_label: config.defaultShortBreakLabel,
+//       desktop_notifications: config.desktopNotifications,
+//       focus_audio: config.focusAudio,
+//       focus_duration: config.focusDuration,
+//       long_break_audio: config.longBreakAudio,
+//       long_break_duration: config.longBreakDuration,
+//       max_round_number: config.maxRoundNumber,
+//       minimize_to_tray: config.minimizeToTray,
+//       minimize_to_tray_on_close: config.minimizeToTrayOnClose,
+//       muted: config.muted,
+//       short_break_audio: config.shortBreakAudio,
+//       short_break_duration: config.shortBreakDuration,
+//       start_minimized: config.startMinimized,
+//       system_startup_auto_start: config.systemStartupAutoStart,
+//       theme: config.theme,
+//       tick_sounds_during_work: config.tickSoundsDuringWork,
+//       tick_sounds_during_break: config.tickSoundsDuringBreak,
+//     },
+//   }).then((newState) => {
+//     app.ports.sendMessageToElm.send(newState);
+//   });
+// });
 
 app.ports.updateCurrentState.subscribe(function (state: ElmState) {
   invoke("change_icon", {

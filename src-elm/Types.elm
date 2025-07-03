@@ -60,7 +60,9 @@ type alias ElmMessage =
 
 type alias Config =
     { alwaysOnTop : Bool
+    , autoQuit : Maybe SessionType
     , autoStartBreakTimer : Bool
+    , autoStartOnAppStartup : Bool
     , autoStartWorkTimer : Bool
     , defaultFocusLabel : String
     , defaultLongBreakLabel : String

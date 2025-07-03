@@ -4,7 +4,7 @@ import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (elmMessageEncoder, externalMessageDecoder)
+import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
@@ -42,8 +42,10 @@ sessionStatusToString sessionStatus =
 type alias Flags =
     { alwaysOnTop : Bool
     , appVersion : String
-    , autoStartWorkTimer : Bool
+    , autoQuit : Maybe String
     , autoStartBreakTimer : Bool
+    , autoStartOnAppStartup : Bool
+    , autoStartWorkTimer : Bool
     , defaultFocusLabel : String
     , defaultShortBreakLabel : String
     , defaultLongBreakLabel : String
@@ -87,8 +89,16 @@ init flags =
     ( { appVersion = flags.appVersion
       , config =
             { alwaysOnTop = flags.alwaysOnTop
-            , autoStartWorkTimer = flags.autoStartWorkTimer
+            , autoQuit =
+                flags.autoQuit
+                    |> Maybe.andThen
+                        (\v ->
+                            Decode.decodeString sessionTypeDecoder v
+                                |> Result.toMaybe
+                        )
             , autoStartBreakTimer = flags.autoStartBreakTimer
+            , autoStartOnAppStartup = flags.autoStartOnAppStartup
+            , autoStartWorkTimer = flags.autoStartWorkTimer
             , defaultFocusLabel = flags.defaultFocusLabel
             , defaultLongBreakLabel = flags.defaultLongBreakLabel
             , defaultShortBreakLabel = flags.defaultShortBreakLabel
@@ -126,7 +136,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (NotStarted |> sessionStatusToString)
-        , sendMessageFromElm (elmMessageEncoder { name = "get-state", value = Nothing })
+        , sendMessageFromElm (elmMessageEncoder { name = "get_state", value = Nothing })
         , getConfigFromRust ()
         , setThemeColors <| theme.colors
         ]
@@ -176,7 +186,7 @@ update msg ({ config } as model) =
               }
             , Cmd.batch
                 [ setThemeColors theme.colors
-                , updateConfig newConfig
+                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
                 , updateCurrentState newState
                 ]
             )
@@ -371,7 +381,7 @@ update msg ({ config } as model) =
                             { config | longBreakAudio = Just path }
             in
             ( { model | config = newConfig }
-            , updateConfig newConfig
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
         Reset ->
@@ -431,7 +441,7 @@ update msg ({ config } as model) =
             ( { model
                 | config = newConfig
               }
-            , updateConfig newConfig
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
         SkipCurrentRound ->
@@ -490,7 +500,10 @@ update msg ({ config } as model) =
                     { config | muted = not config.muted }
             in
             ( { model | volume = newVolume, config = newConfig }
-            , Cmd.batch [ setVolume newVolume, updateConfig newConfig ]
+            , Cmd.batch
+                [ setVolume newVolume
+                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
+                ]
             )
 
         TogglePlayStatus ->
@@ -629,7 +642,7 @@ update msg ({ config } as model) =
             in
             ( { model | config = newConfig }
             , Cmd.batch
-                [ updateConfig newConfig
+                [ sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
@@ -732,9 +745,6 @@ port updateSessionStatus : String -> Cmd msg
 
 
 port notify : Notification -> Cmd msg
-
-
-port updateConfig : Config -> Cmd msg
 
 
 port setThemeColors : ThemeColors -> Cmd msg
