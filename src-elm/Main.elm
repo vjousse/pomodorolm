@@ -748,9 +748,6 @@ port setVolume : Float -> Cmd msg
 port closeWindow : () -> Cmd msg
 
 
-port getInitDataFromRust : () -> Cmd msg
-
-
 port minimizeWindow : () -> Cmd msg
 
 
