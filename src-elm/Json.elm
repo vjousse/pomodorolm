@@ -4,7 +4,7 @@ import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
 import Themes exposing (Theme, ThemeColors)
-import Types exposing (Config, ConfigAndThemes, ElmMessage, ExternalMessage(..), RustSession, RustState, SessionStatus(..), SessionType(..), sessionTypeToString)
+import Types exposing (Config, ElmMessage, ExternalMessage(..), InitData, PomodoroSession, PomodoroState, SessionStatus(..), SessionType(..), sessionTypeToString)
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value
@@ -133,16 +133,17 @@ configDecoder =
         |> Pipe.required "tick_sounds_during_work" Decode.bool
 
 
-configAndThemesDecoder : Decode.Decoder ConfigAndThemes
-configAndThemesDecoder =
-    Decode.succeed ConfigAndThemes
+initDataDecoder : Decode.Decoder InitData
+initDataDecoder =
+    Decode.succeed InitData
         |> Pipe.required "config" configDecoder
+        |> Pipe.required "pomodoro_state" rustStateDecoder
         |> Pipe.required "themes" themesDecoder
 
 
-rustStateDecoder : Decode.Decoder RustState
+rustStateDecoder : Decode.Decoder PomodoroState
 rustStateDecoder =
-    Decode.succeed RustState
+    Decode.succeed PomodoroState
         |> Pipe.required "current_session" rustSessionDecoder
         |> Pipe.required "current_work_round_number" Decode.int
 
@@ -189,9 +190,9 @@ sessionStatusFromStringDecoder string =
             Decode.fail ("Unknown sessionStatus: " ++ string)
 
 
-rustSessionDecoder : Decode.Decoder RustSession
+rustSessionDecoder : Decode.Decoder PomodoroSession
 rustSessionDecoder =
-    Decode.succeed RustSession
+    Decode.succeed PomodoroSession
         |> Pipe.required "current_time" Decode.int
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
@@ -202,6 +203,6 @@ externalMessageDecoder : Decode.Decoder ExternalMessage
 externalMessageDecoder =
     Decode.oneOf
         [ rustStateDecoder |> Decode.map RustStateMsg
-        , configAndThemesDecoder |> Decode.map RustConfigAndThemesMsg
+        , initDataDecoder |> Decode.map InitDataMsg
         , Decode.map2 SoundFilePath (Decode.field "session_type" sessionTypeDecoder) (Decode.field "file_path" Decode.string)
         ]

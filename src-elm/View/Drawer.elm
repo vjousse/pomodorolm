@@ -540,8 +540,9 @@ settingsSettingView model =
             ]
             [ text "General Settings" ]
         , settingWrapper "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) model.config.alwaysOnTop
-        , settingWrapper "Auto-start Work Timer" (UpdateSetting <| Toggle AutoStartWorkTimer) model.config.autoStartWorkTimer
-        , settingWrapper "Auto-start Break Timer" (UpdateSetting <| Toggle AutoStartBreakTimer) model.config.autoStartBreakTimer
+        , settingWrapper "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) model.config.autoStartWorkTimer
+        , settingWrapper "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) model.config.autoStartOnAppStartup
+        , settingWrapper "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) model.config.autoStartBreakTimer
         , settingWrapper "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) model.config.systemStartupAutoStart
         , settingWrapper "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) model.config.desktopNotifications
         , settingWrapper "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) model.config.minimizeToTray

@@ -197,22 +197,12 @@ app.ports.closeWindow.subscribe(function () {
   invoke("close_window");
 });
 
-app.ports.getConfigFromRust.subscribe(function () {
-  invoke("load_config_and_themes").then((config_and_themes) => {
-    const [config, themes] = config_and_themes as [
-      RustConfig,
-      Array<RustThemeColors>
-    ];
-    app.ports.sendMessageToElm.send({ config, themes });
-  });
-});
-
 app.ports.notify.subscribe(function (notification: Notification) {
   invoke("notify", { notification: notification });
 });
 
 app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
-  console.log(`Sending message from Elm ${message}`);
+  console.log(`Sending message from Elm ${message} ${message.name}`);
   switch (message.name) {
     case "choose_sound_file":
       const file = await open({
@@ -231,6 +221,27 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
         file_path: file,
       });
       break;
+
+    case "get_init_data":
+      console.log("Getting init data from Rust");
+
+      invoke("load_init_data").then((init_data) => {
+        const [config, themes, pomodoroState] = init_data as [
+          RustConfig,
+          Array<RustThemeColors>,
+          any
+        ];
+        console.log("Got init data from Rust");
+        console.log({ config, themes, pomodoroState });
+        app.ports.sendMessageToElm.send({
+          config,
+          themes,
+          pomodoro_state: pomodoroState,
+        });
+      });
+
+      break;
+
     case "update_config":
       console.log("Should update config");
 

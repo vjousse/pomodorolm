@@ -136,8 +136,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (NotStarted |> sessionStatusToString)
-        , sendMessageFromElm (elmMessageEncoder { name = "get_state", value = Nothing })
-        , getConfigFromRust ()
+        , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
         , setThemeColors <| theme.colors
         ]
     )
@@ -215,7 +214,7 @@ update msg ({ config } as model) =
         NoOp ->
             ( model, Cmd.none )
 
-        ProcessExternalMessage (RustConfigAndThemesMsg c) ->
+        ProcessExternalMessage (InitDataMsg c) ->
             let
                 updatedThemes =
                     c.themes
@@ -236,7 +235,7 @@ update msg ({ config } as model) =
                         Nothing ->
                             updatedThemes
 
-                newModel =
+                ( newModel, newCmd ) =
                     { model
                         | config = c.config
                         , focusLabel = c.config.defaultFocusLabel
@@ -244,17 +243,34 @@ update msg ({ config } as model) =
                         , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
-            in
-            case newThemes |> ListWithCurrent.getCurrent of
-                Just currentTheme ->
-                    let
-                        ( updatedModel, cmds ) =
-                            update (ChangeTheme currentTheme) newModel
-                    in
-                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (NotStarted |> sessionStatusToString) ] )
+                        |> update (ProcessExternalMessage (RustStateMsg c.pomodoroState))
 
-                _ ->
-                    ( newModel, updateSessionStatus (NotStarted |> sessionStatusToString) )
+                ( modelWithTheme, cmdWithTheme ) =
+                    let
+                        baseCmd =
+                            [ newCmd, updateSessionStatus (NotStarted |> sessionStatusToString) ]
+                    in
+                    case newThemes |> ListWithCurrent.getCurrent of
+                        Just currentTheme ->
+                            let
+                                ( updatedModel, updatedCmd ) =
+                                    update (ChangeTheme currentTheme) newModel
+                            in
+                            ( updatedModel, Cmd.batch (updatedCmd :: baseCmd) )
+
+                        _ ->
+                            ( newModel, Cmd.batch baseCmd )
+            in
+            -- Auto start if config is set
+            if modelWithTheme.config.autoStartOnAppStartup then
+                let
+                    ( updatedModel, updatedCmd ) =
+                        update TogglePlayStatus modelWithTheme
+                in
+                ( updatedModel, Cmd.batch [ cmdWithTheme, updatedCmd ] )
+
+            else
+                ( modelWithTheme, cmdWithTheme )
 
         ProcessExternalMessage (RustStateMsg pomodoroState) ->
             let
@@ -619,6 +635,9 @@ update msg ({ config } as model) =
                                 AutoStartWorkTimer ->
                                     { config | autoStartWorkTimer = not config.autoStartWorkTimer }
 
+                                AutoStartOnAppStartup ->
+                                    { config | autoStartOnAppStartup = not config.autoStartOnAppStartup }
+
                                 DesktopNotifications ->
                                     { config | desktopNotifications = not config.desktopNotifications }
 
@@ -729,7 +748,7 @@ port setVolume : Float -> Cmd msg
 port closeWindow : () -> Cmd msg
 
 
-port getConfigFromRust : () -> Cmd msg
+port getInitDataFromRust : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg
