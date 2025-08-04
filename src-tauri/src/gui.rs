@@ -100,7 +100,7 @@ impl From<JsonTheme> for Theme {
                     let b = ((1.0 - t) * b1 as f32 + t * b2 as f32).round() as u8;
                     // RGB to hex
                     (
-                        format!("#{:02X}{:02X}{:02X}", r, g, b),
+                        format!("#{r:02X}{g:02X}{b:02X}"),
                         json_theme.colors.short_round.clone(),
                     )
                 }
@@ -186,7 +186,7 @@ fn get_config_dir<R: Runtime>(
     config_dir_name: &str,
     path: &tauri::path::PathResolver<R>,
 ) -> Result<PathBuf, tauri::Error> {
-    path.resolve(format!("{}/", config_dir_name), BaseDirectory::Config)
+    path.resolve(format!("{config_dir_name}/"), BaseDirectory::Config)
 }
 
 pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
@@ -226,7 +226,7 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
                 .on_menu_event(move |app, event| {
-                    println!("On menu event {:?}", event);
+                    println!("On menu event {event:?}");
                     match event.id().as_ref() {
                         "quit" => {
                             app.exit(0);
@@ -265,10 +265,10 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
                                         let set_text_result =
                                             guard.toggle_visibility_menu.set_text(new_title);
                                         if let Err(e) = set_text_result {
-                                            eprintln!("Error setting MenuItem title: {:?}.", e);
+                                            eprintln!("Error setting MenuItem title: {e:?}.");
                                         }
                                     }
-                                    Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+                                    Err(e) => eprintln!("Error getting state lock: {e:?}."),
                                 };
                             }
                         }
@@ -396,15 +396,12 @@ fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
             for p in path_dir {
                 match p {
                     Ok(p_ok) => themes_paths_bufs.push(p_ok.path()),
-                    Err(e) => eprintln!("Error reading theme path dir: {:?}.", e),
+                    Err(e) => eprintln!("Error reading theme path dir: {e:?}."),
                 }
             }
         }
         Err(e) => {
-            eprintln!(
-                "Unable to read builtin themes path {:?}: {:?}.",
-                themes_path, e
-            );
+            eprintln!("Unable to read builtin themes path {themes_path:?}: {e:?}.");
         }
     }
 
@@ -454,8 +451,7 @@ async fn tick(app_handle: AppHandle, path: String) {
                         let play_sound_file_result = sound::play_sound_file(&new_path);
                         if play_sound_file_result.is_err() {
                             eprintln!(
-                                "Unable to play sound file {:?}: {:?}",
-                                new_path, play_sound_file_result
+                                "Unable to play sound file {new_path:?}: {play_sound_file_result:?}"
                             );
                         }
                     }
@@ -511,10 +507,10 @@ async fn change_icon<R: tauri::Runtime>(
                         let _ = tray.set_icon(icon_path);
                     }
                 }
-                Err(e) => eprintln!("{:?}", e),
+                Err(e) => eprintln!("{e:?}"),
             }
         }
-        Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
+        Err(e) => eprintln!("Unable to get app_data_dir for icon: {e:?}."),
     }
 
     Ok(())
@@ -533,16 +529,16 @@ async fn update_session_status<R: tauri::Runtime>(
             if status == "running" {
                 let set_text_result = guard.toggle_play_menu.set_text("Pause");
                 if let Err(e) = set_text_result {
-                    eprintln!("Error setting MenuItem title: {:?}.", e);
+                    eprintln!("Error setting MenuItem title: {e:?}.");
                 }
             } else {
                 let set_text_result = guard.toggle_play_menu.set_text("Play");
                 if let Err(e) = set_text_result {
-                    eprintln!("Error setting MenuItem title: {:?}.", e);
+                    eprintln!("Error setting MenuItem title: {e:?}.");
                 }
             }
         }
-        Err(e) => eprintln!("Error getting state lock: {:?}.", e),
+        Err(e) => eprintln!("Error getting state lock: {e:?}."),
     };
 
     Ok(())
@@ -593,7 +589,7 @@ async fn update_config(
                 }
             };
         }
-        Err(e) => eprintln!("Unable to get config file path: {:?}.", e),
+        Err(e) => eprintln!("Unable to get config file path: {e:?}."),
     }
 
     Ok(state_guard.pomodoro.to_unborrowed())
@@ -611,14 +607,11 @@ async fn load_config_and_themes(
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
             let toml_str = fs::read_to_string(&config_file_path).map_err(|err| {
-                eprintln!("Unable to open config file {}: {:?}", config_file_path, err)
+                eprintln!("Unable to open config file {config_file_path}: {err:?}")
             })?;
 
             let config: Config = toml::from_str(toml_str.as_str()).map_err(|err| {
-                eprintln!(
-                    "Unable to parse config file {}: {:?}",
-                    config_file_path, err
-                )
+                eprintln!("Unable to parse config file {config_file_path}: {err:?}")
             })?;
 
             *state_guard = App {
@@ -630,7 +623,7 @@ async fn load_config_and_themes(
             Ok(config)
         }
         Err(e) => {
-            eprintln!("Unable to get config file path: {:?}.", e);
+            eprintln!("Unable to get config file path: {e:?}.");
             Err(())
         }
     };
@@ -677,13 +670,12 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
                 let play_sound_file_result = sound::play_sound_file(&sound_file.to_string_lossy());
                 if play_sound_file_result.is_err() {
                     eprintln!(
-                        "Unable to play sound file {:?}: {:?}",
-                        sound_file, play_sound_file_result
+                        "Unable to play sound file {sound_file:?}: {play_sound_file_result:?}"
                     );
                 }
             });
         }
-        None => eprintln!("Impossible to get sound file with id {}", sound_id),
+        None => eprintln!("Impossible to get sound file with id {sound_id}"),
     }
 }
 
@@ -702,7 +694,7 @@ fn minimize_window<R: tauri::Runtime>(
             Ok(())
         }
         Err(e) => {
-            eprintln!("Error getting state lock: {:?}.", e);
+            eprintln!("Error getting state lock: {e:?}.");
             Err(())
         }
     }
@@ -726,7 +718,7 @@ fn hide_window<R: tauri::Runtime>(
             Ok(())
         }
         Err(e) => {
-            eprintln!("Error getting state lock: {:?}.", e);
+            eprintln!("Error getting state lock: {e:?}.");
             Err(())
         }
     }
@@ -768,7 +760,7 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
                     .show();
             }
         }
-        Err(e) => eprintln!("Unable to get app_data_dir for icon: {:?}.", e),
+        Err(e) => eprintln!("Unable to get app_data_dir for icon: {e:?}."),
     }
 }
 
@@ -826,7 +818,7 @@ fn resolve_resource_path(
     }
 
     if resolved_path.is_err() {
-        eprintln!("Unable to resolve `{}` resource.", path_to_resolve);
+        eprintln!("Unable to resolve `{path_to_resolve}` resource.");
     }
 
     resolved_path
