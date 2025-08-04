@@ -44,12 +44,12 @@ async fn run_pomodoro_checker(config: Config) {
                 if remaining_seconds == 0 {
                     // Delete the session file
                     if let Err(e) = fs::remove_file(&file_path) {
-                        eprintln!("Failed to delete session file: {}", e);
+                        eprintln!("Failed to delete session file: {e}");
                     }
                     continue;
                 }
 
-                println!("{} {}", progress_bar, formatted_time);
+                println!("{progress_bar} {formatted_time}");
             }
         } else {
             println!("P -");
@@ -86,11 +86,11 @@ fn create_progress_bar(total_seconds: u64, elapsed_seconds: u64) -> String {
     let hashes = "#".repeat(total_hashes - filled_length);
     let dots = "·".repeat(filled_length);
 
-    format!("P {}{}", hashes, dots)
+    format!("P {hashes}{dots}")
 }
 
 fn format_time(seconds: u64) -> String {
     let minutes = seconds / 60;
     let remaining_seconds = seconds % 60;
-    format!("{:02}:{:02}", minutes, remaining_seconds)
+    format!("{minutes:02}:{remaining_seconds:02}")
 }

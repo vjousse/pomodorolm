@@ -112,5 +112,5 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
     imgbuf
         .save(temp_path)
         .map(|_| temp_path.to_path_buf())
-        .map_err(|e| format!("Failed to save image to {:?}: {:?}.", temp_path, e))
+        .map_err(|e| format!("Failed to save image to {temp_path:?}: {e:?}."))
 }
