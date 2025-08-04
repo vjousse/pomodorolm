@@ -838,18 +838,22 @@ fn get_sound_file<'a>(
     config: &'a Config,
 ) -> Option<PathBuf> {
     match sound_id {
-        "audio-long-break" => {
-            resolve_resource_path(app_handle, format!("audio/{}", "alert-long-break.mp3")).ok()
-        }
+        "audio-long-break" => match &config.long_break_audio {
+            Some(path) => Some(PathBuf::from(path)),
+            None => {
+                resolve_resource_path(app_handle, format!("audio/{}", "alert-long-break.mp3")).ok()
+            }
+        },
         "audio-short-break" => match &config.short_break_audio {
             Some(path) => Some(PathBuf::from(path)),
             None => {
                 resolve_resource_path(app_handle, format!("audio/{}", "alert-short-break.mp3")).ok()
             }
         },
-        "audio-work" => {
-            resolve_resource_path(app_handle, format!("audio/{}", "alert-work.mp3")).ok()
-        }
+        "audio-work" => match &config.focus_audio {
+            Some(path) => Some(PathBuf::from(path)),
+            None => resolve_resource_path(app_handle, format!("audio/{}", "alert-work.mp3")).ok(),
+        },
         "audio-tick" => resolve_resource_path(app_handle, format!("audio/{}", "tick.mp3")).ok(),
         _ => None,
     }
