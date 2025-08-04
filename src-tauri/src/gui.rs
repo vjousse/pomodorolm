@@ -765,7 +765,8 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
 }
 
 #[tauri::command]
-async fn handle_external_message(
+async fn handle_external_message<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, AppState>,
     name: String,
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
@@ -777,6 +778,9 @@ async fn handle_external_message(
         }
         "play" => {
             app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
+        }
+        "quit" => {
+            app.exit(0);
         }
         "reset" => {
             app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);

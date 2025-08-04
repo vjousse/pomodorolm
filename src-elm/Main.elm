@@ -333,6 +333,7 @@ update msg ({ config } as model) =
                     model.pomodoroState
                         |> Maybe.map
                             (\state ->
+                                -- If we’ve changed the session type
                                 if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
                                     case pomodoroState.currentSession.sessionType of
                                         Focus ->
@@ -349,6 +350,15 @@ update msg ({ config } as model) =
                                                 "start_focus"
                                                 model.config.focusDuration
                                                 currentColor
+                                                ++ (if
+                                                        (config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
+                                                            || (config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
+                                                    then
+                                                        [ sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing }) ]
+
+                                                    else
+                                                        []
+                                                   )
 
                                         LongBreak ->
                                             getCmds
@@ -369,6 +379,12 @@ update msg ({ config } as model) =
                                                 "start_short_break"
                                                 model.config.shortBreakDuration
                                                 currentColor
+                                                ++ (if config.autoQuit == Just Focus then
+                                                        [ sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing }) ]
+
+                                                    else
+                                                        []
+                                                   )
 
                                 else
                                     []
