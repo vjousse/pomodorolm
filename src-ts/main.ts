@@ -181,10 +181,6 @@ app = Elm.Main.init({
   },
 });
 
-app.ports.playSound.subscribe(function (soundElementId: string) {
-  invoke("play_sound_command", { soundId: soundElementId });
-});
-
 app.ports.hideWindow.subscribe(function () {
   invoke("hide_window");
 });
@@ -220,6 +216,11 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
         session_type: message.value,
         file_path: file,
       });
+      break;
+
+    case "play_sound":
+      let soundElementId: string = message.value as string;
+      invoke("play_sound_command", { soundId: soundElementId });
       break;
 
     case "get_init_data":

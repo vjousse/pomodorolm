@@ -310,7 +310,7 @@ update msg ({ config } as model) =
                         Cmd.none
 
                       else
-                        playSound soundName
+                        sendMessageFromElm (elmMessageEncoder { name = "play_sound", value = Just soundName })
                     ]
 
                 maxTime =
@@ -753,9 +753,6 @@ port sendMessageToElm : (Decode.Value -> msg) -> Sub msg
 
 
 port sendMessageFromElm : Encode.Value -> Cmd msg
-
-
-port playSound : String -> Cmd msg
 
 
 port setVolume : Float -> Cmd msg
