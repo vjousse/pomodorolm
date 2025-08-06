@@ -1,10 +1,10 @@
-module Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder)
+module Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
 import Themes exposing (Theme, ThemeColors)
-import Types exposing (Config, ElmMessage, ExternalMessage(..), InitData, PomodoroSession, PomodoroState, SessionStatus(..), SessionType(..), sessionTypeToString)
+import Types exposing (Config, ElmMessage, ExternalMessage(..), InitData, PomodoroSession, PomodoroState, SessionStatus(..), SessionType(..), SoundMessageValue, sessionTypeToString)
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value
@@ -56,6 +56,14 @@ themeDecoder =
 themesDecoder : Decode.Decoder (List Theme)
 themesDecoder =
     Decode.list themeDecoder
+
+
+soundMessageEncoder : SoundMessageValue -> Encode.Value
+soundMessageEncoder soundMessageValue =
+    Encode.object
+        [ ( "soundId", Encode.string soundMessageValue.soundId )
+        , ( "quitAfterPlay", Encode.bool soundMessageValue.quitAfterPlay )
+        ]
 
 
 configEncoder : Config -> Encode.Value

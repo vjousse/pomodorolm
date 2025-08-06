@@ -23,10 +23,14 @@ type ElmState = {
   percentage: number;
   paused: boolean;
 };
+type SoundMessage = {
+  soundId: string;
+  quitAfterPlay: boolean;
+};
 
 type Message = {
   name: string;
-  value: string | ElmConfig;
+  value: string | ElmConfig | SoundMessage;
 };
 
 type Notification = {
@@ -219,8 +223,17 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
       break;
 
     case "play_sound":
-      let soundElementId: string = message.value as string;
-      invoke("play_sound_command", { soundId: soundElementId });
+      let soundMessage: SoundMessage = message.value as SoundMessage;
+      invoke("play_sound_command", {
+        playSoundMessage: {
+          sound_id: soundMessage.soundId,
+          quit_after_play: soundMessage.quitAfterPlay,
+        },
+      });
+      break;
+
+    case "quit":
+      invoke("quit");
       break;
 
     case "get_init_data":

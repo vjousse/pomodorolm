@@ -1,4 +1,4 @@
-module Types exposing (Config, CurrentState, Defaults, ElmMessage, ExternalMessage(..), InitData, Model, Msg(..), Notification, PomodoroSession, PomodoroState, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
+module Types exposing (Config, CurrentState, Defaults, ElmMessage, ExternalMessage(..), InitData, Model, Msg(..), Notification, PomodoroSession, PomodoroState, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), SoundMessageValue, sessionTypeToString)
 
 import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
@@ -55,6 +55,12 @@ type alias Seconds =
 type alias ElmMessage =
     { name : String
     , value : Maybe String
+    }
+
+
+type alias SoundMessageValue =
+    { soundId : String
+    , quitAfterPlay : Bool
     }
 
 

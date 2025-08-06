@@ -4,7 +4,7 @@ import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder)
+import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
@@ -299,18 +299,22 @@ update msg ({ config } as model) =
                     , blue = b
                     }
 
-                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> List (Cmd Msg)
-                getCmds { desktopNotifications, muted } soundName title body name duration rgb =
+                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> Bool -> List (Cmd Msg)
+                getCmds { desktopNotifications, muted } soundName title body name duration rgb quit =
                     [ if desktopNotifications then
                         notify <| getNotification title body name duration rgb
 
                       else
                         Cmd.none
                     , if muted then
-                        Cmd.none
+                        if quit then
+                            sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing })
+
+                        else
+                            Cmd.none
 
                       else
-                        sendMessageFromElm (elmMessageEncoder { name = "play_sound", value = Just soundName })
+                        sendMessageFromElm (elmMessageBuilder "play_sound" { soundId = soundName, quitAfterPlay = quit } soundMessageEncoder)
                     ]
 
                 maxTime =
@@ -350,15 +354,9 @@ update msg ({ config } as model) =
                                                 "start_focus"
                                                 model.config.focusDuration
                                                 currentColor
-                                                ++ (if
-                                                        (config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
-                                                            || (config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
-                                                    then
-                                                        [ sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing }) ]
-
-                                                    else
-                                                        []
-                                                   )
+                                                ((config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
+                                                    || (config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
+                                                )
 
                                         LongBreak ->
                                             getCmds
@@ -369,6 +367,7 @@ update msg ({ config } as model) =
                                                 "start_long_break"
                                                 model.config.longBreakDuration
                                                 currentColor
+                                                False
 
                                         ShortBreak ->
                                             getCmds
@@ -379,12 +378,7 @@ update msg ({ config } as model) =
                                                 "start_short_break"
                                                 model.config.shortBreakDuration
                                                 currentColor
-                                                ++ (if config.autoQuit == Just Focus then
-                                                        [ sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing }) ]
-
-                                                    else
-                                                        []
-                                                   )
+                                                (config.autoQuit == Just Focus)
 
                                 else
                                     []

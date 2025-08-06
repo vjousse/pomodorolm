@@ -43,6 +43,12 @@ struct MenuStates<R: Runtime> {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+struct PlaySoundMessage {
+    sound_id: String,
+    quit_after_play: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct Colors {
     accent: String,
     background: String,
@@ -331,7 +337,8 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
             notify,
             play_sound_command,
             update_config,
-            update_session_status
+            update_session_status,
+            quit
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -658,11 +665,16 @@ async fn load_init_data(
 }
 
 #[tauri::command]
-async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    let state: tauri::State<AppState> = app_handle.state();
+async fn play_sound_command(app_handle: tauri::AppHandle, play_sound_message: PlaySoundMessage) {
+    let app = app_handle.clone();
+    let state: tauri::State<AppState> = app.state();
     let state_guard = state.0.lock().await;
 
-    match get_sound_file(sound_id.as_str(), &app_handle, &state_guard.config) {
+    match get_sound_file(
+        play_sound_message.sound_id.as_str(),
+        &app_handle,
+        &state_guard.config,
+    ) {
         Some(sound_file) => {
             // Fail silently if we can't play sound file
 
@@ -673,10 +685,20 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
                         "Unable to play sound file {sound_file:?}: {play_sound_file_result:?}"
                     );
                 }
+                if play_sound_message.quit_after_play {
+                    app_handle.exit(0);
+                }
             });
         }
-        None => eprintln!("Impossible to get sound file with id {sound_id}"),
+        None => eprintln!(
+            "Impossible to get sound file with id {}",
+            play_sound_message.sound_id
+        ),
     }
+}
+#[tauri::command]
+async fn quit(app_handle: tauri::AppHandle) {
+    app_handle.exit(0);
 }
 
 #[tauri::command]
