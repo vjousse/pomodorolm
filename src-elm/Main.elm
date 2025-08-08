@@ -162,10 +162,6 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ config } as model) =
-    let
-        _ =
-            Debug.log "MSG" msg
-    in
     case msg of
         AudioFileRequested sessionType ->
             ( model
