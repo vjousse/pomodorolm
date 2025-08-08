@@ -4,13 +4,31 @@ import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (elmMessageEncoder, externalMessageDecoder)
+import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
+import Types
+    exposing
+        ( Config
+        , CurrentState
+        , Defaults
+        , ExternalMessage(..)
+        , Model
+        , Msg(..)
+        , Notification
+        , RGB(..)
+        , Seconds
+        , SessionStatus(..)
+        , SessionType(..)
+        , Setting(..)
+        , SettingTab(..)
+        , SettingType(..)
+        , sessionTypeFromString
+        , sessionTypeToString
+        )
 import View.Drawer
 import View.Nav
 import View.Timer
@@ -42,8 +60,10 @@ sessionStatusToString sessionStatus =
 type alias Flags =
     { alwaysOnTop : Bool
     , appVersion : String
-    , autoStartWorkTimer : Bool
+    , autoQuit : Maybe String
     , autoStartBreakTimer : Bool
+    , autoStartOnAppStartup : Bool
+    , autoStartWorkTimer : Bool
     , defaultFocusLabel : String
     , defaultShortBreakLabel : String
     , defaultLongBreakLabel : String
@@ -87,8 +107,16 @@ init flags =
     ( { appVersion = flags.appVersion
       , config =
             { alwaysOnTop = flags.alwaysOnTop
-            , autoStartWorkTimer = flags.autoStartWorkTimer
+            , autoQuit =
+                flags.autoQuit
+                    |> Maybe.andThen
+                        (\v ->
+                            Decode.decodeString sessionTypeDecoder v
+                                |> Result.toMaybe
+                        )
             , autoStartBreakTimer = flags.autoStartBreakTimer
+            , autoStartOnAppStartup = flags.autoStartOnAppStartup
+            , autoStartWorkTimer = flags.autoStartWorkTimer
             , defaultFocusLabel = flags.defaultFocusLabel
             , defaultLongBreakLabel = flags.defaultLongBreakLabel
             , defaultShortBreakLabel = flags.defaultShortBreakLabel
@@ -126,8 +154,7 @@ init flags =
     , Cmd.batch
         [ updateCurrentState currentState
         , updateSessionStatus (NotStarted |> sessionStatusToString)
-        , sendMessageFromElm (elmMessageEncoder { name = "get-state", value = Nothing })
-        , getConfigFromRust ()
+        , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
         , setThemeColors <| theme.colors
         ]
     )
@@ -176,7 +203,7 @@ update msg ({ config } as model) =
               }
             , Cmd.batch
                 [ setThemeColors theme.colors
-                , updateConfig newConfig
+                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
                 , updateCurrentState newState
                 ]
             )
@@ -205,7 +232,7 @@ update msg ({ config } as model) =
         NoOp ->
             ( model, Cmd.none )
 
-        ProcessExternalMessage (RustConfigAndThemesMsg c) ->
+        ProcessExternalMessage (InitDataMsg c) ->
             let
                 updatedThemes =
                     c.themes
@@ -226,7 +253,7 @@ update msg ({ config } as model) =
                         Nothing ->
                             updatedThemes
 
-                newModel =
+                ( newModel, newCmd ) =
                     { model
                         | config = c.config
                         , focusLabel = c.config.defaultFocusLabel
@@ -234,17 +261,34 @@ update msg ({ config } as model) =
                         , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
-            in
-            case newThemes |> ListWithCurrent.getCurrent of
-                Just currentTheme ->
-                    let
-                        ( updatedModel, cmds ) =
-                            update (ChangeTheme currentTheme) newModel
-                    in
-                    ( updatedModel, Cmd.batch [ cmds, updateSessionStatus (NotStarted |> sessionStatusToString) ] )
+                        |> update (ProcessExternalMessage (RustStateMsg c.pomodoroState))
 
-                _ ->
-                    ( newModel, updateSessionStatus (NotStarted |> sessionStatusToString) )
+                ( modelWithTheme, cmdWithTheme ) =
+                    let
+                        baseCmd =
+                            [ newCmd, updateSessionStatus (NotStarted |> sessionStatusToString) ]
+                    in
+                    case newThemes |> ListWithCurrent.getCurrent of
+                        Just currentTheme ->
+                            let
+                                ( updatedModel, updatedCmd ) =
+                                    update (ChangeTheme currentTheme) newModel
+                            in
+                            ( updatedModel, Cmd.batch (updatedCmd :: baseCmd) )
+
+                        _ ->
+                            ( newModel, Cmd.batch baseCmd )
+            in
+            -- Auto start if config is set
+            if modelWithTheme.config.autoStartOnAppStartup then
+                let
+                    ( updatedModel, updatedCmd ) =
+                        update TogglePlayStatus modelWithTheme
+                in
+                ( updatedModel, Cmd.batch [ cmdWithTheme, updatedCmd ] )
+
+            else
+                ( modelWithTheme, cmdWithTheme )
 
         ProcessExternalMessage (RustStateMsg pomodoroState) ->
             let
@@ -273,18 +317,22 @@ update msg ({ config } as model) =
                     , blue = b
                     }
 
-                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> List (Cmd Msg)
-                getCmds { desktopNotifications, muted } soundName title body name duration rgb =
+                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> Bool -> List (Cmd Msg)
+                getCmds { desktopNotifications, muted } soundName title body name duration rgb quit =
                     [ if desktopNotifications then
                         notify <| getNotification title body name duration rgb
 
                       else
                         Cmd.none
                     , if muted then
-                        Cmd.none
+                        if quit then
+                            sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing })
+
+                        else
+                            Cmd.none
 
                       else
-                        playSound soundName
+                        sendMessageFromElm (elmMessageBuilder "play_sound" { soundId = soundName, quitAfterPlay = quit } soundMessageEncoder)
                     ]
 
                 maxTime =
@@ -307,6 +355,7 @@ update msg ({ config } as model) =
                     model.pomodoroState
                         |> Maybe.map
                             (\state ->
+                                -- If we’ve changed the session type
                                 if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
                                     case pomodoroState.currentSession.sessionType of
                                         Focus ->
@@ -323,6 +372,9 @@ update msg ({ config } as model) =
                                                 "start_focus"
                                                 model.config.focusDuration
                                                 currentColor
+                                                ((config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
+                                                    || (config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
+                                                )
 
                                         LongBreak ->
                                             getCmds
@@ -333,6 +385,7 @@ update msg ({ config } as model) =
                                                 "start_long_break"
                                                 model.config.longBreakDuration
                                                 currentColor
+                                                False
 
                                         ShortBreak ->
                                             getCmds
@@ -343,6 +396,7 @@ update msg ({ config } as model) =
                                                 "start_short_break"
                                                 model.config.shortBreakDuration
                                                 currentColor
+                                                (config.autoQuit == Just Focus)
 
                                 else
                                     []
@@ -371,7 +425,7 @@ update msg ({ config } as model) =
                             { config | longBreakAudio = Just path }
             in
             ( { model | config = newConfig }
-            , updateConfig newConfig
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
         Reset ->
@@ -431,7 +485,7 @@ update msg ({ config } as model) =
             ( { model
                 | config = newConfig
               }
-            , updateConfig newConfig
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
         SkipCurrentRound ->
@@ -490,7 +544,10 @@ update msg ({ config } as model) =
                     { config | muted = not config.muted }
             in
             ( { model | volume = newVolume, config = newConfig }
-            , Cmd.batch [ setVolume newVolume, updateConfig newConfig ]
+            , Cmd.batch
+                [ setVolume newVolume
+                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
+                ]
             )
 
         TogglePlayStatus ->
@@ -572,6 +629,9 @@ update msg ({ config } as model) =
 
                 newConfig =
                     case settingType of
+                        AutoQuit sessionTypeString ->
+                            { config | autoQuit = sessionTypeFromString sessionTypeString }
+
                         FocusTime value ->
                             { config | focusDuration = min (90 * 60) (toInt value * 60) }
 
@@ -606,6 +666,9 @@ update msg ({ config } as model) =
                                 AutoStartWorkTimer ->
                                     { config | autoStartWorkTimer = not config.autoStartWorkTimer }
 
+                                AutoStartOnAppStartup ->
+                                    { config | autoStartOnAppStartup = not config.autoStartOnAppStartup }
+
                                 DesktopNotifications ->
                                     { config | desktopNotifications = not config.desktopNotifications }
 
@@ -629,7 +692,7 @@ update msg ({ config } as model) =
             in
             ( { model | config = newConfig }
             , Cmd.batch
-                [ updateConfig newConfig
+                [ sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
@@ -707,16 +770,10 @@ port sendMessageToElm : (Decode.Value -> msg) -> Sub msg
 port sendMessageFromElm : Encode.Value -> Cmd msg
 
 
-port playSound : String -> Cmd msg
-
-
 port setVolume : Float -> Cmd msg
 
 
 port closeWindow : () -> Cmd msg
-
-
-port getConfigFromRust : () -> Cmd msg
 
 
 port minimizeWindow : () -> Cmd msg
@@ -732,9 +789,6 @@ port updateSessionStatus : String -> Cmd msg
 
 
 port notify : Notification -> Cmd msg
-
-
-port updateConfig : Config -> Cmd msg
 
 
 port setThemeColors : ThemeColors -> Cmd msg

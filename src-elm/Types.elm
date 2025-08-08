@@ -1,4 +1,26 @@
-module Types exposing (Config, ConfigAndThemes, CurrentState, Defaults, ElmMessage, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), RustSession, RustState, Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
+module Types exposing
+    ( Config
+    , CurrentState
+    , Defaults
+    , ElmMessage
+    , ExternalMessage(..)
+    , InitData
+    , Model
+    , Msg(..)
+    , Notification
+    , PomodoroSession
+    , PomodoroState
+    , RGB(..)
+    , Seconds
+    , SessionStatus(..)
+    , SessionType(..)
+    , Setting(..)
+    , SettingTab(..)
+    , SettingType(..)
+    , SoundMessageValue
+    , sessionTypeFromString
+    , sessionTypeToString
+    )
 
 import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
@@ -16,7 +38,7 @@ type alias Model =
     , drawerOpen : Bool
     , focusLabel : String
     , longBreakLabel : String
-    , pomodoroState : Maybe RustState
+    , pomodoroState : Maybe PomodoroState
     , settingTab : SettingTab
     , shortBreakLabel : String
     , strokeDasharray : Float
@@ -58,9 +80,17 @@ type alias ElmMessage =
     }
 
 
+type alias SoundMessageValue =
+    { soundId : String
+    , quitAfterPlay : Bool
+    }
+
+
 type alias Config =
     { alwaysOnTop : Bool
+    , autoQuit : Maybe SessionType
     , autoStartBreakTimer : Bool
+    , autoStartOnAppStartup : Bool
     , autoStartWorkTimer : Bool
     , defaultFocusLabel : String
     , defaultLongBreakLabel : String
@@ -84,8 +114,9 @@ type alias Config =
     }
 
 
-type alias ConfigAndThemes =
+type alias InitData =
     { config : Config
+    , pomodoroState : PomodoroState
     , themes : List Theme
     }
 
@@ -127,8 +158,9 @@ type SettingTab
 
 type Setting
     = AlwaysOnTop
-    | AutoStartWorkTimer
     | AutoStartBreakTimer
+    | AutoStartOnAppStartup
+    | AutoStartWorkTimer
     | DesktopNotifications
     | MinimizeToTray
     | MinimizeToTrayOnClose
@@ -147,7 +179,8 @@ type alias Defaults =
 
 
 type SettingType
-    = FocusTime String
+    = AutoQuit String
+    | FocusTime String
     | Label SessionType String
     | LongBreakTime String
     | Rounds String
@@ -155,7 +188,7 @@ type SettingType
     | Toggle Setting
 
 
-type alias RustSession =
+type alias PomodoroSession =
     { currentTime : Seconds
     , label : Maybe String
     , sessionType : SessionType
@@ -163,15 +196,15 @@ type alias RustSession =
     }
 
 
-type alias RustState =
-    { currentSession : RustSession
+type alias PomodoroState =
+    { currentSession : PomodoroSession
     , currentWorkRoundNumber : Int
     }
 
 
 type ExternalMessage
-    = RustStateMsg RustState
-    | RustConfigAndThemesMsg ConfigAndThemes
+    = RustStateMsg PomodoroState
+    | InitDataMsg InitData
     | SoundFilePath SessionType String
 
 
@@ -179,10 +212,26 @@ sessionTypeToString : SessionType -> String
 sessionTypeToString sessionType =
     case sessionType of
         Focus ->
-            "focus"
+            "Focus"
 
         ShortBreak ->
-            "shortbreak"
+            "ShortBreak"
 
         LongBreak ->
-            "longbreak"
+            "LongBreak"
+
+
+sessionTypeFromString : String -> Maybe SessionType
+sessionTypeFromString string =
+    case String.toLower string of
+        "focus" ->
+            Just Focus
+
+        "shortbreak" ->
+            Just ShortBreak
+
+        "longbreak" ->
+            Just LongBreak
+
+        _ ->
+            Nothing

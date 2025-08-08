@@ -615,3 +615,14 @@ input[type="range"]::-webkit-slider-thumb {
   max-height: calc(100% - 10vw);
   overflow-y: auto;
 }
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-background-light);
+  color: var(--color-foreground-darker);
+  padding: 0.3em;
+
+  border: 0.56vw solid var(--color-background-lightest);
+  font-size: 0.7rem;
+}

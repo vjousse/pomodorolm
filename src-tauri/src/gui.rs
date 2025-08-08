@@ -43,6 +43,12 @@ struct MenuStates<R: Runtime> {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+struct PlaySoundMessage {
+    sound_id: String,
+    quit_after_play: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct Colors {
     accent: String,
     background: String,
@@ -326,12 +332,13 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
             close_window,
             handle_external_message,
             hide_window,
-            load_config_and_themes,
+            load_init_data,
             minimize_window,
             notify,
             play_sound_command,
             update_config,
-            update_session_status
+            update_session_status,
+            quit
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -596,10 +603,10 @@ async fn update_config(
 }
 
 #[tauri::command]
-async fn load_config_and_themes(
+async fn load_init_data(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
-) -> Result<(Config, Vec<Theme>), ()> {
+) -> Result<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed), ()> {
     let mut state_guard = state.0.lock().await;
 
     let config = match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
@@ -654,15 +661,20 @@ async fn load_config_and_themes(
         }
     }
 
-    config.map(|c| (c, themes))
+    config.map(|c| (c, themes, state_guard.pomodoro.to_unborrowed()))
 }
 
 #[tauri::command]
-async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
-    let state: tauri::State<AppState> = app_handle.state();
+async fn play_sound_command(app_handle: tauri::AppHandle, play_sound_message: PlaySoundMessage) {
+    let app = app_handle.clone();
+    let state: tauri::State<AppState> = app.state();
     let state_guard = state.0.lock().await;
 
-    match get_sound_file(sound_id.as_str(), &app_handle, &state_guard.config) {
+    match get_sound_file(
+        play_sound_message.sound_id.as_str(),
+        &app_handle,
+        &state_guard.config,
+    ) {
         Some(sound_file) => {
             // Fail silently if we can't play sound file
 
@@ -673,10 +685,20 @@ async fn play_sound_command(app_handle: tauri::AppHandle, sound_id: String) {
                         "Unable to play sound file {sound_file:?}: {play_sound_file_result:?}"
                     );
                 }
+                if play_sound_message.quit_after_play {
+                    app_handle.exit(0);
+                }
             });
         }
-        None => eprintln!("Impossible to get sound file with id {sound_id}"),
+        None => eprintln!(
+            "Impossible to get sound file with id {}",
+            play_sound_message.sound_id
+        ),
     }
+}
+#[tauri::command]
+async fn quit(app_handle: tauri::AppHandle) {
+    app_handle.exit(0);
 }
 
 #[tauri::command]
@@ -765,12 +787,11 @@ async fn notify(app_handle: tauri::AppHandle, notification: ElmNotification) {
 }
 
 #[tauri::command]
-async fn handle_external_message(
+async fn handle_external_message<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, AppState>,
     name: String,
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
-    eprintln!("Got external message {name:?}");
-
     let mut app_state_guard = state.0.lock().await;
 
     match name.as_str() {
@@ -780,13 +801,16 @@ async fn handle_external_message(
         "play" => {
             app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
         }
+        "quit" => {
+            app.exit(0);
+        }
         "reset" => {
             app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
         }
         "skip" => {
             app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
         }
-        _ => eprintln!("Unknown message"),
+        message => eprintln!("[rust] Got unknown message `{message}`, ignoring."),
     }
 
     // Needed because Tauri doesn't play well with returning references
