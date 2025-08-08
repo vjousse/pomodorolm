@@ -10,7 +10,25 @@ import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, Defaults, ExternalMessage(..), Model, Msg(..), Notification, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), sessionTypeToString)
+import Types
+    exposing
+        ( Config
+        , CurrentState
+        , Defaults
+        , ExternalMessage(..)
+        , Model
+        , Msg(..)
+        , Notification
+        , RGB(..)
+        , Seconds
+        , SessionStatus(..)
+        , SessionType(..)
+        , Setting(..)
+        , SettingTab(..)
+        , SettingType(..)
+        , sessionTypeFromString
+        , sessionTypeToString
+        )
 import View.Drawer
 import View.Nav
 import View.Timer
@@ -144,6 +162,10 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ config } as model) =
+    let
+        _ =
+            Debug.log "MSG" msg
+    in
     case msg of
         AudioFileRequested sessionType ->
             ( model
@@ -611,6 +633,9 @@ update msg ({ config } as model) =
 
                 newConfig =
                     case settingType of
+                        AutoQuit sessionTypeString ->
+                            { config | autoQuit = sessionTypeFromString sessionTypeString }
+
                         FocusTime value ->
                             { config | focusDuration = min (90 * 60) (toInt value * 60) }
 

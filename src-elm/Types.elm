@@ -1,4 +1,26 @@
-module Types exposing (Config, CurrentState, Defaults, ElmMessage, ExternalMessage(..), InitData, Model, Msg(..), Notification, PomodoroSession, PomodoroState, RGB(..), Seconds, SessionStatus(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..), SoundMessageValue, sessionTypeToString)
+module Types exposing
+    ( Config
+    , CurrentState
+    , Defaults
+    , ElmMessage
+    , ExternalMessage(..)
+    , InitData
+    , Model
+    , Msg(..)
+    , Notification
+    , PomodoroSession
+    , PomodoroState
+    , RGB(..)
+    , Seconds
+    , SessionStatus(..)
+    , SessionType(..)
+    , Setting(..)
+    , SettingTab(..)
+    , SettingType(..)
+    , SoundMessageValue
+    , sessionTypeFromString
+    , sessionTypeToString
+    )
 
 import ListWithCurrent exposing (ListWithCurrent)
 import Themes exposing (Theme)
@@ -157,7 +179,8 @@ type alias Defaults =
 
 
 type SettingType
-    = FocusTime String
+    = AutoQuit String
+    | FocusTime String
     | Label SessionType String
     | LongBreakTime String
     | Rounds String
@@ -189,10 +212,26 @@ sessionTypeToString : SessionType -> String
 sessionTypeToString sessionType =
     case sessionType of
         Focus ->
-            "focus"
+            "Focus"
 
         ShortBreak ->
-            "shortbreak"
+            "ShortBreak"
 
         LongBreak ->
-            "longbreak"
+            "LongBreak"
+
+
+sessionTypeFromString : String -> Maybe SessionType
+sessionTypeFromString string =
+    case String.toLower string of
+        "focus" ->
+            Just Focus
+
+        "shortbreak" ->
+            Just ShortBreak
+
+        "longbreak" ->
+            Just LongBreak
+
+        _ ->
+            Nothing

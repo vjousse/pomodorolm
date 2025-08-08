@@ -1,7 +1,7 @@
 module View.Drawer exposing (drawerView)
 
-import Html exposing (Html, a, div, h2, input, p, section, span, text)
-import Html.Attributes exposing (class, href, id, style, target, title, type_, value)
+import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
+import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import ListWithCurrent
 import Svg exposing (path, svg)
@@ -533,21 +533,35 @@ timerSettingView model =
 
 
 settingsSettingView : Model -> Html Msg
-settingsSettingView model =
+settingsSettingView { config } =
     div [ class "container", id "settings" ]
         [ p
             [ class "drawer-heading"
             ]
             [ text "General Settings" ]
-        , settingWrapper "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) model.config.alwaysOnTop
-        , settingWrapper "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) model.config.autoStartWorkTimer
-        , settingWrapper "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) model.config.autoStartOnAppStartup
-        , settingWrapper "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) model.config.autoStartBreakTimer
-        , settingWrapper "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) model.config.systemStartupAutoStart
-        , settingWrapper "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) model.config.desktopNotifications
-        , settingWrapper "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) model.config.minimizeToTray
-        , settingWrapper "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) model.config.minimizeToTrayOnClose
-        , settingWrapper "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) model.config.startMinimized
+        , settingWrapper "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) config.alwaysOnTop
+        , settingWrapper "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) config.autoStartWorkTimer
+        , settingWrapper "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) config.autoStartOnAppStartup
+        , settingWrapper "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) config.autoStartBreakTimer
+        , settingWrapper "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) config.systemStartupAutoStart
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title", style "margin-top" "0.3rem" ] [ text "Auto-quit app" ]
+            , div
+                []
+                [ select [ onInput (AutoQuit >> UpdateSetting) ]
+                    [ option [ value "", selected (config.autoQuit == Nothing) ] [ text "Never" ]
+                    , option [ value "Focus", selected (config.autoQuit == Just Focus) ] [ text "After Focus" ]
+                    , option [ value "ShortBreak", selected (config.autoQuit == Just ShortBreak) ] [ text "After Short Break" ]
+                    , option [ value "LongBreak", selected (config.autoQuit == Just LongBreak) ] [ text "After Long Break" ]
+                    ]
+                ]
+            ]
+        , settingWrapper "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) config.desktopNotifications
+        , settingWrapper "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) config.minimizeToTray
+        , settingWrapper "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) config.minimizeToTrayOnClose
+        , settingWrapper "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) config.startMinimized
         ]
 
 
@@ -607,8 +621,6 @@ textSettingView model =
                     , class "setting-input"
                     , value model.config.defaultShortBreakLabel
                     , onInput <| Label ShortBreak >> UpdateSetting
-
-                    -- , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
                     ]
                     []
 
@@ -630,12 +642,8 @@ textSettingView model =
                     , class "setting-input"
                     , value model.config.defaultLongBreakLabel
                     , onInput <| Label LongBreak >> UpdateSetting
-
-                    -- , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
                     ]
                     []
-
-                -- , text ":00"
                 ]
             ]
         ]
