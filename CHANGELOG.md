@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.6.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.0)] - 2025-08-08
+
+### 🚀 Features
+
+- Edit current and default session labels ([#174](https://github.com/vjousse/pomodorolm/issues/174))
+- Add autostart and autoquit ([#178](https://github.com/vjousse/pomodorolm/issues/178))
+
+### 🐛 Bug Fixes
+
+- Play all custom sounds ([#183](https://github.com/vjousse/pomodorolm/issues/183))
+
 ## [[app-v0.5.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.5.0)] - 2025-05-23
 
 ### 🚀 Features
@@ -12,6 +23,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update AUR checksum for 0.4.0
+- Bump to 0.5.0
 
 ## [[app-v0.4.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.4.0)] - 2025-05-11
 
