@@ -131,3 +131,25 @@ impl Default for Config {
         }
     }
 }
+
+pub fn pomodoro_config(config: &Config) -> pomodoro::Config {
+    pomodoro::Config {
+        auto_start_long_break_timer: config.auto_start_break_timer,
+        auto_start_short_break_timer: config.auto_start_break_timer,
+        auto_start_focus_timer: config.auto_start_work_timer,
+        default_focus_label: config.default_focus_label.clone(),
+        default_short_break_label: config.default_short_break_label.clone(),
+        default_long_break_label: config.default_long_break_label.clone(),
+        focus_duration: config.focus_duration,
+        long_break_duration: config.long_break_duration,
+        max_focus_rounds: config.max_round_number,
+        short_break_duration: config.short_break_duration,
+    }
+}
+
+pub fn pomodoro_state_from_config(config: &Config) -> pomodoro::Pomodoro {
+    pomodoro::Pomodoro {
+        config: pomodoro_config(config),
+        ..pomodoro::Pomodoro::default()
+    }
+}
