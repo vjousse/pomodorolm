@@ -90,6 +90,7 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 }
             };
             pomodoro.current_session.label = Some(session_info.label.clone());
+            pomodoro.current_session.session_type = session_info.session_type;
 
             if let Some(remaining_time) =
                 get_remaining_time(&session_file_path, pomodoro.config.focus_duration as u64).await
