@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::error::Error;
+use std::fmt;
+use std::str::FromStr;
 
 #[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub enum SessionStatus {
@@ -13,14 +16,41 @@ pub enum SessionType {
     ShortBreak,
     LongBreak,
 }
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseSessionTypeError;
+
+impl fmt::Display for ParseSessionTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unable to parse session type")
+    }
+}
+
+impl Error for ParseSessionTypeError {}
+
+impl FromStr for SessionType {
+    type Err = ParseSessionTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let opt = match s.to_lowercase().as_str() {
+            "focus" => Self::Focus,
+            "longbreak" => Self::LongBreak,
+            "shortbreak" => Self::ShortBreak,
+            _ => return Err(ParseSessionTypeError),
+        };
+        Ok(opt)
+    }
+}
 
 type Seconds = u16;
 
-#[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub auto_start_long_break_timer: bool,
     pub auto_start_short_break_timer: bool,
     pub auto_start_focus_timer: bool,
+    pub default_focus_label: String,
+    pub default_long_break_label: String,
+    pub default_short_break_label: String,
     pub focus_duration: Seconds,
     pub long_break_duration: Seconds,
     pub max_focus_rounds: u16,
@@ -33,6 +63,9 @@ impl Default for Config {
             auto_start_long_break_timer: false,
             auto_start_short_break_timer: false,
             auto_start_focus_timer: false,
+            default_focus_label: "Focus".to_owned(),
+            default_long_break_label: "Long Break".to_owned(),
+            default_short_break_label: "Short Break".to_owned(),
             focus_duration: 25 * 60,
             long_break_duration: 20 * 60,
             max_focus_rounds: 4,
@@ -67,15 +100,7 @@ pub struct SessionUnburrowed {
 impl Default for Pomodoro {
     fn default() -> Self {
         Pomodoro {
-            config: Config {
-                auto_start_long_break_timer: false,
-                auto_start_short_break_timer: false,
-                auto_start_focus_timer: false,
-                focus_duration: 25 * 60,
-                long_break_duration: 20 * 60,
-                max_focus_rounds: 4,
-                short_break_duration: 5 * 60,
-            },
+            config: Config::default(),
             current_session: Session::default(),
             current_work_round_number: 1,
         }
@@ -92,7 +117,7 @@ impl Pomodoro {
 
     pub fn to_unborrowed(&self) -> PomodoroUnborrowed {
         PomodoroUnborrowed {
-            config: self.config,
+            config: self.config.clone(),
             current_work_round_number: self.current_work_round_number,
             current_session: SessionUnburrowed {
                 current_time: self.current_session.current_time,
@@ -130,6 +155,7 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
             label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
+        config: pomodoro.config.clone(),
         ..*pomodoro
     }
 }
@@ -141,6 +167,7 @@ pub fn play(pomodoro: &Pomodoro) -> Pomodoro {
             label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
+        config: pomodoro.config.clone(),
         ..*pomodoro
     }
 }
@@ -153,6 +180,7 @@ pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
             label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
+        config: pomodoro.config.clone(),
         ..*pomodoro
     }
 }
@@ -217,7 +245,7 @@ pub fn next(pomodoro: &Pomodoro) -> Pomodoro {
             SessionType::LongBreak => 1,
             _ => pomodoro.current_work_round_number,
         },
-        ..*pomodoro
+        config: pomodoro.config.clone(),
     }
 }
 
@@ -239,6 +267,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Pomodoro {
                     label: session.label,
                     ..pomodoro.current_session
                 },
+                config: pomodoro.config.clone(),
                 ..*pomodoro
             }
         }

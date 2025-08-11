@@ -3,7 +3,7 @@
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
 
-use crate::config::Config;
+use crate::config::{pomodoro_config, pomodoro_state_from_config, Config};
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
@@ -437,25 +437,6 @@ fn read_config_from_disk<R: Runtime>(
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
     Config::get_or_create_from_disk(&config_dir, None)
-}
-
-fn pomodoro_config(config: &Config) -> pomodoro::Config {
-    pomodoro::Config {
-        auto_start_long_break_timer: config.auto_start_break_timer,
-        auto_start_short_break_timer: config.auto_start_break_timer,
-        auto_start_focus_timer: config.auto_start_work_timer,
-        focus_duration: config.focus_duration,
-        long_break_duration: config.long_break_duration,
-        max_focus_rounds: config.max_round_number,
-        short_break_duration: config.short_break_duration,
-    }
-}
-
-fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
-    pomodoro::Pomodoro {
-        config: pomodoro_config(config),
-        ..pomodoro::Pomodoro::default()
-    }
 }
 
 fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
