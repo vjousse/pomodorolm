@@ -1,5 +1,8 @@
 extern crate dirs;
-use crate::config::Config;
+use crate::config::{pomodoro_state_from_config, Config};
+use crate::pomodoro::SessionStatus;
+use crate::pomodoro::{self, SessionType};
+use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use std::fs;
@@ -23,7 +26,7 @@ pub fn run(config_dir_name: &str, display_label: bool) -> Result<()> {
 #[derive(Debug)]
 struct SessionInfo {
     label: String,
-    seconds: u64,
+    session_type: SessionType,
 }
 
 // Session file format should be
@@ -37,7 +40,7 @@ struct SessionInfo {
 // To start a new session with the label working and a time of 20 minutes, do the
 // following:
 //
-// echo "working;20" > ~/.cache/pomodoro_session
+// echo "focus;working" > ~/.cache/pomodoro_session
 
 fn parse_session_info(line: String) -> Result<SessionInfo> {
     let parts = line.trim().split(";").collect::<Vec<&str>>();
@@ -48,56 +51,50 @@ fn parse_session_info(line: String) -> Result<SessionInfo> {
         ));
     }
 
-    let focus_label = parts[0];
+    let session_type_string = parts[0];
+    let label = parts[1];
 
-    // Time specified in seconds, value ending with an `s`
-    let focus_duration = if parts[1].ends_with("s") {
-        parts[1]
-            .replace("s", "")
-            .parse::<u64>()
-            .context("Unable to parse time from session line")?
-    } else {
-        // Default time specified in minutes
-        parts[1]
-            .parse::<u64>()
-            .context("Unable to parse time from session line")?
-            * 60
-    };
     Ok(SessionInfo {
-        label: focus_label.to_owned(),
-        seconds: focus_duration,
+        label: label.to_owned(),
+        session_type: SessionType::from_str(session_type_string).context(format!(
+            "Unable to read session line, unknown session type: {session_type_string}"
+        ))?,
     })
 }
+
 async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()> {
     let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
+    let mut pomodoro = pomodoro_state_from_config(&config);
 
     let session_file_path = cache_dir.join("pomodoro_session");
     let mut interval = interval(Duration::from_secs(1));
 
-    let mut running = false;
     loop {
         interval.tick().await;
 
         if file_exists(&session_file_path).await {
-            running = true;
             let contents: String = fs::read_to_string(&session_file_path)
                 .context("Unable to read the session file")?;
 
             let session_info = match parse_session_info(contents) {
                 Ok(info) => info,
                 Err(e) => {
-                    eprintln!("Unable to parse session line: {e}. Fallback to defaults focus/25.");
+                    eprintln!(
+                        "Unable to parse session line: {e}. Fallback to config defaults: {}/{}.",
+                        pomodoro.config.default_focus_label, pomodoro.config.focus_duration
+                    );
                     SessionInfo {
-                        label: "focus".to_owned(),
-                        seconds: config.focus_duration as u64,
+                        label: pomodoro.config.default_focus_label.clone(),
+                        session_type: SessionType::Focus,
                     }
                 }
             };
+            pomodoro.current_session.label = Some(session_info.label.clone());
 
             if let Some(remaining_time) =
-                get_remaining_time(&session_file_path, session_info.seconds).await
+                get_remaining_time(&session_file_path, pomodoro.config.focus_duration as u64).await
             {
-                let total_seconds = session_info.seconds; // Total time for Pomodoro in seconds
+                let total_seconds = pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
                 let remaining_seconds = remaining_time.as_secs();
                 let elapsed_seconds = total_seconds - remaining_seconds;
                 if elapsed_seconds == 1 {
@@ -114,7 +111,6 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                     // Delete the session file
                     fs::remove_file(&session_file_path).context("Failed to delete session file")?;
                     println!("-> Pomodoro ended normally");
-                    running = false;
                     continue;
                 }
 
@@ -125,9 +121,9 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 }
             }
         } else {
-            if running {
+            if pomodoro.current_session.status == SessionStatus::Running {
                 println!("-> Pomodoro stopped outside of the app");
-                running = false;
+                pomodoro = pomodoro::reset(&pomodoro);
             }
             println!("P -");
         }
@@ -184,19 +180,27 @@ mod tests {
             format!("{error}"),
             "Unable to read session line, it should have only 2 parts between a ;"
         );
+
+        let result = parse_session_info("focus-;label".to_owned());
+        let error = result.unwrap_err();
+        assert_eq!(
+            format!("{error}"),
+            "Unable to read session line, unknown session type: focus-"
+        );
     }
 
     #[test]
     fn parsing_ok_in_minutes() {
-        let result = parse_session_info("label;25".to_owned()).unwrap();
+        let result = parse_session_info("Focus;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
-        assert_eq!(result.seconds, 25 * 60);
-    }
+        assert_eq!(result.session_type, SessionType::Focus);
 
-    #[test]
-    fn parsing_ok_in_seconds() {
-        let result = parse_session_info("label;3600s".to_owned()).unwrap();
+        let result = parse_session_info("ShortBreak;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
-        assert_eq!(result.seconds, 3600);
+        assert_eq!(result.session_type, SessionType::ShortBreak);
+
+        let result = parse_session_info("LongBreak;label".to_owned()).unwrap();
+        assert_eq!(result.label, "label");
+        assert_eq!(result.session_type, SessionType::LongBreak);
     }
 }
