@@ -33,6 +33,8 @@ pub struct Config {
     pub minimize_to_tray_on_close: bool,
     #[serde(default)]
     pub muted: bool,
+    #[serde(default = "default_session_file")]
+    pub session_file: PathBuf,
     pub short_break_audio: Option<String>,
     pub short_break_duration: u16,
     #[serde(default)]
@@ -56,6 +58,11 @@ fn default_short_break_label() -> String {
 }
 fn default_theme() -> String {
     "pomotroid".to_string()
+}
+fn default_session_file() -> PathBuf {
+    dirs::cache_dir().map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
+        p.join("pomodorolm_session")
+    })
 }
 
 fn default_max_session_duration() -> u16 {
@@ -121,6 +128,10 @@ impl Default for Config {
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
             muted: false,
+            session_file: dirs::cache_dir()
+                .map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
+                    p.join("pomodorolm_session")
+                }),
             short_break_audio: None,
             short_break_duration: 5 * 60,
             start_minimized: false,
@@ -143,6 +154,7 @@ pub fn pomodoro_config(config: &Config) -> pomodoro::Config {
         focus_duration: config.focus_duration,
         long_break_duration: config.long_break_duration,
         max_focus_rounds: config.max_round_number,
+        session_file: config.session_file.clone(),
         short_break_duration: config.short_break_duration,
     }
 }

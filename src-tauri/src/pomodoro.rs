@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
+use std::fs::File;
+use std::io;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
@@ -54,6 +57,7 @@ pub struct Config {
     pub focus_duration: Seconds,
     pub long_break_duration: Seconds,
     pub max_focus_rounds: u16,
+    pub session_file: PathBuf,
     pub short_break_duration: Seconds,
 }
 
@@ -69,6 +73,10 @@ impl Default for Config {
             focus_duration: 25 * 60,
             long_break_duration: 20 * 60,
             max_focus_rounds: 4,
+            session_file: dirs::cache_dir()
+                .map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
+                    p.join("pomodorolm_session")
+                }),
             short_break_duration: 5 * 60,
         }
     }
@@ -106,6 +114,7 @@ impl Default for Pomodoro {
         }
     }
 }
+
 impl Pomodoro {
     pub fn duration_of_session(&self, session: &Session) -> Seconds {
         match session.session_type {
@@ -133,6 +142,7 @@ impl Pomodoro {
 pub struct Session {
     pub current_time: Seconds,
     pub label: Option<String>,
+    pub session_file: Option<PathBuf>,
     pub session_type: SessionType,
     pub status: SessionStatus,
 }
@@ -142,6 +152,7 @@ impl Default for Session {
         Session {
             current_time: 0,
             label: None,
+            session_file: None,
             session_type: SessionType::Focus,
             status: SessionStatus::NotStarted,
         }
@@ -153,6 +164,7 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
         current_session: Session {
             status: SessionStatus::Paused,
             label: pomodoro.current_session.label.clone(),
+            session_file: pomodoro.current_session.session_file.clone(),
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
@@ -160,16 +172,22 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
-pub fn play(pomodoro: &Pomodoro) -> Pomodoro {
-    Pomodoro {
+pub fn play(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+    if pomodoro.current_session.session_file.is_none() {
+        eprintln!("[rust] creating {:?}", pomodoro.config.session_file);
+        File::create(pomodoro.config.session_file.clone())?;
+    }
+
+    Ok(Pomodoro {
         current_session: Session {
             status: SessionStatus::Running,
             label: pomodoro.current_session.label.clone(),
+            session_file: Some(pomodoro.config.session_file.clone()),
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
         ..*pomodoro
-    }
+    })
 }
 
 pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
@@ -178,6 +196,7 @@ pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
             status: SessionStatus::NotStarted,
             current_time: 0,
             label: pomodoro.current_session.label.clone(),
+            session_file: pomodoro.current_session.session_file.clone(),
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
@@ -265,6 +284,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Pomodoro {
                 current_session: Session {
                     current_time: session.current_time + 1,
                     label: session.label,
+                    session_file: pomodoro.current_session.session_file.clone(),
                     ..pomodoro.current_session
                 },
                 config: pomodoro.config.clone(),
