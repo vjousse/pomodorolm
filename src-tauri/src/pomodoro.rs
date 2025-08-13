@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
+use std::fs;
 use std::fs::File;
 use std::io;
 use std::path::PathBuf;
@@ -175,6 +176,7 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
 pub fn play(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
     if pomodoro.current_session.session_file.is_none() {
         eprintln!("[rust] creating {:?}", pomodoro.config.session_file);
+        fs::create_dir_all(pomodoro.config.session_file.clone().parent().unwrap())?;
         File::create(pomodoro.config.session_file.clone())?;
     }
 
