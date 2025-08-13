@@ -827,7 +827,9 @@ async fn handle_external_message<R: tauri::Runtime>(
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
         }
         "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro).map_err(|e| {
+                eprintln!("[rust] Unable to play pomodoro `{e}`.");
+            })?;
         }
         "quit" => {
             app.exit(0);
