@@ -192,11 +192,16 @@ pub fn play(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
     })
 }
 
-pub fn reset(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
     if let Some(session_file) = &pomodoro.current_session.session_file {
         eprintln!("[rust] removing {session_file:?}");
         fs::remove_file(session_file)?;
     };
+    Ok(())
+}
+
+pub fn reset(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+    remove_session_file(pomodoro)?;
 
     Ok(Pomodoro {
         current_session: Session {
@@ -262,15 +267,15 @@ pub fn next(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
-pub fn tick(pomodoro: &Pomodoro) -> Pomodoro {
+pub fn tick(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
     let session = pomodoro.current_session.clone();
 
-    match session.status {
-        // Tick should do something only if the current session is in running mode
+    let new_pomodoro = match session.status {
+        // Tick should do something if the current session is in running mode
         SessionStatus::Running => {
             // If it was the last tick, return the next status
             if session.current_time + 1 == pomodoro.duration_of_session(&session) {
-                return next(pomodoro);
+                return Ok(next(pomodoro));
             }
 
             // If we're not a the end of a session, just update the time of the current session
@@ -286,5 +291,11 @@ pub fn tick(pomodoro: &Pomodoro) -> Pomodoro {
             }
         }
         _ => pomodoro.clone(),
+    };
+
+    if new_pomodoro.current_session.status == SessionStatus::NotStarted {
+        remove_session_file(&new_pomodoro)?;
     }
+
+    Ok(new_pomodoro)
 }
