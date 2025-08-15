@@ -124,7 +124,7 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
         } else {
             if pomodoro.current_session.status == SessionStatus::Running {
                 println!("-> Pomodoro stopped outside of the app");
-                pomodoro = pomodoro::reset(&pomodoro);
+                pomodoro = pomodoro::reset_round(&pomodoro)?;
             }
             println!("P -");
         }
