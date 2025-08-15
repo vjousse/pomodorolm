@@ -493,7 +493,8 @@ async fn tick(app_handle: AppHandle, path: String) {
                 let play_tick: bool =
                     should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
+                state_guard.pomodoro =
+                    pomodoro::tick(&state_guard.pomodoro).expect("Error when ticking pomodoro");
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
