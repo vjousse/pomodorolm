@@ -43,7 +43,7 @@ fn it_defaults_the_way_it_should() {
 #[test]
 fn tick_should_not_do_anything_if_not_running() {
     let initial_state = get_initial_state();
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(initial_state.clone(), new_state);
 }
@@ -73,7 +73,7 @@ fn pause_should_change_session_status() {
 #[test]
 fn tick_should_tick_if_started() {
     let initial_state = pomodoro::play(&get_initial_state()).unwrap();
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(
         new_state.current_session.current_time,
@@ -95,7 +95,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
     initial_state.current_session.current_time = initial_state.config.focus_duration - 1;
 
     // At the end of a focus session, we should switch to a short break
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
     assert_eq!(
         new_state.current_session.session_type,
         SessionType::ShortBreak
@@ -114,7 +114,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
     let mut initial_state = pomodoro::play(&new_state).unwrap();
     initial_state.current_session.current_time = initial_state.config.short_break_duration - 1;
 
-    let mut new_state = pomodoro::tick(&initial_state);
+    let mut new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
@@ -128,7 +128,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
     new_state.current_work_round_number = new_state.config.max_focus_rounds;
     new_state.current_session.current_time = new_state.config.focus_duration - 1;
 
-    let mut new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap());
+    let mut new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap()).unwrap();
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(
@@ -143,7 +143,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
 
     // We are at the end of the long break, we should reset to a focus session
     new_state.current_session.current_time = new_state.config.long_break_duration - 1;
-    let new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap());
+    let new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap()).unwrap();
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
@@ -154,7 +154,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
 #[test]
 fn reset_should_stop_the_current_round() {
     let initial_state = pomodoro::play(&get_initial_state()).unwrap();
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(
         new_state.current_session.current_time,
@@ -194,7 +194,7 @@ fn auto_start_should_run_next_state() {
 
     // At the end of a focus session, we should switch to a short break
     // that should run automatically
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
     assert_eq!(
         new_state.current_session.session_type,
         SessionType::ShortBreak
@@ -215,7 +215,7 @@ fn auto_start_should_run_next_state() {
 
     // At the end of the 4th focus session, we should switch to a long break
     // that should run automatically
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(
         new_state.current_session.session_type,
@@ -240,7 +240,7 @@ fn auto_start_should_run_next_state() {
 
     // At the end of a break, we should switch to a focus session
     // that should run automatically
-    let new_state = pomodoro::tick(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
     assert_eq!(new_state.current_session.status, SessionStatus::Running);
