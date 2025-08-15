@@ -768,7 +768,9 @@ async fn handle_external_message<R: tauri::Runtime>(
             app.exit(0);
         }
         "reset" => {
-            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro).map_err(|e| {
+                eprintln!("[rust] Unable to reset pomodoro `{e}`.");
+            })?;
         }
         "skip" => {
             app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
