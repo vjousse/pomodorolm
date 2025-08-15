@@ -192,8 +192,13 @@ pub fn play(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
     })
 }
 
-pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
-    Pomodoro {
+pub fn reset_round(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+    if let Some(session_file) = &pomodoro.current_session.session_file {
+        eprintln!("[rust] removing {session_file:?}");
+        fs::remove_file(session_file)?;
+    };
+
+    Ok(Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
             current_time: 0,
@@ -203,20 +208,27 @@ pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
         },
         config: pomodoro.config.clone(),
         ..*pomodoro
-    }
+    })
 }
 
-pub fn reset_session(pomodoro: &Pomodoro) -> Pomodoro {
-    Pomodoro {
+pub fn reset_session(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+    if let Some(session_file) = &pomodoro.current_session.session_file {
+        eprintln!("[rust] removing {session_file:?}");
+        fs::remove_file(session_file)?;
+    };
+
+    Ok(Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
             current_time: 0,
             label: pomodoro.current_session.label.clone(),
+            session_file: pomodoro.current_session.session_file.clone(),
             session_type: SessionType::Focus,
         },
+        config: pomodoro.config.clone(),
         current_work_round_number: 1,
         ..*pomodoro
-    }
+    })
 }
 
 pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
