@@ -835,10 +835,17 @@ async fn handle_external_message<R: tauri::Runtime>(
             app.exit(0);
         }
         "reset_round" => {
-            app_state_guard.pomodoro = pomodoro::reset_round(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro =
+                pomodoro::reset_round(&app_state_guard.pomodoro).map_err(|e| {
+                    eprintln!("[rust] Unable to reset pomodoro round `{e}`.");
+                })?;
         }
         "reset_session" => {
-            app_state_guard.pomodoro = pomodoro::reset_session(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro =
+                pomodoro::reset_session(&app_state_guard.pomodoro).map_err(|e| {
+                    eprintln!("[rust] Unable to reset pomodoro session `{e}`.");
+                })?;
+            app_state_guard.pomodoro.current_work_round_number = 1;
         }
 
         "skip" => {
