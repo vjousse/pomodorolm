@@ -30,6 +30,12 @@ struct SessionInfo {
     start_time: SystemTime,
 }
 
+#[derive(Debug)]
+struct SessionLineContent {
+    label: String,
+    session_type: SessionType,
+}
+
 // Session file format should be
 // current label;time
 //
@@ -43,7 +49,28 @@ struct SessionInfo {
 //
 // echo "focus;working" > ~/.cache/pomodorolm_session
 
-fn get_session_info(line: String, session_file_path: &PathBuf) -> Result<SessionInfo> {
+fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
+    if file_exists(session_file_path) {
+        let line: String =
+            fs::read_to_string(session_file_path).context("Unable to read the session file")?;
+
+        let session_line_content = parse_line(line)?;
+
+        let modified = fs::metadata(session_file_path)?.modified()?;
+
+        Ok(SessionInfo {
+            label: session_line_content.label,
+            start_time: modified,
+            session_type: session_line_content.session_type,
+        })
+    } else {
+        Err(anyhow!(
+            "Unable to read session file {session_file_path:?}, file doesn’t exist"
+        ))
+    }
+}
+
+fn parse_line(line: String) -> Result<SessionLineContent> {
     let parts = line.trim().split(";").collect::<Vec<&str>>();
 
     if parts.len() != 2 {
@@ -55,11 +82,8 @@ fn get_session_info(line: String, session_file_path: &PathBuf) -> Result<Session
     let session_type_string = parts[0];
     let label = parts[1];
 
-    let modified = fs::metadata(session_file_path)?.modified()?;
-
-    Ok(SessionInfo {
+    Ok(SessionLineContent {
         label: label.to_owned(),
-        start_time: modified,
         session_type: SessionType::from_str(session_type_string).context(format!(
             "Unable to read session line, unknown session type: {session_type_string}"
         ))?,
@@ -76,11 +100,8 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
     loop {
         interval.tick().await;
 
-        if file_exists(&session_file_path).await {
-            let contents: String = fs::read_to_string(&session_file_path)
-                .context("Unable to read the session file")?;
-
-            let session_info = match get_session_info(contents, &session_file_path) {
+        if file_exists(&session_file_path) {
+            let session_info = match get_session_info(&session_file_path) {
                 Ok(info) => info,
                 Err(e) => {
                     eprintln!(
@@ -137,7 +158,7 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
     }
 }
 
-async fn file_exists(path: &Path) -> bool {
+fn file_exists(path: &Path) -> bool {
     fs::metadata(path).is_ok()
 }
 
@@ -178,22 +199,17 @@ fn format_time(seconds: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use tempfile::NamedTempFile;
 
     #[test]
     fn parsing_error() {
-        let session_file_path = NamedTempFile::new().unwrap().path().to_path_buf();
-        File::create(&session_file_path).unwrap();
-
-        let result = get_session_info("invalid line".to_owned(), &session_file_path);
+        let result = parse_line("invalid line".to_owned());
         let error = result.unwrap_err();
         assert_eq!(
             format!("{error}"),
             "Unable to read session line, it should have only 2 parts between a ;"
         );
 
-        let result = get_session_info("focus-;label".to_owned(), &session_file_path);
+        let result = parse_line("focus-;label".to_owned());
         let error = result.unwrap_err();
         assert_eq!(
             format!("{error}"),
@@ -203,18 +219,15 @@ mod tests {
 
     #[test]
     fn parsing_ok_in_minutes() {
-        let session_file_path = NamedTempFile::new().unwrap().path().to_path_buf();
-        File::create(&session_file_path).unwrap();
-
-        let result = get_session_info("Focus;label".to_owned(), &session_file_path).unwrap();
+        let result = parse_line("Focus;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::Focus);
 
-        let result = get_session_info("ShortBreak;label".to_owned(), &session_file_path).unwrap();
+        let result = parse_line("ShortBreak;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::ShortBreak);
 
-        let result = get_session_info("LongBreak;label".to_owned(), &session_file_path).unwrap();
+        let result = parse_line("LongBreak;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::LongBreak);
     }
