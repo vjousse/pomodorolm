@@ -1,4 +1,6 @@
-use pomodorolm_lib::pomodoro::{self, Config, Pomodoro, Session, SessionStatus, SessionType};
+use pomodorolm_lib::pomodoro::{
+    self, create_session_file, Config, Pomodoro, Session, SessionStatus, SessionType,
+};
 use tempfile::NamedTempFile;
 
 fn get_initial_state() -> Pomodoro {
@@ -46,6 +48,40 @@ fn tick_should_not_do_anything_if_not_running() {
     let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(initial_state.clone(), new_state);
+}
+
+#[test]
+fn tick_should_start_session_if_file_created() {
+    let initial_state = get_initial_state();
+    let _ = create_session_file(&initial_state);
+    let new_state = pomodoro::tick(&initial_state).unwrap();
+    assert_eq!(
+        new_state,
+        Pomodoro {
+            current_session: Session {
+                // Session should be running
+                status: SessionStatus::Running,
+                label: initial_state.current_session.label.clone(),
+                // Session file should have been set
+                session_file: Some(initial_state.config.session_file.clone()),
+                start_time: new_state.current_session.start_time,
+                ..initial_state.current_session
+            },
+            config: initial_state.config.clone(),
+            ..initial_state
+        }
+    );
+
+    // Start time should have been set
+    assert!(new_state.current_session.start_time.is_some());
+
+    // Session file should have been created
+    assert!(new_state
+        .current_session
+        .session_file
+        .as_ref()
+        .unwrap()
+        .exists());
 }
 
 #[test]
@@ -161,22 +197,15 @@ fn reset_should_stop_the_current_round() {
         initial_state.current_session.current_time + 1
     );
 
-    assert!(new_state
-        .current_session
-        .session_file
-        .clone()
-        .unwrap()
-        .exists());
+    let session_file = new_state.current_session.session_file.clone().unwrap();
+
+    assert!(session_file.exists());
     let new_state = pomodoro::reset_round(&new_state).unwrap();
 
     // Reset should delete the file on disk
-    assert!(!new_state
-        .current_session
-        .session_file
-        .clone()
-        .unwrap()
-        .exists());
+    assert!(!session_file.exists());
 
+    assert_eq!(new_state.current_session.session_file, None);
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
