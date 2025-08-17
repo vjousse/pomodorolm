@@ -1,12 +1,10 @@
 extern crate dirs;
 use crate::config::{pomodoro_state_from_config, Config};
-use crate::pomodoro::SessionStatus;
-use crate::pomodoro::{self, SessionType};
-use std::str::FromStr;
+use crate::pomodoro::{self, get_session_info, SessionInfo, SessionStatus, SessionType};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tokio::time::interval;
 
@@ -21,73 +19,6 @@ pub fn run(config_dir_name: &str, display_label: bool) -> Result<()> {
     // Initialize the Tokio runtime
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(run_pomodoro_checker(config, display_label))
-}
-
-#[derive(Debug)]
-struct SessionInfo {
-    label: String,
-    session_type: SessionType,
-    start_time: SystemTime,
-}
-
-#[derive(Debug)]
-struct SessionLineContent {
-    label: String,
-    session_type: SessionType,
-}
-
-// Session file format should be
-// current label;time
-//
-// `current label` can be any type of string
-// `;` is the separator
-// `time` is by default the number of mintes of the current session. You provide an int
-// in seconds, but you need to suffix it with the letter `s`
-//
-// To start a new session with the label working and a time of 20 minutes, do the
-// following:
-//
-// echo "focus;working" > ~/.cache/pomodorolm_session
-
-fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
-    if file_exists(session_file_path) {
-        let line: String =
-            fs::read_to_string(session_file_path).context("Unable to read the session file")?;
-
-        let session_line_content = parse_line(line)?;
-
-        let modified = fs::metadata(session_file_path)?.modified()?;
-
-        Ok(SessionInfo {
-            label: session_line_content.label,
-            start_time: modified,
-            session_type: session_line_content.session_type,
-        })
-    } else {
-        Err(anyhow!(
-            "Unable to read session file {session_file_path:?}, file doesn’t exist"
-        ))
-    }
-}
-
-fn parse_line(line: String) -> Result<SessionLineContent> {
-    let parts = line.trim().split(";").collect::<Vec<&str>>();
-
-    if parts.len() != 2 {
-        return Err(anyhow!(
-            "Unable to read session line, it should have only 2 parts between a ;"
-        ));
-    }
-
-    let session_type_string = parts[0];
-    let label = parts[1];
-
-    Ok(SessionLineContent {
-        label: label.to_owned(),
-        session_type: SessionType::from_str(session_type_string).context(format!(
-            "Unable to read session line, unknown session type: {session_type_string}"
-        ))?,
-    })
 }
 
 async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()> {
@@ -194,41 +125,4 @@ fn format_time(seconds: u64) -> String {
     let minutes = seconds / 60;
     let remaining_seconds = seconds % 60;
     format!("{minutes:02}:{remaining_seconds:02}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parsing_error() {
-        let result = parse_line("invalid line".to_owned());
-        let error = result.unwrap_err();
-        assert_eq!(
-            format!("{error}"),
-            "Unable to read session line, it should have only 2 parts between a ;"
-        );
-
-        let result = parse_line("focus-;label".to_owned());
-        let error = result.unwrap_err();
-        assert_eq!(
-            format!("{error}"),
-            "Unable to read session line, unknown session type: focus-"
-        );
-    }
-
-    #[test]
-    fn parsing_ok_in_minutes() {
-        let result = parse_line("Focus;label".to_owned()).unwrap();
-        assert_eq!(result.label, "label");
-        assert_eq!(result.session_type, SessionType::Focus);
-
-        let result = parse_line("ShortBreak;label".to_owned()).unwrap();
-        assert_eq!(result.label, "label");
-        assert_eq!(result.session_type, SessionType::ShortBreak);
-
-        let result = parse_line("LongBreak;label".to_owned()).unwrap();
-        assert_eq!(result.label, "label");
-        assert_eq!(result.session_type, SessionType::LongBreak);
-    }
 }
