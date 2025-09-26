@@ -116,10 +116,18 @@ computeCurrentColor currentTime maxTime sessionType theme =
         Focus ->
             let
                 remainingPercent =
-                    toFloat (maxTime - currentTime) / toFloat maxTime
+                    if maxTime /= 0 then
+                        toFloat (maxTime - currentTime) / toFloat maxTime
+
+                    else
+                        1
 
                 relativePercent =
-                    (toFloat (maxTime - currentTime) - toFloat maxTime / 2) / (toFloat maxTime / 2)
+                    if maxTime /= 0 then
+                        (toFloat (maxTime - currentTime) - toFloat maxTime / 2) / (toFloat maxTime / 2)
+
+                    else
+                        1
 
                 ( startRed, startGreen, startBlue ) =
                     case fromCSSHexToRGB theme.colors.focusRound of

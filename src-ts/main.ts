@@ -169,7 +169,7 @@ app = Elm.Main.init({
     defaultLongBreakLabel: rustConfig.default_long_break_label,
     defaultShortBreakLabel: rustConfig.default_short_break_label,
     desktopNotifications: rustConfig.desktop_notifications,
-    focusAudio: rustConfig.focus_duration,
+    focusAudio: rustConfig.focus_audio,
     focusDuration: rustConfig.focus_duration,
     longBreakDuration: rustConfig.long_break_duration,
     maxRoundNumber: rustConfig.max_round_number,
