@@ -823,14 +823,17 @@ async fn handle_external_message<R: tauri::Runtime>(
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut app_state_guard = state.0.lock().await;
 
+    eprintln!("[rust] external message: {name}");
+
     match name.as_str() {
         "pause" => {
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
         }
         "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro).map_err(|e| {
-                eprintln!("[rust] Unable to play pomodoro `{e}`.");
-            })?;
+            app_state_guard.pomodoro =
+                pomodoro::play(&app_state_guard.pomodoro, None).map_err(|e| {
+                    eprintln!("[rust] Unable to play pomodoro `{e}`.");
+                })?;
         }
         "quit" => {
             app.exit(0);

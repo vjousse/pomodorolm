@@ -1,6 +1,7 @@
 use pomodorolm_lib::pomodoro::{
-    self, create_session_file, Config, Pomodoro, Session, SessionStatus, SessionType,
+    self, create_session_file, Config, Pomodoro, Session, SessionInfo, SessionStatus, SessionType,
 };
+use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
 
 fn get_initial_state() -> Pomodoro {
@@ -108,7 +109,7 @@ fn pause_should_change_session_status() {
 
 #[test]
 fn tick_should_tick_if_started() {
-    let initial_state = pomodoro::play(&get_initial_state()).unwrap();
+    let initial_state = pomodoro::play(&get_initial_state(), None).unwrap();
     let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(
@@ -119,7 +120,7 @@ fn tick_should_tick_if_started() {
 
 #[test]
 fn play_should_create_session_file() {
-    let play_state = pomodoro::play(&get_initial_state()).unwrap();
+    let play_state = pomodoro::play(&get_initial_state(), None).unwrap();
 
     assert!(play_state.current_session.session_file.is_some());
     assert!(play_state.current_session.session_file.unwrap().exists());
@@ -127,8 +128,16 @@ fn play_should_create_session_file() {
 
 #[test]
 fn tick_should_return_next_session_at_end_of_turn() {
-    let mut initial_state = pomodoro::play(&get_initial_state()).unwrap();
+    let mut initial_state = pomodoro::play(&get_initial_state(), None).unwrap();
+
+    eprintln!(
+        "# -> initial_state session {:?}",
+        initial_state.current_session
+    );
     initial_state.current_session.current_time = initial_state.config.focus_duration - 1;
+
+    // As the session is started, the session file should have been created
+    assert!(initial_state.current_session.session_file.is_some());
 
     // At the end of a focus session, we should switch to a short break
     let new_state = pomodoro::tick(&initial_state).unwrap();
@@ -138,6 +147,10 @@ fn tick_should_return_next_session_at_end_of_turn() {
     );
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
+
+    // As the ShortBreak session is not started, the session file should have been removed
+    assert_eq!(new_state.current_session.session_file, None);
+
     // A work round includes a Focus and a Break, so the counter should be incremented only
     // at the end of a break
     assert_eq!(
@@ -145,10 +158,13 @@ fn tick_should_return_next_session_at_end_of_turn() {
         initial_state.current_work_round_number
     );
 
+    eprintln!("# -> new_state session {:?}", new_state.current_session);
+
     // At the end of a short break round, we should switch to a focus round and
     // increment the current_work_round_number counter
-    let mut initial_state = pomodoro::play(&new_state).unwrap();
+    let mut initial_state = pomodoro::play(&new_state, None).unwrap();
     initial_state.current_session.current_time = initial_state.config.short_break_duration - 1;
+    assert!(initial_state.current_session.session_file.is_some());
 
     let mut new_state = pomodoro::tick(&initial_state).unwrap();
 
@@ -159,12 +175,19 @@ fn tick_should_return_next_session_at_end_of_turn() {
         new_state.current_work_round_number,
         initial_state.current_work_round_number + 1
     );
+    assert!(initial_state.current_session.session_file.is_none());
 
     // We are at the end of the last focus session, we should switch to a long break
     new_state.current_work_round_number = new_state.config.max_focus_rounds;
     new_state.current_session.current_time = new_state.config.focus_duration - 1;
+    eprintln!("# -> current_session {:?}", new_state.current_session);
 
-    let mut new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap()).unwrap();
+    let mut new_state = pomodoro::tick(&pomodoro::play(&new_state, None).unwrap()).unwrap();
+
+    eprintln!(
+        "# -> current_time after {}",
+        new_state.current_session.current_time
+    );
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(
@@ -179,7 +202,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
 
     // We are at the end of the long break, we should reset to a focus session
     new_state.current_session.current_time = new_state.config.long_break_duration - 1;
-    let new_state = pomodoro::tick(&pomodoro::play(&new_state).unwrap()).unwrap();
+    let new_state = pomodoro::tick(&pomodoro::play(&new_state, None).unwrap()).unwrap();
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
@@ -189,7 +212,7 @@ fn tick_should_return_next_session_at_end_of_turn() {
 
 #[test]
 fn reset_should_stop_the_current_round() {
-    let initial_state = pomodoro::play(&get_initial_state()).unwrap();
+    let initial_state = pomodoro::play(&get_initial_state(), None).unwrap();
     let new_state = pomodoro::tick(&initial_state).unwrap();
 
     assert_eq!(
@@ -218,7 +241,7 @@ fn auto_start_should_run_next_state() {
         .config
         .auto_start_short_break_timer = true;
 
-    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_short_break).unwrap();
+    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_short_break, None).unwrap();
     initial_state.current_session.current_time = initial_state.config.focus_duration - 1;
 
     // At the end of a focus session, we should switch to a short break
@@ -239,7 +262,7 @@ fn auto_start_should_run_next_state() {
         ..Default::default()
     };
 
-    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_long_break).unwrap();
+    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_long_break, None).unwrap();
     initial_state.current_session.current_time = initial_state.config.focus_duration - 1;
 
     // At the end of the 4th focus session, we should switch to a long break
@@ -264,7 +287,7 @@ fn auto_start_should_run_next_state() {
 
         ..Default::default()
     };
-    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_focus).unwrap();
+    let mut initial_state = pomodoro::play(&pomodoro_with_auto_start_focus, None).unwrap();
     initial_state.current_session.current_time = initial_state.config.short_break_duration - 1;
 
     // At the end of a break, we should switch to a focus session
@@ -273,4 +296,63 @@ fn auto_start_should_run_next_state() {
 
     assert_eq!(new_state.current_session.session_type, SessionType::Focus);
     assert_eq!(new_state.current_session.status, SessionStatus::Running);
+}
+
+#[test]
+fn tick_with_file_session_info_test() {
+    let pomodoro_state = get_initial_state();
+
+    let now = SystemTime::now();
+    let session_info = SessionInfo {
+        label: "Test label".to_string(),
+        start_time: now,
+        session_type: SessionType::Focus,
+    };
+
+    let new_state =
+        pomodoro::tick_with_file_session_info(&pomodoro_state, Some(session_info)).unwrap();
+
+    // If we have a new file we should start the pomodoro
+    assert_eq!(new_state.current_session.status, SessionStatus::Running);
+
+    let new_state = pomodoro::tick_with_file_session_info(&pomodoro_state, None).unwrap();
+
+    // If we did remove the file, the pomodoro should be stopped
+    assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
+
+    // Start it again
+    let session_info = SessionInfo {
+        label: "Test label".to_string(),
+        start_time: now,
+        session_type: SessionType::Focus,
+    };
+
+    let mut new_state =
+        pomodoro::tick_with_file_session_info(&pomodoro_state, Some(session_info)).unwrap();
+
+    assert_eq!(new_state.current_session.status, SessionStatus::Running);
+
+    // Lets tick for 90 seconds
+    for _ in 1..=90 {
+        new_state = pomodoro::tick(&new_state).unwrap();
+    }
+
+    assert_eq!(new_state.current_session.current_time, 90);
+    let ninety_seconds = Duration::new(90, 0);
+
+    // Read a new session file that has 90 seconds more as start time,
+    // so we should reset the current pomodoro
+    let new_start_time = now + ninety_seconds;
+
+    let session_info = SessionInfo {
+        label: "Test label".to_string(),
+        start_time: new_start_time,
+        session_type: SessionType::Focus,
+    };
+
+    let new_state = pomodoro::tick_with_file_session_info(&new_state, Some(session_info)).unwrap();
+
+    assert_eq!(new_state.current_session.status, SessionStatus::Running);
+    assert_eq!(new_state.current_session.current_time, 0);
+    assert_eq!(new_state.current_session.start_time, Some(new_start_time));
 }
