@@ -201,24 +201,37 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
-pub fn play(pomodoro: &Pomodoro) -> Result<Pomodoro> {
+pub fn play(pomodoro: &Pomodoro, session_info: Option<SessionInfo>) -> Result<Pomodoro> {
+    // eprintln!("[rust] playing pomodoro {pomodoro:?}");
+
     if pomodoro.current_session.session_file.is_none() {
+        eprintln!("[rust] creating session file");
         create_session_file(pomodoro)?;
     }
 
-    let current_session_info = get_session_info(&pomodoro.config.session_file)?;
+    let current_session_info =
+        session_info.unwrap_or(get_session_info(&pomodoro.config.session_file)?);
 
-    Ok(Pomodoro {
+    let new_pomodoro = Pomodoro {
         current_session: Session {
             status: SessionStatus::Running,
             label: pomodoro.current_session.label.clone(),
             session_file: Some(pomodoro.config.session_file.clone()),
             start_time: Some(current_session_info.start_time),
+            current_time: if pomodoro.current_session.start_time
+                < Some(current_session_info.start_time)
+            {
+                0
+            } else {
+                pomodoro.current_session.current_time
+            },
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
         ..*pomodoro
-    })
+    };
+    eprintln!("[rust] new pomodoro after play {new_pomodoro:?}");
+    Ok(new_pomodoro)
 }
 
 pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
@@ -229,7 +242,7 @@ pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
+pub fn create_session_file(pomodoro: &Pomodoro) -> io::Result<PathBuf> {
     eprintln!("[rust] creating {:?}", pomodoro.config.session_file);
     fs::create_dir_all(pomodoro.config.session_file.clone().parent().unwrap())?;
     File::create(pomodoro.config.session_file.clone())?;
@@ -246,10 +259,10 @@ pub fn create_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
         ),
     )?;
 
-    Ok(())
+    Ok(pomodoro.config.session_file.clone())
 }
 
-pub fn reset_round(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
+pub fn reset_round(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     remove_session_file(pomodoro)?;
 
     Ok(Pomodoro {
@@ -337,15 +350,50 @@ pub fn next(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
+pub fn tick_with_file_session_info(
+    pomodoro: &Pomodoro,
+    session_info: Option<SessionInfo>,
+) -> Result<Pomodoro> {
+    let current_session = pomodoro.current_session.clone();
+
+    match (session_info, current_session.start_time) {
+        (Some(info), Some(current_session_start_time)) => {
+            // @TODO: Here we need to check the consistency between the session_info that we have (coming from
+            //  reading the session file on disk) and the state of the current pomodoro
+            //  We need a way to check that the file has possibly been reset, deleted to adapt the next
+            //  pomodoro state
+
+            // If there is no session file let’s play the pomodoro, it means a new file has been
+            // created
+            if current_session.session_file.is_none()
+                || info.start_time > current_session_start_time
+            {
+                play(pomodoro, Some(info))
+            } else {
+                Ok(pomodoro.clone())
+            }
+        }
+
+        (Some(info), None) => play(pomodoro, Some(info)),
+        _ => reset_round(pomodoro),
+    }
+}
+
 pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     let current_session = pomodoro.current_session.clone();
 
+    let new_pomodoro_session_info = tick_with_file_session_info(
+        pomodoro,
+        get_session_info(&pomodoro.config.session_file).ok(),
+    );
+
     if file_exists(pomodoro.config.session_file.as_path()) && current_session.session_file.is_none()
     {
+        eprintln!("# -> [tick] Playing {pomodoro:?}");
         // File created externally, start the pomodoro
-        play(pomodoro)
+        play(pomodoro, None)
     } else {
-        let new_pomodoro = match current_session.status {
+        let mut new_pomodoro = match current_session.status {
             // Tick should do something if the current session is in running mode
             SessionStatus::Running => {
                 // If it was the last tick, return the next status
@@ -371,9 +419,12 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
         };
 
         if new_pomodoro.current_session.status == SessionStatus::NotStarted {
+            eprintln!("# -> [tick] Let’s remove the session file");
             remove_session_file(&new_pomodoro)?;
+            new_pomodoro.current_session.session_file = None;
         }
 
+        eprintln!("# -> [tick] Returning new_pomodoro {new_pomodoro:?}");
         Ok(new_pomodoro)
     }
 }
