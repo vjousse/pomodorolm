@@ -15,7 +15,11 @@ dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> Stri
 dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
     let
         remainingPercent =
-            toFloat (maxTime - currentTime) / toFloat maxTime
+            if maxTime /= 0 then
+                toFloat (maxTime - currentTime) / toFloat maxTime
+
+            else
+                1
 
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * remainingPercent
