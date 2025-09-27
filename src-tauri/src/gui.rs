@@ -607,33 +607,12 @@ async fn load_init_data(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed), ()> {
-    let mut state_guard = state.0.lock().await;
+    let state_guard = state.0.lock().await;
 
-    let config = match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
-        Ok(config_file_pathbuf) => {
-            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
+    let config_dir =
+        get_config_dir(&state_guard.config_dir_name, app_handle.path()).map_err(|_| ())?;
 
-            let toml_str = fs::read_to_string(&config_file_path).map_err(|err| {
-                eprintln!("Unable to open config file {config_file_path}: {err:?}")
-            })?;
-
-            let config: Config = toml::from_str(toml_str.as_str()).map_err(|err| {
-                eprintln!("Unable to parse config file {config_file_path}: {err:?}")
-            })?;
-
-            *state_guard = App {
-                config: config.clone(),
-                config_dir_name: state_guard.config_dir_name.clone(),
-                pomodoro: state_guard.pomodoro.clone(),
-            };
-
-            Ok(config)
-        }
-        Err(e) => {
-            eprintln!("Unable to get config file path: {e:?}.");
-            Err(())
-        }
-    };
+    let config = Config::get_or_create_from_disk(&config_dir, None).map_err(|_| ());
 
     let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
         .expect("Unable to resolve `themes/{}` resource.");

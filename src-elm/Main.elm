@@ -342,7 +342,11 @@ update msg ({ config } as model) =
                     computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
 
                 percent =
-                    toFloat (maxTime - pomodoroState.currentSession.currentTime) / toFloat maxTime
+                    if maxTime /= 0 then
+                        toFloat (maxTime - pomodoroState.currentSession.currentTime) / toFloat maxTime
+
+                    else
+                        1
 
                 currentState =
                     { color = fromRGBToCSSHex currentColor
@@ -568,7 +572,12 @@ update msg ({ config } as model) =
                                                     (getCurrentMaxTime config state)
                                                     state.currentSession.sessionType
                                                     model.theme
-                                        , percentage = toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+                                        , percentage =
+                                            if maxTime /= 0 then
+                                                toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+
+                                            else
+                                                1
                                         , paused = True
                                         }
                                 in
@@ -591,7 +600,12 @@ update msg ({ config } as model) =
                                                     (getCurrentMaxTime config state)
                                                     state.currentSession.sessionType
                                                     model.theme
-                                        , percentage = toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+                                        , percentage =
+                                            if maxTime /= 0 then
+                                                toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+
+                                            else
+                                                1
                                         , paused = False
                                         }
                                 in

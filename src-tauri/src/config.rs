@@ -88,9 +88,7 @@ impl Config {
         } else {
             // Open the file
             let toml_str = fs::read_to_string(config_file_path)?;
-            let config: Config = toml::from_str(toml_str.as_str())?;
-
-            config
+            toml::from_str(toml_str.as_str())?
         })
     }
 }
