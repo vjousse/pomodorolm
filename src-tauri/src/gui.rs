@@ -607,7 +607,7 @@ async fn load_init_data(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed), ()> {
-    let mut state_guard = state.0.lock().await;
+    let state_guard = state.0.lock().await;
 
     let config_dir =
         get_config_dir(&state_guard.config_dir_name, app_handle.path()).map_err(|_| ())?;
