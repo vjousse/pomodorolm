@@ -57,6 +57,7 @@ jobs:
       - name: Run clippy
         run: |
           mkdir dist
+          rustup component add clippy
           cargo clippy --all-targets --all-features --manifest-path src-tauri/Cargo.toml
 
       - name: Run cargo test
