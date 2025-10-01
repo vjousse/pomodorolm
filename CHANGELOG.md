@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.6.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.1)] - 2025-10-01
+
+### 🐛 Bug Fixes
+
+- App crash if duration is 0 ([#188](https://github.com/vjousse/pomodorolm/issues/188))
+- No icon on windows 11 ([#189](https://github.com/vjousse/pomodorolm/issues/189))
+
 ## [[app-v0.6.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.0)] - 2025-08-08
 
 ### 🚀 Features
@@ -12,6 +19,10 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Play all custom sounds ([#183](https://github.com/vjousse/pomodorolm/issues/183))
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to 0.6.0
 
 ## [[app-v0.5.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.5.0)] - 2025-05-23
 
