@@ -212,6 +212,9 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
             if app.notification().permission_state()? == PermissionState::Prompt {
                 app.notification().request_permission()?;
             }
+
+            fs::create_dir_all(app.path().app_data_dir()?)?;
+
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
