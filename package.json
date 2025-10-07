@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@lydell/elm": "^0.19.1-14",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.8.4",
     "@types/node": "^22.5.4",
     "elm-debug-transformer": "^1.2.1",
     "elm-review": "^2.12.0",
@@ -23,7 +23,7 @@
     "vite-plugin-top-level-await": "^1.4.4"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-autostart": "^2.3.0",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-log": "^2",

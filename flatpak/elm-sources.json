@@ -58,14 +58,6 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://github.com/elm/bytes/archive/1.0.8.tar.gz",
-        "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/bytes/1.0.8/",
-        "strip-components": 1,
-        "sha512": "c652c4a91c315a37d0aeeb40d6c03dc68ea8cf65f1dd6dcb7b0e53b64703f3488a89787af0f3d19415226e67a97b4181fbf8ca8f3be48115b6648f63aae48beb"
-    },
-    {
-        "type": "archive",
-        "archive-type": "tar-gzip",
         "url": "https://github.com/elm/time/archive/1.0.0.tar.gz",
         "dest": "elm-stuff/home/.elm/0.19.1/packages/elm/time/1.0.0/",
         "strip-components": 1,
