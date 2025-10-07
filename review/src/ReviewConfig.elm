@@ -11,8 +11,6 @@ when inside the directory containing this file.
 
 -}
 
---import NoMissingTypeAnnotationInLetIn
-
 import Docs.ReviewAtDocs
 import NoConfusingPrefixOperator
 import NoDebug.Log
