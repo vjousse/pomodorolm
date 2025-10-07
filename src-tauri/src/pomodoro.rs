@@ -362,8 +362,8 @@ pub fn tick_with_file_session_info(
 pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     let current_session = pomodoro.current_session.clone();
 
-    let new_pomodoro_session_info = tick_with_file_session_info(
-        &pomodoro,
+    let _new_pomodoro_session_info = tick_with_file_session_info(
+        pomodoro,
         get_session_info(&pomodoro.config.session_file).ok(),
     );
 
