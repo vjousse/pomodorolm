@@ -25,7 +25,7 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
     let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
     let mut pomodoro = pomodoro_state_from_config(&config);
 
-    let session_file_path = cache_dir.join("pomodoro_session");
+    let session_file_path = cache_dir.join("pomodorolm_session");
     let mut interval = interval(Duration::from_secs(1));
 
     loop {
@@ -48,7 +48,6 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
             };
             pomodoro.current_session.label = Some(session_info.label.clone());
             pomodoro.current_session.session_type = session_info.session_type;
-            println!("Start time is: {:?}", session_info.start_time);
 
             if let Some(remaining_time) =
                 get_remaining_time(&session_file_path, pomodoro.config.focus_duration as u64).await

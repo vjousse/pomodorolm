@@ -218,8 +218,11 @@ pub fn play(pomodoro: &Pomodoro, session_info: Option<SessionInfo>) -> Result<Po
             label: pomodoro.current_session.label.clone(),
             session_file: Some(pomodoro.config.session_file.clone()),
             start_time: Some(current_session_info.start_time),
-            current_time: if pomodoro.current_session.start_time
-                < Some(current_session_info.start_time)
+            // If the external file creation time is newer than the current start time, we should
+            // reset the current pomodoro
+            // @TODO: it looks like this logic should be handle elsewhere?
+            current_time: if pomodoro.current_session.start_time.is_some()
+                && pomodoro.current_session.start_time < Some(current_session_info.start_time)
             {
                 0
             } else {
@@ -230,7 +233,6 @@ pub fn play(pomodoro: &Pomodoro, session_info: Option<SessionInfo>) -> Result<Po
         config: pomodoro.config.clone(),
         ..*pomodoro
     };
-    eprintln!("[rust] new pomodoro after play {new_pomodoro:?}");
     Ok(new_pomodoro)
 }
 
@@ -393,7 +395,6 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
 
     if file_exists(pomodoro.config.session_file.as_path()) && current_session.session_file.is_none()
     {
-        eprintln!("# -> [tick] Playing {pomodoro:?}");
         // File created externally, start the pomodoro
         play(pomodoro, None)
     } else {
@@ -404,31 +405,29 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
                 if current_session.current_time + 1
                     == pomodoro.duration_of_session(&current_session)
                 {
-                    return Ok(next(pomodoro));
-                }
-
-                // If we're not a the end of a session, just update the time of the current session
-                Pomodoro {
-                    current_session: Session {
-                        current_time: current_session.current_time + 1,
-                        label: current_session.label,
-                        session_file: pomodoro.current_session.session_file.clone(),
-                        ..pomodoro.current_session
-                    },
-                    config: pomodoro.config.clone(),
-                    ..*pomodoro
+                    next(pomodoro)
+                } else {
+                    // If we're not a the end of a session, just update the time of the current session
+                    Pomodoro {
+                        current_session: Session {
+                            current_time: current_session.current_time + 1,
+                            label: current_session.label,
+                            session_file: pomodoro.current_session.session_file.clone(),
+                            ..pomodoro.current_session
+                        },
+                        config: pomodoro.config.clone(),
+                        ..*pomodoro
+                    }
                 }
             }
             _ => pomodoro.clone(),
         };
 
         if new_pomodoro.current_session.status == SessionStatus::NotStarted {
-            eprintln!("# -> [tick] Let’s remove the session file");
             remove_session_file(&new_pomodoro)?;
             new_pomodoro.current_session.session_file = None;
         }
 
-        eprintln!("# -> [tick] Returning new_pomodoro {new_pomodoro:?}");
         Ok(new_pomodoro)
     }
 }
