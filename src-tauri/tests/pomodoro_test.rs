@@ -175,19 +175,14 @@ fn tick_should_return_next_session_at_end_of_turn() {
         new_state.current_work_round_number,
         initial_state.current_work_round_number + 1
     );
-    assert!(initial_state.current_session.session_file.is_none());
+    assert!(new_state.current_session.session_file.is_none());
 
     // We are at the end of the last focus session, we should switch to a long break
     new_state.current_work_round_number = new_state.config.max_focus_rounds;
     new_state.current_session.current_time = new_state.config.focus_duration - 1;
-    eprintln!("# -> current_session {:?}", new_state.current_session);
+    let pomodoro_play = &pomodoro::play(&new_state, None).unwrap();
 
-    let mut new_state = pomodoro::tick(&pomodoro::play(&new_state, None).unwrap()).unwrap();
-
-    eprintln!(
-        "# -> current_time after {}",
-        new_state.current_session.current_time
-    );
+    let mut new_state = pomodoro::tick(pomodoro_play).unwrap();
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(
