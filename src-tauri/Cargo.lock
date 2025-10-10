@@ -3799,6 +3799,7 @@ dependencies = [
 name = "pomodorolm"
 version = "0.6.1"
 dependencies = [
+ "anyhow",
  "clap",
  "dirs 6.0.0",
  "futures",

@@ -3,7 +3,7 @@
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
 
-use crate::config::Config;
+use crate::config::{pomodoro_config, pomodoro_state_from_config, Config};
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
@@ -23,6 +23,7 @@ use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
 pub struct AppMenuStates<R: Runtime>(std::sync::Mutex<MenuStates<R>>);
+use anyhow::Result;
 use futures::StreamExt;
 use hex_color::HexColor;
 use std::path::PathBuf;
@@ -234,55 +235,52 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
-                .on_menu_event(move |app, event| {
-                    println!("On menu event {event:?}");
-                    match event.id().as_ref() {
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        "toggle_play" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("toggle-play", "");
-                            }
-                        }
-                        "skip" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("skip", "");
-                            }
-                        }
-                        "toggle_visibility" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let new_title = if window.is_visible().unwrap_or_default() {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.hide();
-                                    #[cfg(not(target_os = "macos"))]
-                                    let _ = window.hide();
-                                    "Show"
-                                } else {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.show();
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                    "Hide"
-                                };
-
-                                let state: tauri::State<'_, AppMenuStates<R>> = app.state();
-
-                                let state_guard = state.0.lock();
-                                match state_guard {
-                                    Ok(guard) => {
-                                        let set_text_result =
-                                            guard.toggle_visibility_menu.set_text(new_title);
-                                        if let Err(e) = set_text_result {
-                                            eprintln!("Error setting MenuItem title: {e:?}.");
-                                        }
-                                    }
-                                    Err(e) => eprintln!("Error getting state lock: {e:?}."),
-                                };
-                            }
-                        }
-                        _ => (),
+                .on_menu_event(move |app, event| match event.id().as_ref() {
+                    "quit" => {
+                        app.exit(0);
                     }
+                    "toggle_play" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("toggle-play", "");
+                        }
+                    }
+                    "skip" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("skip", "");
+                        }
+                    }
+                    "toggle_visibility" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let new_title = if window.is_visible().unwrap_or_default() {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.hide();
+                                #[cfg(not(target_os = "macos"))]
+                                let _ = window.hide();
+                                "Show"
+                            } else {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.show();
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                "Hide"
+                            };
+
+                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
+
+                            let state_guard = state.0.lock();
+                            match state_guard {
+                                Ok(guard) => {
+                                    let set_text_result =
+                                        guard.toggle_visibility_menu.set_text(new_title);
+                                    if let Err(e) = set_text_result {
+                                        eprintln!("Error setting MenuItem title: {e:?}.");
+                                    }
+                                }
+                                Err(e) => eprintln!("Error getting state lock: {e:?}."),
+                            };
+                        }
+                    }
+                    _ => (),
                 })
                 .build(app);
 
@@ -372,29 +370,10 @@ fn manage_autostart(
 fn read_config_from_disk<R: Runtime>(
     config_dir_name: &str,
     app_path: &tauri::path::PathResolver<R>,
-) -> Result<Config, Box<dyn std::error::Error>> {
+) -> Result<Config> {
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
     Config::get_or_create_from_disk(&config_dir, None)
-}
-
-fn pomodoro_config(config: &Config) -> pomodoro::Config {
-    pomodoro::Config {
-        auto_start_long_break_timer: config.auto_start_break_timer,
-        auto_start_short_break_timer: config.auto_start_break_timer,
-        auto_start_focus_timer: config.auto_start_work_timer,
-        focus_duration: config.focus_duration,
-        long_break_duration: config.long_break_duration,
-        max_focus_rounds: config.max_round_number,
-        short_break_duration: config.short_break_duration,
-    }
-}
-
-fn pomodoro_state_from_config(config: &Config) -> Pomodoro {
-    pomodoro::Pomodoro {
-        config: pomodoro_config(config),
-        ..pomodoro::Pomodoro::default()
-    }
 }
 
 fn get_themes_for_directory(themes_path: PathBuf) -> Vec<PathBuf> {
@@ -451,7 +430,8 @@ async fn tick(app_handle: AppHandle, path: String) {
                 let play_tick: bool =
                     should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                state_guard.pomodoro = pomodoro::tick(&state_guard.pomodoro);
+                state_guard.pomodoro =
+                    pomodoro::tick(&state_guard.pomodoro).expect("Error when ticking pomodoro");
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
@@ -776,18 +756,25 @@ async fn handle_external_message<R: tauri::Runtime>(
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut app_state_guard = state.0.lock().await;
 
+    eprintln!("[rust] external message: {name}");
+
     match name.as_str() {
         "pause" => {
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
         }
         "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro =
+                pomodoro::play(&app_state_guard.pomodoro, None).map_err(|e| {
+                    eprintln!("[rust] Unable to play pomodoro `{e}`.");
+                })?;
         }
         "quit" => {
             app.exit(0);
         }
         "reset" => {
-            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro).map_err(|e| {
+                eprintln!("[rust] Unable to reset pomodoro `{e}`.");
+            })?;
         }
         "skip" => {
             app_state_guard.pomodoro = pomodoro::next(&app_state_guard.pomodoro);
