@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 #[derive(PartialEq, Copy, Debug, Serialize, Deserialize, Clone)]
 pub enum SessionStatus {
@@ -534,6 +534,67 @@ fn parse_line(line: String) -> Result<SessionLineContent> {
             "Unable to read session line, unknown session type: {session_type_string}"
         ))?,
     })
+}
+
+fn get_remaining_time(path: &Path, duration: u64) -> Result<Duration> {
+    let modified_time = fs::metadata(path)?.modified()?;
+
+    let now = SystemTime::now();
+    let elapsed = now.duration_since(modified_time)?;
+    let total_duration = Duration::from_secs(duration);
+
+    if elapsed >= total_duration {
+        return Ok(Duration::from_secs(0)); // Return zero if the time is up
+    }
+    let remaining = total_duration - elapsed;
+
+    Ok(remaining)
+}
+
+pub fn get_next_pomodoro_from_session_file(
+    session_file_path: &PathBuf,
+    previous_pomodoro: &Pomodoro,
+) -> Result<Pomodoro> {
+    if file_exists(session_file_path) {
+        let session_info = get_session_info_with_default(session_file_path, previous_pomodoro);
+
+        let remaining_time = get_remaining_time(
+            session_file_path,
+            previous_pomodoro.config.focus_duration as u64,
+        )?;
+
+        let total_seconds = previous_pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
+        let remaining_seconds = remaining_time.as_secs();
+        let elapsed_seconds = total_seconds - remaining_seconds;
+
+        let next_pomodoro = Pomodoro {
+            current_session: Session {
+                label: Some(session_info.label.clone()),
+                session_type: session_info.session_type,
+                session_file: Some(session_file_path.to_path_buf()),
+                current_time: elapsed_seconds as u16,
+                status: if remaining_seconds == 0 {
+                    SessionStatus::NotStarted
+                } else {
+                    previous_pomodoro.current_session.status
+                },
+                ..previous_pomodoro.current_session
+            },
+            config: previous_pomodoro.config.clone(),
+            ..*previous_pomodoro
+        };
+        if previous_pomodoro.current_session.status == SessionStatus::NotStarted
+            && elapsed_seconds > 0
+        {
+            play_with_session_file(&next_pomodoro, None)
+        } else {
+            Ok(next_pomodoro)
+        }
+    } else {
+        // Whatever the current status, if there is no session file, we should reset the pomodoro
+        // to a not started state
+        reset(previous_pomodoro)
+    }
 }
 
 #[cfg(test)]
