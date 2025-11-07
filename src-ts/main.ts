@@ -278,12 +278,7 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
     case "update_config":
       console.log("Should update config");
 
-      console.log(message);
-
       let config: ElmConfig = message.value as ElmConfig;
-
-      console.log(config);
-      // break;
 
       invoke("update_config", {
         config: {
@@ -365,10 +360,6 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
     themeColors.foregroundDarkest
   );
   mainHtmlElement.style.setProperty("--color-accent", themeColors.accent);
-});
-
-await listen("tick-event", () => {
-  app.ports.tick.send(null);
 });
 
 await listen("external-message", (message) => {
