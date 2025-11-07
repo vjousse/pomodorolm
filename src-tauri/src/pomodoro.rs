@@ -405,7 +405,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
         // File created externally, start the pomodoro
         play_with_session_file(pomodoro, None)
     } else {
-        let next_pomodoro =
+        let _next_pomodoro =
             get_next_pomodoro_from_session_file(&pomodoro.config.session_file, pomodoro)?;
 
         let mut new_pomodoro = match current_session.status {
