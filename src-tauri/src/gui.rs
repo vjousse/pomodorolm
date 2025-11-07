@@ -3,7 +3,7 @@
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
 
-use crate::config::{pomodoro_config, pomodoro_state_from_config, Config};
+use crate::config::{Config, pomodoro_config, pomodoro_state_from_config};
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
@@ -354,10 +354,10 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
                     #[cfg(not(target_os = "macos"))]
                     let _ = window.hide();
                     let _ = toggle_visibility.set_text("Show");
-                };
+                }
 
                 let _ = window.set_always_on_top(config.always_on_top);
-            }
+            };
 
             let pomodoro = pomodoro_state_from_config(&config);
 
@@ -843,10 +843,9 @@ async fn handle_external_message<R: tauri::Runtime>(
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
         }
         "play" => {
-            app_state_guard.pomodoro =
-                pomodoro::play(&app_state_guard.pomodoro, None).map_err(|e| {
-                    eprintln!("[rust] Unable to play pomodoro `{e}`.");
-                })?;
+            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro).map_err(|e| {
+                eprintln!("[rust] Unable to play pomodoro `{e}`.");
+            })?;
         }
         "quit" => {
             app.exit(0);

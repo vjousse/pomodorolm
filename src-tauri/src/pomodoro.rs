@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
@@ -33,7 +33,7 @@ impl fmt::Display for SessionType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SessionInfo {
     pub label: String,
     pub session_type: SessionType,
@@ -201,33 +201,35 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
-pub fn play(pomodoro: &Pomodoro, session_info: Option<SessionInfo>) -> Result<Pomodoro> {
-    // eprintln!("[rust] playing pomodoro {pomodoro:?}");
-
+pub fn play_with_session_file(
+    pomodoro: &Pomodoro,
+    session_info: Option<SessionInfo>,
+) -> Result<Pomodoro> {
     if pomodoro.current_session.session_file.is_none() {
         eprintln!("[rust] creating session file");
         create_session_file(pomodoro)?;
     }
 
-    let current_session_info =
-        session_info.unwrap_or(get_session_info(&pomodoro.config.session_file)?);
+    // @TODO: Are we really sure we want logic here?
+    let current_session_info = session_info.unwrap_or(get_session_info_with_default(
+        &pomodoro.config.session_file,
+        pomodoro,
+    ));
 
+    let mut new_pomodoro = play(pomodoro)?;
+
+    new_pomodoro.current_session.start_time = Some(current_session_info.start_time);
+
+    Ok(new_pomodoro)
+}
+
+pub fn play(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     let new_pomodoro = Pomodoro {
         current_session: Session {
             status: SessionStatus::Running,
             label: pomodoro.current_session.label.clone(),
             session_file: Some(pomodoro.config.session_file.clone()),
-            start_time: Some(current_session_info.start_time),
-            // If the external file creation time is newer than the current start time, we should
-            // reset the current pomodoro
-            // @TODO: it looks like this logic should be handle elsewhere?
-            current_time: if pomodoro.current_session.start_time.is_some()
-                && pomodoro.current_session.start_time < Some(current_session_info.start_time)
-            {
-                0
-            } else {
-                pomodoro.current_session.current_time
-            },
+            current_time: pomodoro.current_session.current_time,
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
@@ -238,8 +240,11 @@ pub fn play(pomodoro: &Pomodoro, session_info: Option<SessionInfo>) -> Result<Po
 
 pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
     if let Some(session_file) = &pomodoro.current_session.session_file {
-        eprintln!("[rust] removing {session_file:?}");
-        fs::remove_file(session_file)?;
+        // Check that the file exists
+        if fs::metadata(session_file).is_ok() {
+            eprintln!("[rust] removing {session_file:?}");
+            fs::remove_file(session_file)?;
+        };
     };
     Ok(())
 }
@@ -370,13 +375,21 @@ pub fn tick_with_file_session_info(
             if current_session.session_file.is_none()
                 || info.start_time > current_session_start_time
             {
-                play(pomodoro, Some(info))
+                let mut new_pomodoro = play_with_session_file(pomodoro, Some(info.clone()))?;
+
+                // If the external file creation time is newer than the current start time, we should
+                // reset the current pomodoro
+                // @TODO: it looks like this logic should be handle elsewhere?
+                if current_session_start_time < info.start_time {
+                    new_pomodoro.current_session.current_time = 0;
+                };
+                Ok(new_pomodoro)
             } else {
                 Ok(pomodoro.clone())
             }
         }
 
-        (Some(info), None) => play(pomodoro, Some(info)),
+        (Some(info), None) => play_with_session_file(pomodoro, Some(info)),
         _ => reset_round(pomodoro),
     }
 }
@@ -384,11 +397,7 @@ pub fn tick_with_file_session_info(
 pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     let current_session = pomodoro.current_session.clone();
 
-<<<<<<< HEAD
-    let new_pomodoro_session_info = tick_with_file_session_info(
-=======
     let _new_pomodoro_session_info = tick_with_file_session_info(
->>>>>>> 89a4099 (chore: clippy)
         pomodoro,
         get_session_info(&pomodoro.config.session_file).ok(),
     );
@@ -396,7 +405,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     if file_exists(pomodoro.config.session_file.as_path()) && current_session.session_file.is_none()
     {
         // File created externally, start the pomodoro
-        play(pomodoro, None)
+        play_with_session_file(pomodoro, None)
     } else {
         let mut new_pomodoro = match current_session.status {
             // Tick should do something if the current session is in running mode
@@ -462,6 +471,44 @@ pub fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
         Err(anyhow!(
             "Unable to read session file {session_file_path:?}, file doesn’t exist"
         ))
+    }
+}
+
+pub fn get_session_info_with_default(
+    session_file_path: &PathBuf,
+    pomodoro: &Pomodoro,
+) -> SessionInfo {
+    let default = SessionInfo {
+        label: pomodoro.config.default_focus_label.clone(),
+        start_time: SystemTime::now(),
+        session_type: SessionType::Focus,
+    };
+
+    if file_exists(session_file_path) {
+        let line: String = fs::read_to_string(session_file_path)
+            .context("Unable to read the session file")
+            .unwrap();
+
+        let modified = fs::metadata(session_file_path).unwrap().modified().unwrap();
+
+        let session_line_content = parse_line(line);
+
+        match session_line_content {
+            Ok(line_content) => SessionInfo {
+                label: line_content.label,
+                start_time: modified,
+                session_type: line_content.session_type,
+            },
+            Err(e) => {
+                eprintln!(
+                    "Unable to parse session line: {e}. Fallback to config defaults: {}/{}.",
+                    pomodoro.config.default_focus_label, pomodoro.config.focus_duration
+                );
+                default
+            }
+        }
+    } else {
+        default
     }
 }
 
