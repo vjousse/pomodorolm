@@ -489,12 +489,18 @@ async fn tick(app_handle: AppHandle, path: String) {
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
                 let mut state_guard = new_state.0.lock().await;
-                //let play_tick: bool = state_guard.play_tick;
+
                 let play_tick: bool =
                     should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                state_guard.pomodoro =
-                    pomodoro::tick(&state_guard.pomodoro).expect("Error when ticking pomodoro");
+                // state_guard.pomodoro =
+                //     pomodoro::tick(&state_guard.pomodoro).expect("Error when ticking pomodoro");
+
+                state_guard.pomodoro = pomodoro::get_next_pomodoro_from_session_file(
+                    &state_guard.pomodoro.config.session_file,
+                    &state_guard.pomodoro,
+                )
+                .expect("Error when ticking pomodoro");
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
@@ -830,9 +836,10 @@ async fn handle_external_message<R: tauri::Runtime>(
             app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
         }
         "play" => {
-            app_state_guard.pomodoro = pomodoro::play(&app_state_guard.pomodoro).map_err(|e| {
-                eprintln!("[rust] Unable to play pomodoro `{e}`.");
-            })?;
+            app_state_guard.pomodoro =
+                pomodoro::play_with_session_file(&app_state_guard.pomodoro, None).map_err(|e| {
+                    eprintln!("[rust] Unable to play pomodoro `{e}`.");
+                })?;
         }
         "quit" => {
             app.exit(0);
