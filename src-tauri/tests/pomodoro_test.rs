@@ -1,6 +1,7 @@
 use pomodorolm_lib::pomodoro::{
     self, Config, Pomodoro, Session, SessionInfo, SessionStatus, SessionType, create_session_file,
 };
+use std::fs;
 use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
 
@@ -346,4 +347,132 @@ fn tick_with_file_session_info_test() {
     assert_eq!(new_state.current_session.status, SessionStatus::Running);
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.start_time, Some(new_start_time));
+}
+
+#[test]
+fn get_session_info_with_default_test() {
+    let pomodoro = get_initial_state();
+    let session_info =
+        pomodoro::get_session_info_with_default(&pomodoro.config.session_file, &pomodoro);
+
+    assert_eq!(session_info.session_type, SessionType::Focus);
+    assert_eq!(session_info.label, pomodoro.config.default_focus_label);
+    // Default label
+    assert_eq!(session_info.label, "Focus");
+
+    let _ = create_session_file(&pomodoro);
+
+    let session_info =
+        pomodoro::get_session_info_with_default(&pomodoro.config.session_file, &pomodoro);
+
+    assert_eq!(session_info.session_type, SessionType::Focus);
+    assert_eq!(session_info.label, "working");
+
+    let _ = fs::write(
+        &pomodoro.config.session_file,
+        format!("{};{}", SessionType::ShortBreak, "test"),
+    );
+
+    let session_info =
+        pomodoro::get_session_info_with_default(&pomodoro.config.session_file, &pomodoro);
+
+    assert_eq!(session_info.session_type, SessionType::ShortBreak);
+    assert_eq!(session_info.label, "test");
+
+    let _ = fs::write(&pomodoro.config.session_file, format!("{};{}", "-", ""));
+    let session_info =
+        pomodoro::get_session_info_with_default(&pomodoro.config.session_file, &pomodoro);
+
+    assert_eq!(session_info.session_type, SessionType::Focus);
+    assert_eq!(session_info.label, pomodoro.config.default_focus_label);
+    // Default label
+    assert_eq!(session_info.label, "Focus");
+}
+
+#[test]
+fn get_next_pomodoro_from_session_file_test() {
+    let pomodoro = get_initial_state();
+    let next_pomodoro =
+        pomodoro::get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)
+            .unwrap();
+
+    // No session file, the pomodoro should not be started
+    assert_eq!(
+        next_pomodoro.current_session.status,
+        SessionStatus::NotStarted
+    );
+
+    let _ = create_session_file(&next_pomodoro);
+
+    let next_pomodoro =
+        pomodoro::get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)
+            .unwrap();
+
+    // A session file was created, the pomodoro should be running
+    assert_eq!(next_pomodoro.current_session.status, SessionStatus::Running);
+
+    assert_eq!(
+        next_pomodoro.current_session.session_type,
+        SessionType::Focus
+    );
+
+    assert_eq!(
+        next_pomodoro.current_session.session_file,
+        Some(pomodoro.config.session_file.clone())
+    );
+
+    fs::remove_file(&pomodoro.config.session_file).unwrap();
+
+    let next_pomodoro =
+        pomodoro::get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)
+            .unwrap();
+
+    // The session file was removed, the pomodoro should be stopped
+    assert_eq!(
+        next_pomodoro.current_session.status,
+        SessionStatus::NotStarted
+    );
+
+    assert_eq!(
+        next_pomodoro.current_session.session_type,
+        SessionType::Focus
+    );
+
+    assert_eq!(next_pomodoro.current_session.session_file, None);
+
+    // Session file should not exist
+    assert!(!next_pomodoro.config.session_file.exists());
+
+    // Play the pomodoro and create the related session file
+    let next_pomodoro = pomodoro::play_with_session_file(&next_pomodoro, None).unwrap();
+
+    assert_eq!(next_pomodoro.current_session.status, SessionStatus::Running);
+
+    assert_eq!(
+        next_pomodoro.current_session.session_type,
+        SessionType::Focus
+    );
+
+    assert_eq!(
+        next_pomodoro.current_session.session_file,
+        Some(pomodoro.config.session_file.clone())
+    );
+
+    // Session file should exist
+    assert!(
+        next_pomodoro
+            .current_session
+            .session_file
+            .clone()
+            .unwrap()
+            .exists()
+    );
+
+    // Stop / reset the pomodoro
+    let next_pomodoro = pomodoro::reset(&next_pomodoro).unwrap();
+
+    assert_eq!(next_pomodoro.current_session.session_file, None);
+
+    // Session file should not exist anymore
+    assert!(!next_pomodoro.config.session_file.clone().exists());
 }
