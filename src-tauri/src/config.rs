@@ -1,4 +1,4 @@
-use crate::pomodoro;
+use crate::pomodoro::{self, default_session_file};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -58,11 +58,6 @@ fn default_short_break_label() -> String {
 }
 fn default_theme() -> String {
     "pomotroid".to_string()
-}
-fn default_session_file() -> PathBuf {
-    dirs::cache_dir().map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
-        p.join("pomodorolm_session")
-    })
 }
 
 fn default_max_session_duration() -> u16 {
@@ -128,10 +123,7 @@ impl Default for Config {
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
             muted: false,
-            session_file: dirs::cache_dir()
-                .map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
-                    p.join("pomodorolm_session")
-                }),
+            session_file: default_session_file(),
             short_break_audio: None,
             short_break_duration: 5 * 60,
             start_minimized: false,
