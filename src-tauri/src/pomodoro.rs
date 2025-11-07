@@ -400,16 +400,14 @@ pub fn tick_with_file_session_info(
 pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     let current_session = pomodoro.current_session.clone();
 
-    let _new_pomodoro_session_info = tick_with_file_session_info(
-        pomodoro,
-        get_session_info(&pomodoro.config.session_file).ok(),
-    );
-
     if file_exists(pomodoro.config.session_file.as_path()) && current_session.session_file.is_none()
     {
         // File created externally, start the pomodoro
         play_with_session_file(pomodoro, None)
     } else {
+        let next_pomodoro =
+            get_next_pomodoro_from_session_file(&pomodoro.config.session_file, pomodoro)?;
+
         let mut new_pomodoro = match current_session.status {
             // Tick should do something if the current session is in running mode
             SessionStatus::Running => {
