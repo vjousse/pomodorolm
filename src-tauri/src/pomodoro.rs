@@ -100,13 +100,16 @@ impl Default for Config {
             focus_duration: 25 * 60,
             long_break_duration: 20 * 60,
             max_focus_rounds: 4,
-            session_file: dirs::cache_dir()
-                .map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
-                    p.join("pomodorolm_session")
-                }),
+            session_file: default_session_file(),
             short_break_duration: 5 * 60,
         }
     }
+}
+
+pub fn default_session_file() -> PathBuf {
+    dirs::cache_dir().map_or(PathBuf::from("~/.cache/pomodorolm_session"), |p| {
+        p.join("pomodorolm_session")
+    })
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]

@@ -22,16 +22,15 @@ pub fn run(config_dir_name: &str, display_label: bool) -> Result<()> {
 }
 
 async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()> {
-    let cache_dir = dirs::cache_dir().context("Error while getting the cache directory")?;
     let mut pomodoro = pomodoro_state_from_config(&config);
 
-    let session_file_path = cache_dir.join("pomodorolm_session");
     let mut interval = interval(Duration::from_secs(1));
 
     loop {
         interval.tick().await;
 
-        let next_pomodoro = get_next_pomodoro_from_session_file(&session_file_path, &pomodoro)?;
+        let next_pomodoro =
+            get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)?;
 
         if next_pomodoro.current_session.current_time == 1 {
             println!("-> New pomodoro created");
@@ -64,9 +63,10 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
         }
 
         // Check if remaining time is zero
-        if remaining_seconds == 0 && file_exists(&session_file_path) {
+        if remaining_seconds == 0 && file_exists(&pomodoro.config.session_file) {
             // Delete the session file
-            fs::remove_file(&session_file_path).context("Failed to delete session file")?;
+            fs::remove_file(&pomodoro.config.session_file)
+                .context("Failed to delete session file")?;
             println!("-> Pomodoro ended normally");
             continue;
         }
