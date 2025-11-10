@@ -298,6 +298,7 @@ fn tick_with_file_session_info_test() {
     let session_info = SessionInfo {
         label: "Test label".to_string(),
         start_time: now,
+        session_status: SessionStatus::Running,
         session_type: SessionType::Focus,
     };
 
@@ -316,6 +317,7 @@ fn tick_with_file_session_info_test() {
     let session_info = SessionInfo {
         label: "Test label".to_string(),
         start_time: now,
+        session_status: SessionStatus::Running,
         session_type: SessionType::Focus,
     };
 
@@ -339,6 +341,7 @@ fn tick_with_file_session_info_test() {
     let session_info = SessionInfo {
         label: "Test label".to_string(),
         start_time: new_start_time,
+        session_status: SessionStatus::Running,
         session_type: SessionType::Focus,
     };
 
