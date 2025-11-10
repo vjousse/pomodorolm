@@ -16,6 +16,31 @@ pub enum SessionStatus {
     Running,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseSessionStatusError;
+
+impl fmt::Display for ParseSessionStatusError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unable to parse session status")
+    }
+}
+
+impl Error for ParseSessionStatusError {}
+
+impl FromStr for SessionStatus {
+    type Err = ParseSessionStatusError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let opt = match s.to_lowercase().as_str() {
+            "notstarted" => Self::NotStarted,
+            "paused" => Self::Paused,
+            "running" => Self::Running,
+            _ => return Err(ParseSessionStatusError),
+        };
+        Ok(opt)
+    }
+}
+
 #[derive(Copy, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum SessionType {
     Focus,
@@ -36,6 +61,7 @@ impl fmt::Display for SessionType {
 #[derive(Debug, Clone)]
 pub struct SessionInfo {
     pub label: String,
+    pub session_status: SessionStatus,
     pub session_type: SessionType,
     pub start_time: SystemTime,
 }
@@ -43,6 +69,7 @@ pub struct SessionInfo {
 #[derive(Debug)]
 struct SessionLineContent {
     label: String,
+    session_status: SessionStatus,
     session_type: SessionType,
 }
 
@@ -466,6 +493,7 @@ pub fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
         Ok(SessionInfo {
             label: session_line_content.label,
             start_time: modified,
+            session_status: session_line_content.session_status,
             session_type: session_line_content.session_type,
         })
     } else {
@@ -482,6 +510,7 @@ pub fn get_session_info_with_default(
     let default = SessionInfo {
         label: pomodoro.config.default_focus_label.clone(),
         start_time: SystemTime::now(),
+        session_status: SessionStatus::Running,
         session_type: SessionType::Focus,
     };
 
@@ -498,6 +527,7 @@ pub fn get_session_info_with_default(
             Ok(line_content) => SessionInfo {
                 label: line_content.label,
                 start_time: modified,
+                session_status: line_content.session_status,
                 session_type: line_content.session_type,
             },
             Err(e) => {
@@ -520,17 +550,26 @@ fn file_exists(path: &Path) -> bool {
 fn parse_line(line: String) -> Result<SessionLineContent> {
     let parts = line.trim().split(";").collect::<Vec<&str>>();
 
-    if parts.len() != 2 {
+    if parts.len() < 2 {
         return Err(anyhow!(
-            "Unable to read session line, it should have only 2 parts between a ;"
+            "Unable to read session line, it should have at least 2 parts between a ;"
         ));
     }
 
     let session_type_string = parts[0];
     let label = parts[1];
 
+    let session_status_string = if parts.len() == 3 {
+        parts[2]
+    } else {
+        "running"
+    };
+
     Ok(SessionLineContent {
         label: label.to_owned(),
+        session_status: SessionStatus::from_str(session_status_string).context(format!(
+            "Unable to read session line, unknown session status: {session_status_string}"
+        ))?,
         session_type: SessionType::from_str(session_type_string).context(format!(
             "Unable to read session line, unknown session type: {session_type_string}"
         ))?,
@@ -608,7 +647,7 @@ mod tests {
         let error = result.unwrap_err();
         assert_eq!(
             format!("{error}"),
-            "Unable to read session line, it should have only 2 parts between a ;"
+            "Unable to read session line, it should have at least 2 parts between a ;"
         );
 
         let result = parse_line("focus-;label".to_owned());
@@ -624,6 +663,7 @@ mod tests {
         let result = parse_line("Focus;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::Focus);
+        assert_eq!(result.session_status, SessionStatus::Running);
 
         let result = parse_line("ShortBreak;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
@@ -632,5 +672,10 @@ mod tests {
         let result = parse_line("LongBreak;label".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::LongBreak);
+
+        let result = parse_line("Focus;label;paused".to_owned()).unwrap();
+        assert_eq!(result.label, "label");
+        assert_eq!(result.session_type, SessionType::Focus);
+        assert_eq!(result.session_status, SessionStatus::Paused);
     }
 }
