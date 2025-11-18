@@ -502,6 +502,8 @@ async fn tick(app_handle: AppHandle, path: String) {
                 )
                 .expect("Error when ticking pomodoro");
 
+                eprintln!("tick: {:?}", state_guard.pomodoro);
+
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
                 tauri::async_runtime::spawn_blocking(move || {
@@ -833,7 +835,12 @@ async fn handle_external_message<R: tauri::Runtime>(
 
     match name.as_str() {
         "pause" => {
-            app_state_guard.pomodoro = pomodoro::pause(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro =
+                pomodoro::pause_with_session_file(&app_state_guard.pomodoro, None).map_err(
+                    |e| {
+                        eprintln!("[rust] Unable to play pomodoro `{e}`.");
+                    },
+                )?;
         }
         "play" => {
             app_state_guard.pomodoro =

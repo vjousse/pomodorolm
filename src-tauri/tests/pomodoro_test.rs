@@ -55,7 +55,11 @@ fn tick_should_not_do_anything_if_not_running() {
 #[test]
 fn tick_should_start_session_if_file_created() {
     let initial_state = get_initial_state();
-    let _ = create_session_file(&initial_state);
+    let _ = create_session_file(
+        &initial_state,
+        initial_state.current_session.session_type,
+        SessionStatus::Running,
+    );
     let new_state = pomodoro::tick(&initial_state).unwrap();
     assert_eq!(
         new_state,
@@ -363,7 +367,11 @@ fn get_session_info_with_default_test() {
     // Default label
     assert_eq!(session_info.label, "Focus");
 
-    let _ = create_session_file(&pomodoro);
+    let _ = create_session_file(
+        &pomodoro,
+        pomodoro.current_session.session_type,
+        SessionStatus::Running,
+    );
 
     let session_info =
         pomodoro::get_session_info_with_default(&pomodoro.config.session_file, &pomodoro);
@@ -393,6 +401,30 @@ fn get_session_info_with_default_test() {
 }
 
 #[test]
+fn get_session_info_with_paused_test() {
+    let initial_state = get_initial_state();
+
+    let _ = create_session_file(
+        &initial_state,
+        initial_state.current_session.session_type,
+        SessionStatus::Paused,
+    );
+    let session_info =
+        pomodoro::get_session_info_with_default(&initial_state.config.session_file, &initial_state);
+
+    assert_eq!(session_info.session_type, SessionType::Focus);
+    assert_eq!(session_info.session_status, SessionStatus::Paused);
+
+    let next_pomodoro = pomodoro::get_next_pomodoro_from_session_file(
+        &initial_state.config.session_file,
+        &initial_state,
+    )
+    .unwrap();
+
+    assert_eq!(next_pomodoro.current_session.status, SessionStatus::Paused);
+}
+
+#[test]
 fn get_next_pomodoro_from_session_file_test() {
     let pomodoro = get_initial_state();
     let next_pomodoro =
@@ -405,7 +437,11 @@ fn get_next_pomodoro_from_session_file_test() {
         SessionStatus::NotStarted
     );
 
-    let _ = create_session_file(&next_pomodoro);
+    let _ = create_session_file(
+        &next_pomodoro,
+        next_pomodoro.current_session.session_type,
+        SessionStatus::Running,
+    );
 
     let next_pomodoro =
         pomodoro::get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)
