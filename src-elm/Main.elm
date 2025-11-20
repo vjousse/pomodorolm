@@ -13,7 +13,6 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types
     exposing
         ( Config
-        , CurrentState
         , Defaults
         , ExternalMessage(..)
         , Model
@@ -26,6 +25,7 @@ import Types
         , Setting(..)
         , SettingTab(..)
         , SettingType(..)
+        , sessionStatusToString
         , sessionTypeFromString
         , sessionTypeToString
         )
@@ -42,19 +42,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-
-sessionStatusToString : SessionStatus -> String
-sessionStatusToString sessionStatus =
-    case sessionStatus of
-        Paused ->
-            "paused"
-
-        Running ->
-            "running"
-
-        NotStarted ->
-            "not_started"
 
 
 type alias Flags =
@@ -102,6 +89,7 @@ init flags =
             { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
+            , sessionStatus = NotStarted
             }
     in
     ( { appVersion = flags.appVersion
@@ -353,6 +341,7 @@ update msg ({ config } as model) =
                     , percentage = percent
                     , paused =
                         pomodoroState.currentSession.status == Paused
+                    , sessionStatus = pomodoroState.currentSession.status
                     }
 
                 cmds =
@@ -445,6 +434,7 @@ update msg ({ config } as model) =
                     , percentage = 1
                     , paused =
                         model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
+                    , sessionStatus = NotStarted
                     }
             in
             ( model
@@ -580,6 +570,7 @@ update msg ({ config } as model) =
                                             else
                                                 1
                                         , paused = True
+                                        , sessionStatus = Paused
                                         }
                                 in
                                 ( { model | currentState = currentState }
@@ -609,6 +600,7 @@ update msg ({ config } as model) =
                                             else
                                                 1
                                         , paused = False
+                                        , sessionStatus = status
                                         }
                                 in
                                 ( { model | currentState = currentState }

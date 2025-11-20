@@ -4,7 +4,21 @@ import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
 import Themes exposing (Theme, ThemeColors)
-import Types exposing (Config, CurrentState, ElmMessage, ExternalMessage(..), InitData, PomodoroSession, PomodoroState, SessionStatus(..), SessionType(..), SoundMessageValue, sessionTypeToString)
+import Types
+    exposing
+        ( Config
+        , CurrentState
+        , ElmMessage
+        , ExternalMessage(..)
+        , InitData
+        , PomodoroSession
+        , PomodoroState
+        , SessionStatus(..)
+        , SessionType(..)
+        , SoundMessageValue
+        , sessionStatusToString
+        , sessionTypeToString
+        )
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value
@@ -64,6 +78,7 @@ currentStateEncoder currentState =
         [ ( "color", Encode.string currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
+        , ( "sessionStatus", Encode.string (sessionStatusToString currentState.sessionStatus) )
         ]
 
 

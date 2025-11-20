@@ -22,6 +22,7 @@ type ElmState = {
   color: string;
   percentage: number;
   paused: boolean;
+  sessionStatus: string;
 };
 type SoundMessage = {
   soundId: string;
@@ -245,6 +246,9 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
         fillPercentage: state.percentage,
         paused: state.paused,
       });
+
+      invoke("update_session_status", { status: state.sessionStatus });
+
       break;
 
     case "get_init_data":
