@@ -25,7 +25,6 @@ import Types
         , Setting(..)
         , SettingTab(..)
         , SettingType(..)
-        , sessionStatusToString
         , sessionTypeFromString
         , sessionTypeToString
         )
@@ -141,7 +140,6 @@ init flags =
       }
     , Cmd.batch
         [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-        , updateSessionStatus (NotStarted |> sessionStatusToString)
         , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
         , setThemeColors <| theme.colors
         ]
@@ -252,20 +250,16 @@ update msg ({ config } as model) =
                         |> update (ProcessExternalMessage (RustStateMsg c.pomodoroState))
 
                 ( modelWithTheme, cmdWithTheme ) =
-                    let
-                        baseCmd =
-                            [ newCmd, updateSessionStatus (NotStarted |> sessionStatusToString) ]
-                    in
                     case newThemes |> ListWithCurrent.getCurrent of
                         Just currentTheme ->
                             let
                                 ( updatedModel, updatedCmd ) =
                                     update (ChangeTheme currentTheme) newModel
                             in
-                            ( updatedModel, Cmd.batch (updatedCmd :: baseCmd) )
+                            ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
 
                         _ ->
-                            ( newModel, Cmd.batch baseCmd )
+                            ( newModel, newCmd )
             in
             -- Auto start if config is set
             if modelWithTheme.config.autoStartOnAppStartup then
@@ -440,7 +434,6 @@ update msg ({ config } as model) =
             ( model
             , Cmd.batch
                 [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                , updateSessionStatus (NotStarted |> sessionStatusToString)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
@@ -459,8 +452,7 @@ update msg ({ config } as model) =
                 | config = newConfig
               }
             , Cmd.batch
-                [ updateSessionStatus (NotStarted |> sessionStatusToString)
-                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
+                [ sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
 
@@ -576,7 +568,6 @@ update msg ({ config } as model) =
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
                                     [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                                    , updateSessionStatus (Running |> sessionStatusToString)
                                     , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
                                     ]
                                 )
@@ -606,7 +597,6 @@ update msg ({ config } as model) =
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
                                     [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                                    , updateSessionStatus (status |> sessionStatusToString)
                                     , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
                                     ]
                                 )
@@ -789,9 +779,6 @@ port minimizeWindow : () -> Cmd msg
 
 
 port hideWindow : () -> Cmd msg
-
-
-port updateSessionStatus : String -> Cmd msg
 
 
 port notify : Notification -> Cmd msg
