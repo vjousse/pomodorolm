@@ -30,7 +30,7 @@ type SoundMessage = {
 
 type Message = {
   name: string;
-  value: string | ElmConfig | SoundMessage;
+  value: string | ElmConfig | SoundMessage | ElmState;
 };
 
 type Notification = {
@@ -236,6 +236,17 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
       invoke("quit");
       break;
 
+    case "update_current_state":
+      let state: ElmState = message.value as ElmState;
+      invoke("change_icon", {
+        red: hexToRgb(state.color)?.r,
+        green: hexToRgb(state.color)?.g,
+        blue: hexToRgb(state.color)?.b,
+        fillPercentage: state.percentage,
+        paused: state.paused,
+      });
+      break;
+
     case "get_init_data":
       console.log("Getting init data from Rust");
 
@@ -304,20 +315,6 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
         app.ports.sendMessageToElm.send(newState);
       });
   }
-});
-
-app.ports.updateCurrentState.subscribe(function (state: ElmState) {
-  invoke("change_icon", {
-    red: hexToRgb(state.color)?.r,
-    green: hexToRgb(state.color)?.g,
-    blue: hexToRgb(state.color)?.b,
-    fillPercentage: state.percentage,
-    paused: state.paused,
-  });
-});
-
-app.ports.updateSessionStatus.subscribe(function (status: String) {
-  invoke("update_session_status", { status });
 });
 
 app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {

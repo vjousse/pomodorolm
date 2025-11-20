@@ -4,7 +4,7 @@ import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
@@ -152,7 +152,7 @@ init flags =
       , volumeSliderHidden = True
       }
     , Cmd.batch
-        [ updateCurrentState currentState
+        [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
         , updateSessionStatus (NotStarted |> sessionStatusToString)
         , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
         , setThemeColors <| theme.colors
@@ -204,7 +204,7 @@ update msg ({ config } as model) =
             , Cmd.batch
                 [ setThemeColors theme.colors
                 , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
-                , updateCurrentState newState
+                , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
                 ]
             )
 
@@ -412,7 +412,8 @@ update msg ({ config } as model) =
                 , currentState = currentState
                 , pomodoroState = Just pomodoroState
               }
-            , Cmd.batch (updateCurrentState currentState :: cmds)
+            , Cmd.batch
+                (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
             )
 
         ProcessExternalMessage (SoundFilePath sessionType path) ->
@@ -448,7 +449,7 @@ update msg ({ config } as model) =
             in
             ( model
             , Cmd.batch
-                [ updateCurrentState currentState
+                [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
                 , updateSessionStatus (NotStarted |> sessionStatusToString)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
@@ -583,12 +584,13 @@ update msg ({ config } as model) =
                                 in
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
-                                    [ updateCurrentState currentState
+                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
+                                    , updateSessionStatus (Running |> sessionStatusToString)
                                     , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
                                     ]
                                 )
 
-                            _ ->
+                            status ->
                                 let
                                     maxTime =
                                         getCurrentMaxTime config state
@@ -611,7 +613,8 @@ update msg ({ config } as model) =
                                 in
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
-                                    [ updateCurrentState currentState
+                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
+                                    , updateSessionStatus (status |> sessionStatusToString)
                                     , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
                                     ]
                                 )
@@ -794,9 +797,6 @@ port minimizeWindow : () -> Cmd msg
 
 
 port hideWindow : () -> Cmd msg
-
-
-port updateCurrentState : CurrentState -> Cmd msg
 
 
 port updateSessionStatus : String -> Cmd msg

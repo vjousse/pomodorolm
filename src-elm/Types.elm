@@ -122,7 +122,10 @@ type alias InitData =
 
 
 type alias CurrentState =
-    { color : String, percentage : Float, paused : Bool }
+    { color : String
+    , percentage : Float
+    , paused : Bool
+    }
 
 
 type alias Notification =
