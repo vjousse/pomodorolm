@@ -451,9 +451,7 @@ update msg ({ config } as model) =
             ( { model
                 | config = newConfig
               }
-            , Cmd.batch
-                [ sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
-                ]
+            , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
             )
 
         ResetAudioFile sessionType ->
