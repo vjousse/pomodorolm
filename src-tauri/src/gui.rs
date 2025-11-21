@@ -295,7 +295,9 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
                     #[cfg(not(target_os = "macos"))]
                     let _ = window.hide();
                     let _ = toggle_visibility.set_text("Show");
-                }
+                };
+
+                let _ = window.set_always_on_top(config.always_on_top);
             }
 
             let pomodoro = pomodoro_state_from_config(&config);
@@ -590,6 +592,10 @@ async fn update_config(
 
                     // Manage autostart status
                     let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
+
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.set_always_on_top(config.always_on_top);
+                    }
 
                     Ok::<(), ()>(())
                 }
