@@ -2,12 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.6.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.2)] - 2025-11-21
+
+### 🐛 Bug Fixes
+
+- Handle play status correctly in tray menu ([#199](https://github.com/vjousse/pomodorolm/issues/199))
+- Handle always on top config ([#200](https://github.com/vjousse/pomodorolm/issues/200))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update aur package
+- Update to latest deps and tauri 2.8 ([#191](https://github.com/vjousse/pomodorolm/issues/191))
+
 ## [[app-v0.6.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.1)] - 2025-10-01
 
 ### 🐛 Bug Fixes
 
 - App crash if duration is 0 ([#188](https://github.com/vjousse/pomodorolm/issues/188))
 - No icon on windows 11 ([#189](https://github.com/vjousse/pomodorolm/issues/189))
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to 0.6.1
 
 ## [[app-v0.6.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.0)] - 2025-08-08
 

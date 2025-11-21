@@ -5,7 +5,7 @@ platforms:
   amd64:
   arm64:
 
-version: "0.6.1"
+version: "0.6.2"
 summary: A simple, good looking and multi-platform pomodoro tracker
 description: |
   Pomodorolm is a simple and configurable Pomodoro timer. It aims to provide a visually-pleasing and reliable way to track productivity using the Pomodoro Technique.

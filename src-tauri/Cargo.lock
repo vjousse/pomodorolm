@@ -3797,7 +3797,7 @@ dependencies = [
 
 [[package]]
 name = "pomodorolm"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "clap",
  "dirs 6.0.0",
