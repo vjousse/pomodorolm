@@ -383,7 +383,7 @@ pub fn reset_session(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
     Ok(Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
-            current_time: 0,
+            elapsed_seconds: 0,
             label: pomodoro.current_session.label.clone(),
             session_file: pomodoro.current_session.session_file.clone(),
             session_type: SessionType::Focus,
@@ -594,7 +594,7 @@ pub fn get_session_info_with_default(
                         if line_content.session_status == SessionStatus::Running {
                             pomodoro.config.focus_duration - remaining_seconds
                         } else {
-                            pomodoro.current_session.elapsed_seconds.into()
+                            pomodoro.current_session.elapsed_seconds
                         }
                     }
                 };
@@ -720,7 +720,7 @@ pub fn get_next_pomodoro_from_session_file(
     } else {
         // Whatever the current status, if there is no session file, we should reset the pomodoro
         // to a not started state
-        reset(previous_pomodoro)
+        reset_round(previous_pomodoro)
     }
 }
 

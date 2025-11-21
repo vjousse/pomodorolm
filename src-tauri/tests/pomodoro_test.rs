@@ -499,7 +499,7 @@ fn get_next_pomodoro_from_session_file_test() {
     );
 
     // Stop / reset the pomodoro
-    let next_pomodoro = pomodoro::reset(&next_pomodoro).unwrap();
+    let next_pomodoro = pomodoro::reset_round(&next_pomodoro).unwrap();
 
     assert_eq!(next_pomodoro.current_session.session_file, None);
 
