@@ -574,7 +574,7 @@ pub fn get_session_info_with_default(
                         if line_content.session_status == SessionStatus::Running {
                             pomodoro.config.focus_duration - remaining_seconds
                         } else {
-                            pomodoro.current_session.elapsed_seconds.into()
+                            pomodoro.current_session.elapsed_seconds
                         }
                     }
                 };
