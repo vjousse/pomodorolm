@@ -55,10 +55,6 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
                 println!("{progress_bar} {formatted_time}");
             }
         } else {
-            if pomodoro.current_session.status == SessionStatus::Running {
-                println!("-> Pomodoro stopped outside of the app");
-                pomodoro = pomodoro::reset_round(&pomodoro)?;
-            }
             println!("P -");
         }
 
