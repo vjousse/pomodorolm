@@ -4,7 +4,7 @@ import Browser
 import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (configEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
@@ -13,7 +13,6 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types
     exposing
         ( Config
-        , CurrentState
         , Defaults
         , ExternalMessage(..)
         , Model
@@ -42,19 +41,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-
-sessionStatusToString : SessionStatus -> String
-sessionStatusToString sessionStatus =
-    case sessionStatus of
-        Paused ->
-            "paused"
-
-        Running ->
-            "running"
-
-        NotStarted ->
-            "not_started"
 
 
 type alias Flags =
@@ -102,6 +88,7 @@ init flags =
             { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
+            , sessionStatus = NotStarted
             }
     in
     ( { appVersion = flags.appVersion
@@ -152,8 +139,7 @@ init flags =
       , volumeSliderHidden = True
       }
     , Cmd.batch
-        [ updateCurrentState currentState
-        , updateSessionStatus (NotStarted |> sessionStatusToString)
+        [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
         , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
         , setThemeColors <| theme.colors
         ]
@@ -204,7 +190,7 @@ update msg ({ config } as model) =
             , Cmd.batch
                 [ setThemeColors theme.colors
                 , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
-                , updateCurrentState newState
+                , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
                 ]
             )
 
@@ -264,20 +250,16 @@ update msg ({ config } as model) =
                         |> update (ProcessExternalMessage (RustStateMsg c.pomodoroState))
 
                 ( modelWithTheme, cmdWithTheme ) =
-                    let
-                        baseCmd =
-                            [ newCmd, updateSessionStatus (NotStarted |> sessionStatusToString) ]
-                    in
                     case newThemes |> ListWithCurrent.getCurrent of
                         Just currentTheme ->
                             let
                                 ( updatedModel, updatedCmd ) =
                                     update (ChangeTheme currentTheme) newModel
                             in
-                            ( updatedModel, Cmd.batch (updatedCmd :: baseCmd) )
+                            ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
 
                         _ ->
-                            ( newModel, Cmd.batch baseCmd )
+                            ( newModel, newCmd )
             in
             -- Auto start if config is set
             if modelWithTheme.config.autoStartOnAppStartup then
@@ -353,6 +335,7 @@ update msg ({ config } as model) =
                     , percentage = percent
                     , paused =
                         pomodoroState.currentSession.status == Paused
+                    , sessionStatus = pomodoroState.currentSession.status
                     }
 
                 cmds =
@@ -412,7 +395,8 @@ update msg ({ config } as model) =
                 , currentState = currentState
                 , pomodoroState = Just pomodoroState
               }
-            , Cmd.batch (updateCurrentState currentState :: cmds)
+            , Cmd.batch
+                (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
             )
 
         ProcessExternalMessage (SoundFilePath sessionType path) ->
@@ -444,12 +428,12 @@ update msg ({ config } as model) =
                     , percentage = 1
                     , paused =
                         model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
+                    , sessionStatus = NotStarted
                     }
             in
             ( model
             , Cmd.batch
-                [ updateCurrentState currentState
-                , updateSessionStatus (NotStarted |> sessionStatusToString)
+                [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
                 , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
                 ]
             )
@@ -467,10 +451,7 @@ update msg ({ config } as model) =
             ( { model
                 | config = newConfig
               }
-            , Cmd.batch
-                [ updateSessionStatus (NotStarted |> sessionStatusToString)
-                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
-                ]
+            , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
             )
 
         ResetAudioFile sessionType ->
@@ -579,16 +560,17 @@ update msg ({ config } as model) =
                                             else
                                                 1
                                         , paused = True
+                                        , sessionStatus = Paused
                                         }
                                 in
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
-                                    [ updateCurrentState currentState
+                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
                                     , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
                                     ]
                                 )
 
-                            _ ->
+                            status ->
                                 let
                                     maxTime =
                                         getCurrentMaxTime config state
@@ -607,11 +589,12 @@ update msg ({ config } as model) =
                                             else
                                                 1
                                         , paused = False
+                                        , sessionStatus = status
                                         }
                                 in
                                 ( { model | currentState = currentState }
                                 , Cmd.batch
-                                    [ updateCurrentState currentState
+                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
                                     , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
                                     ]
                                 )
@@ -794,12 +777,6 @@ port minimizeWindow : () -> Cmd msg
 
 
 port hideWindow : () -> Cmd msg
-
-
-port updateCurrentState : CurrentState -> Cmd msg
-
-
-port updateSessionStatus : String -> Cmd msg
 
 
 port notify : Notification -> Cmd msg

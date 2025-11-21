@@ -18,6 +18,7 @@ module Types exposing
     , SettingTab(..)
     , SettingType(..)
     , SoundMessageValue
+    , sessionStatusToString
     , sessionTypeFromString
     , sessionTypeToString
     )
@@ -122,7 +123,11 @@ type alias InitData =
 
 
 type alias CurrentState =
-    { color : String, percentage : Float, paused : Bool }
+    { color : String
+    , percentage : Float
+    , paused : Bool
+    , sessionStatus : SessionStatus
+    }
 
 
 type alias Notification =
@@ -235,3 +240,16 @@ sessionTypeFromString string =
 
         _ ->
             Nothing
+
+
+sessionStatusToString : SessionStatus -> String
+sessionStatusToString sessionStatus =
+    case sessionStatus of
+        Paused ->
+            "paused"
+
+        Running ->
+            "running"
+
+        NotStarted ->
+            "not_started"
