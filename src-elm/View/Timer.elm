@@ -102,10 +102,6 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
 
 timerView : Model -> Html Msg
 timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
-    let
-        _ =
-            Debug.log "Pomodoro state" pomodoroState
-    in
     pomodoroState
         |> Maybe.map
             (\state ->
