@@ -1,5 +1,4 @@
 use anyhow::{Context, Result, anyhow};
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
@@ -71,17 +70,17 @@ impl fmt::Display for SessionType {
 
 #[derive(Debug, Clone)]
 pub struct SessionInfo {
+    pub elapsed_seconds: Seconds,
     pub label: String,
     pub session_status: SessionStatus,
     pub session_type: SessionType,
-    pub start_time: SystemTime,
 }
 
 #[derive(Debug)]
 struct SessionLineContent {
+    elapsed_seconds: Option<Seconds>,
     label: String,
     session_status: SessionStatus,
-    session_status_creation_time: Option<NaiveDateTime>,
     session_type: SessionType,
 }
 
@@ -198,7 +197,7 @@ impl Pomodoro {
             config: self.config.clone(),
             current_work_round_number: self.current_work_round_number,
             current_session: SessionUnburrowed {
-                current_time: self.current_session.current_time,
+                current_time: self.current_session.elapsed_seconds,
                 session_type: self.current_session.session_type,
                 status: self.current_session.status,
                 label: self.current_session.label.clone(),
@@ -209,7 +208,7 @@ impl Pomodoro {
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Session {
-    pub current_time: Seconds,
+    pub elapsed_seconds: Seconds,
     pub label: Option<String>,
     pub session_file: Option<PathBuf>,
     pub session_type: SessionType,
@@ -221,10 +220,11 @@ impl fmt::Display for Session {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{};{};{}",
+            "{};{};{};{}",
             self.session_type,
             self.label.clone().unwrap_or("working".into()),
             self.status,
+            self.elapsed_seconds
         )
     }
 }
@@ -232,7 +232,7 @@ impl fmt::Display for Session {
 impl Default for Session {
     fn default() -> Self {
         Session {
-            current_time: 0,
+            elapsed_seconds: 0,
             label: None,
             session_file: None,
             session_type: SessionType::Focus,
@@ -257,7 +257,7 @@ pub fn pause(pomodoro: &Pomodoro) -> Pomodoro {
 
 pub fn pause_with_session_file(
     pomodoro: &Pomodoro,
-    session_info: Option<SessionInfo>,
+    _session_info: Option<SessionInfo>,
 ) -> Result<Pomodoro> {
     let new_pomodoro = Pomodoro {
         current_session: Session {
@@ -270,7 +270,7 @@ pub fn pause_with_session_file(
         ..*pomodoro
     };
 
-    create_session_file(
+    write_session_file(
         &new_pomodoro,
         new_pomodoro.current_session.session_type,
         SessionStatus::Paused,
@@ -285,7 +285,7 @@ pub fn play_with_session_file(
 ) -> Result<Pomodoro> {
     if pomodoro.current_session.session_file.is_none() {
         eprintln!("[rust] creating session file");
-        create_session_file(
+        write_session_file(
             pomodoro,
             pomodoro.current_session.session_type,
             SessionStatus::Running,
@@ -293,14 +293,14 @@ pub fn play_with_session_file(
     }
 
     // @TODO: Are we really sure we want logic here?
-    let current_session_info = session_info.unwrap_or(get_session_info_with_default(
+    let _current_session_info = session_info.unwrap_or(get_session_info_with_default(
         &pomodoro.config.session_file,
         pomodoro,
     ));
 
-    let mut new_pomodoro = play(pomodoro)?;
+    let new_pomodoro = play(pomodoro)?;
 
-    new_pomodoro.current_session.start_time = Some(current_session_info.start_time);
+    // new_pomodoro.current_session.start_time = Some(current_session_info.start_time);
 
     Ok(new_pomodoro)
 }
@@ -311,7 +311,7 @@ pub fn play(pomodoro: &Pomodoro) -> Result<Pomodoro> {
             status: SessionStatus::Running,
             label: pomodoro.current_session.label.clone(),
             session_file: Some(pomodoro.config.session_file.clone()),
-            current_time: pomodoro.current_session.current_time,
+            elapsed_seconds: pomodoro.current_session.elapsed_seconds,
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
@@ -331,7 +331,7 @@ pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create_session_file(
+pub fn write_session_file(
     pomodoro: &Pomodoro,
     session_type: SessionType,
     session_status: SessionStatus,
@@ -348,7 +348,7 @@ pub fn create_session_file(
                 label: pomodoro.current_session.label.clone(),
                 session_file: Some(pomodoro.config.session_file.clone()),
                 session_type,
-                current_time: pomodoro.current_session.current_time,
+                elapsed_seconds: pomodoro.current_session.elapsed_seconds,
                 ..pomodoro.current_session
             }
         ),
@@ -363,7 +363,7 @@ pub fn reset_round(pomodoro: &Pomodoro) -> Result<Pomodoro> {
     Ok(Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
-            current_time: 0,
+            elapsed_seconds: 0,
             label: pomodoro.current_session.label.clone(),
             session_file: None,
             start_time: None,
@@ -452,7 +452,7 @@ pub fn tick_with_file_session_info(
     let current_session = pomodoro.current_session.clone();
 
     match (session_info, current_session.start_time) {
-        (Some(info), Some(current_session_start_time)) => {
+        (Some(info), Some(_current_session_start_time)) => {
             // @TODO: Here we need to check the consistency between the session_info that we have (coming from
             //  reading the session file on disk) and the state of the current pomodoro
             //  We need a way to check that the file has possibly been reset, deleted to adapt the next
@@ -460,17 +460,15 @@ pub fn tick_with_file_session_info(
 
             // If there is no session file let’s play the pomodoro, it means a new file has been
             // created
-            if current_session.session_file.is_none()
-                || info.start_time > current_session_start_time
-            {
-                let mut new_pomodoro = play_with_session_file(pomodoro, Some(info.clone()))?;
+            if current_session.session_file.is_none() {
+                let new_pomodoro = play_with_session_file(pomodoro, Some(info.clone()))?;
 
-                // If the external file creation time is newer than the current start time, we should
-                // reset the current pomodoro
-                // @TODO: it looks like this logic should be handle elsewhere?
-                if current_session_start_time < info.start_time {
-                    new_pomodoro.current_session.current_time = 0;
-                };
+                // // If the external file creation time is newer than the current start time, we should
+                // // reset the current pomodoro
+                // // @TODO: it looks like this logic should be handle elsewhere?
+                // if current_session_start_time < info.start_time {
+                //     new_pomodoro.current_session.elapsed_seconds = 0;
+                // };
                 Ok(new_pomodoro)
             } else {
                 Ok(pomodoro.clone())
@@ -497,7 +495,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
             // Tick should do something if the current session is in running mode
             SessionStatus::Running => {
                 // If it was the last tick, return the next status
-                if current_session.current_time + 1
+                if current_session.elapsed_seconds + 1
                     == pomodoro.duration_of_session(&current_session)
                 {
                     next(pomodoro)
@@ -505,7 +503,7 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
                     // If we're not a the end of a session, just update the time of the current session
                     Pomodoro {
                         current_session: Session {
-                            current_time: current_session.current_time + 1,
+                            elapsed_seconds: current_session.elapsed_seconds + 1,
                             label: current_session.label,
                             session_file: pomodoro.current_session.session_file.clone(),
                             ..pomodoro.current_session
@@ -546,11 +544,11 @@ pub fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
 
         let session_line_content = parse_line(line)?;
 
-        let modified = fs::metadata(session_file_path)?.modified()?;
+        let _modified = fs::metadata(session_file_path)?.modified()?;
 
         Ok(SessionInfo {
+            elapsed_seconds: session_line_content.elapsed_seconds.unwrap_or(0),
             label: session_line_content.label,
-            start_time: modified,
             session_status: session_line_content.session_status,
             session_type: session_line_content.session_type,
         })
@@ -566,8 +564,8 @@ pub fn get_session_info_with_default(
     pomodoro: &Pomodoro,
 ) -> SessionInfo {
     let default = SessionInfo {
+        elapsed_seconds: 0,
         label: pomodoro.config.default_focus_label.clone(),
-        start_time: SystemTime::now(),
         session_status: SessionStatus::Running,
         session_type: SessionType::Focus,
     };
@@ -577,17 +575,37 @@ pub fn get_session_info_with_default(
             .context("Unable to read the session file")
             .unwrap();
 
-        let modified = fs::metadata(session_file_path).unwrap().modified().unwrap();
+        let _modified = fs::metadata(session_file_path).unwrap().modified().unwrap();
 
         let session_line_content = parse_line(line);
 
         match session_line_content {
-            Ok(line_content) => SessionInfo {
-                label: line_content.label,
-                start_time: modified,
-                session_status: line_content.session_status,
-                session_type: line_content.session_type,
-            },
+            Ok(line_content) => {
+                let elapsed_seconds = match line_content.elapsed_seconds {
+                    Some(seconds) => seconds,
+                    None => {
+                        let remaining_seconds = get_remaining_time(
+                            session_file_path,
+                            pomodoro.config.focus_duration as u64,
+                        )
+                        .unwrap_or(Duration::from_secs(pomodoro.config.focus_duration.into()))
+                        .as_secs() as u16;
+
+                        if line_content.session_status == SessionStatus::Running {
+                            pomodoro.config.focus_duration - remaining_seconds
+                        } else {
+                            pomodoro.current_session.elapsed_seconds.into()
+                        }
+                    }
+                };
+
+                SessionInfo {
+                    elapsed_seconds,
+                    label: line_content.label,
+                    session_status: line_content.session_status,
+                    session_type: line_content.session_type,
+                }
+            }
             Err(e) => {
                 eprintln!(
                     "Unable to parse session line: {e}. Fallback to config defaults: {}/{}.",
@@ -623,9 +641,10 @@ fn parse_line(line: String) -> Result<SessionLineContent> {
         "running"
     };
 
-    let status_creation_time = if parts.len() >= 4 {
+    let elapsed_seconds = if parts.len() >= 4 {
         Some(
-            NaiveDateTime::parse_from_str(parts[3], "%s")
+            parts[3]
+                .parse::<Seconds>()
                 .context("Unable to read timestamp in session line")?,
         )
     } else {
@@ -633,11 +652,11 @@ fn parse_line(line: String) -> Result<SessionLineContent> {
     };
 
     Ok(SessionLineContent {
+        elapsed_seconds,
         label: label.to_owned(),
         session_status: SessionStatus::from_str(session_status_string).context(format!(
             "Unable to read session line, unknown session status: {session_status_string}"
         ))?,
-        session_status_creation_time: status_creation_time,
         session_type: SessionType::from_str(session_type_string).context(format!(
             "Unable to read session line, unknown session type: {session_type_string}"
         ))?,
@@ -665,29 +684,21 @@ pub fn get_next_pomodoro_from_session_file(
 ) -> Result<Pomodoro> {
     if file_exists(session_file_path) {
         let session_info = get_session_info_with_default(session_file_path, previous_pomodoro);
-        eprintln!("Session info: {:?}", session_info);
-
-        let remaining_time = get_remaining_time(
-            session_file_path,
-            previous_pomodoro.config.focus_duration as u64,
-        )?;
+        // eprintln!("Session info: {:?}", session_info);
 
         let total_seconds = previous_pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
-        let remaining_seconds = remaining_time.as_secs();
-        let elapsed_seconds = if session_info.session_status == SessionStatus::Running {
-            total_seconds - remaining_seconds
-        } else {
-            previous_pomodoro.current_session.current_time.into()
-        };
 
-        eprintln!("Remaining seconds: {:?}", remaining_seconds);
+        let elapsed_seconds = session_info.elapsed_seconds as u64;
+        let remaining_seconds = total_seconds - session_info.elapsed_seconds as u64;
+
+        // eprintln!("Remaining seconds: {:?}", remaining_seconds);
 
         let next_pomodoro = Pomodoro {
             current_session: Session {
                 label: Some(session_info.label.clone()),
                 session_type: session_info.session_type,
                 session_file: Some(session_file_path.to_path_buf()),
-                current_time: elapsed_seconds as u16,
+                elapsed_seconds: elapsed_seconds as u16,
                 status: if remaining_seconds == 0 {
                     SessionStatus::NotStarted
                 } else {
@@ -755,9 +766,10 @@ mod tests {
         assert_eq!(result.session_status, SessionStatus::Paused);
 
         // Add timestamp of pause
-        let result = parse_line("Focus;label;paused;1763116702".to_owned()).unwrap();
+        let result = parse_line("Focus;label;paused;8".to_owned()).unwrap();
         assert_eq!(result.label, "label");
         assert_eq!(result.session_type, SessionType::Focus);
         assert_eq!(result.session_status, SessionStatus::Paused);
+        assert_eq!(result.elapsed_seconds, Some(8));
     }
 }
