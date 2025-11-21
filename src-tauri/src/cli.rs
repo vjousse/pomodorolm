@@ -32,17 +32,17 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
         let next_pomodoro =
             get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)?;
 
-        if next_pomodoro.current_session.current_time == 1 {
+        if next_pomodoro.current_session.elapsed_seconds == 1 {
             println!("-> New pomodoro created");
         }
 
         // Create the progress bar
         let progress_bar = create_progress_bar(
             next_pomodoro.config.focus_duration.into(),
-            next_pomodoro.current_session.current_time.into(),
+            next_pomodoro.current_session.elapsed_seconds.into(),
         );
         let remaining_seconds = (next_pomodoro.config.focus_duration
-            - next_pomodoro.current_session.current_time) as u64;
+            - next_pomodoro.current_session.elapsed_seconds) as u64;
 
         let formatted_time = format_time(remaining_seconds);
 
