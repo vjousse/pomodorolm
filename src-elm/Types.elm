@@ -11,6 +11,7 @@ module Types exposing
     , PomodoroSession
     , PomodoroState
     , RGB(..)
+    , ResetType(..)
     , Seconds
     , SessionStatus(..)
     , SessionType(..)
@@ -59,7 +60,7 @@ type Msg
     | ProcessExternalMessage ExternalMessage
     | MinimizeWindow
     | NoOp
-    | Reset
+    | Reset ResetType
     | ResetSettings
     | ResetAudioFile SessionType
     | SkipCurrentRound
@@ -69,6 +70,11 @@ type Msg
     | UpdateLabel SessionType String
     | UpdateSetting SettingType
     | UpdateVolume String
+
+
+type ResetType
+    = CurrentRound
+    | EntireSession
 
 
 type alias Seconds =

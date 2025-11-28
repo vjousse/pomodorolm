@@ -8,7 +8,7 @@ import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Model, Msg(..), RGB(..), Seconds, SessionStatus(..), SessionType(..))
+import Types exposing (Model, Msg(..), RGB(..), ResetType(..), Seconds, SessionStatus(..), SessionType(..))
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
@@ -189,8 +189,12 @@ footerView : Model -> Html Msg
 footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
-            [ p [] [ text <| String.fromInt (model.pomodoroState |> Maybe.map (\state -> state.currentWorkRoundNumber) |> Maybe.withDefault 1) ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
-            , p [ class "text-button", title "Reset current round", onClick Reset ] [ text "Reset" ]
+            [ p [ class "total-rounds" ] [ text <| String.fromInt (model.pomodoroState |> Maybe.map (\state -> state.currentWorkRoundNumber) |> Maybe.withDefault 1) ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
+            , div [ class "reset-rounds" ]
+                [ p [ class "text-button", title "Reset current round", onClick <| Reset CurrentRound ] [ text "Reset round" ]
+                , text " or "
+                , p [ class "text-button", title "Reset the whole session", onClick <| Reset EntireSession ] [ text "session" ]
+                ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
             [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick SkipCurrentRound ]
