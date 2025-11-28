@@ -87,6 +87,7 @@ type ElmConfig = {
   longBreakAudio: string | null;
   longBreakDuration: number;
   maxRoundNumber: number;
+  maxSessionDuration: number;
   minimizeToTray: boolean;
   minimizeToTrayOnClose: boolean;
   muted: boolean;
@@ -114,6 +115,7 @@ type RustConfig = {
   long_break_audio: string | null;
   long_break_duration: number;
   max_round_number: number;
+  max_session_duration: number;
   minimize_to_tray: boolean;
   minimize_to_tray_on_close: boolean;
   muted: boolean;
@@ -143,6 +145,7 @@ let rustConfig: RustConfig = {
   long_break_audio: null,
   long_break_duration: 1200,
   max_round_number: 4,
+  max_session_duration: 90,
   minimize_to_tray: true,
   minimize_to_tray_on_close: true,
   muted: false,
@@ -174,6 +177,7 @@ app = Elm.Main.init({
     focusDuration: rustConfig.focus_duration,
     longBreakDuration: rustConfig.long_break_duration,
     maxRoundNumber: rustConfig.max_round_number,
+    maxSessionDuration: rustConfig.max_session_duration,
     minimizeToTray: rustConfig.minimize_to_tray,
     minimizeToTrayOnClose: rustConfig.minimize_to_tray_on_close,
     muted: rustConfig.muted,
@@ -297,6 +301,7 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
           long_break_audio: config.longBreakAudio,
           long_break_duration: config.longBreakDuration,
           max_round_number: config.maxRoundNumber,
+          max_session_duration: config.maxSessionDuration,
           minimize_to_tray: config.minimizeToTray,
           minimize_to_tray_on_close: config.minimizeToTrayOnClose,
           muted: config.muted,
