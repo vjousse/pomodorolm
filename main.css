@@ -227,8 +227,17 @@ input:focus {
   text-align: center;
 }
 .round-wrapper .total-rounds {
+  text-align: left;
+}
+
+.round-wrapper .reset-rounds {
   color: var(--color-foreground-darker);
   font-size: 0.7rem;
+  letter-spacing: 0.05rem;
+}
+
+.round-wrapper .reset-rounds p {
+  display: inline;
 }
 
 .icon--mute path {

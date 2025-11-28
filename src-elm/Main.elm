@@ -19,6 +19,7 @@ import Types
         , Msg(..)
         , Notification
         , RGB(..)
+        , ResetType(..)
         , Seconds
         , SessionStatus(..)
         , SessionType(..)
@@ -418,7 +419,7 @@ update msg ({ config } as model) =
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
-        Reset ->
+        Reset resetType ->
             let
                 currentState =
                     { color =
@@ -436,7 +437,18 @@ update msg ({ config } as model) =
             ( model
             , Cmd.batch
                 [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                , sendMessageFromElm (elmMessageEncoder { name = "reset", value = Nothing })
+                , sendMessageFromElm
+                    (elmMessageEncoder
+                        { name =
+                            case resetType of
+                                CurrentRound ->
+                                    "reset_round"
+
+                                EntireSession ->
+                                    "reset_session"
+                        , value = Nothing
+                        }
+                    )
                 ]
             )
 
