@@ -632,7 +632,7 @@ update msg ({ config } as model) =
                             { config | autoQuit = sessionTypeFromString sessionTypeString }
 
                         FocusTime value ->
-                            { config | focusDuration = toInt value * 60 }
+                            { config | focusDuration = min (config.maxSessionDuration * 60) (toInt value * 60) }
 
                         Label sessionType label ->
                             case sessionType of
@@ -646,7 +646,7 @@ update msg ({ config } as model) =
                                     { config | defaultLongBreakLabel = label }
 
                         LongBreakTime value ->
-                            { config | longBreakDuration = min (90 * 60) (toInt value * 60) }
+                            { config | longBreakDuration = min (config.maxSessionDuration * 60) (toInt value * 60) }
 
                         MaxSessionDuration value ->
                             { config | maxSessionDuration = toInt value * 60 }
@@ -662,7 +662,7 @@ update msg ({ config } as model) =
                             }
 
                         ShortBreakTime value ->
-                            { config | shortBreakDuration = min (90 * 60) (toInt value * 60) }
+                            { config | shortBreakDuration = min (config.maxSessionDuration * 60) (toInt value * 60) }
 
                         Toggle value ->
                             case value of
