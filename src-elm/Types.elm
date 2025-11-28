@@ -102,6 +102,7 @@ type alias Config =
     , longBreakAudio : Maybe String
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
+    , maxSessionDuration : Seconds
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
     , muted : Bool
@@ -188,7 +189,9 @@ type SettingType
     | FocusTime String
     | Label SessionType String
     | LongBreakTime String
+    | MaxSessionDuration String
     | Rounds String
+    | SaveMaxSessionDuration
     | ShortBreakTime String
     | Toggle Setting
 

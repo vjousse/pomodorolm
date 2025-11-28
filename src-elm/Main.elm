@@ -56,6 +56,7 @@ type alias Flags =
     , desktopNotifications : Bool
     , longBreakDuration : Seconds
     , maxRoundNumber : Int
+    , maxSessionDuration : Seconds
     , minimizeToTray : Bool
     , minimizeToTrayOnClose : Bool
     , muted : Bool
@@ -113,6 +114,7 @@ init flags =
             , longBreakAudio = Nothing
             , longBreakDuration = flags.longBreakDuration
             , maxRoundNumber = flags.maxRoundNumber
+            , maxSessionDuration = flags.maxSessionDuration
             , minimizeToTray = flags.minimizeToTray
             , minimizeToTrayOnClose = flags.minimizeToTrayOnClose
             , muted = flags.muted
@@ -630,7 +632,7 @@ update msg ({ config } as model) =
                             { config | autoQuit = sessionTypeFromString sessionTypeString }
 
                         FocusTime value ->
-                            { config | focusDuration = min (90 * 60) (toInt value * 60) }
+                            { config | focusDuration = toInt value * 60 }
 
                         Label sessionType label ->
                             case sessionType of
@@ -646,8 +648,18 @@ update msg ({ config } as model) =
                         LongBreakTime value ->
                             { config | longBreakDuration = min (90 * 60) (toInt value * 60) }
 
+                        MaxSessionDuration value ->
+                            { config | maxSessionDuration = toInt value * 60 }
+
                         Rounds value ->
                             { config | maxRoundNumber = min 12 (toInt value) }
+
+                        SaveMaxSessionDuration ->
+                            { config
+                                | focusDuration = min config.focusDuration config.maxSessionDuration
+                                , longBreakDuration = min config.longBreakDuration config.maxSessionDuration
+                                , shortBreakDuration = min config.shortBreakDuration config.maxSessionDuration
+                            }
 
                         ShortBreakTime value ->
                             { config | shortBreakDuration = min (90 * 60) (toInt value * 60) }

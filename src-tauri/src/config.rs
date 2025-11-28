@@ -26,6 +26,8 @@ pub struct Config {
     pub long_break_audio: Option<String>,
     pub long_break_duration: u16,
     pub max_round_number: u16,
+    #[serde(default = "default_max_session_duration")]
+    pub max_session_duration: u16,
     pub minimize_to_tray: bool,
     pub minimize_to_tray_on_close: bool,
     #[serde(default)]
@@ -53,6 +55,10 @@ fn default_short_break_label() -> String {
 }
 fn default_theme() -> String {
     "pomotroid".to_string()
+}
+
+fn default_max_session_duration() -> u16 {
+    90 * 60
 }
 
 impl Config {
@@ -101,15 +107,16 @@ impl Default for Config {
             auto_start_break_timer: true,
             auto_start_on_app_startup: false,
             auto_start_work_timer: true,
-            default_focus_label: "Focus".to_string(),
-            default_long_break_label: "Long break".to_string(),
-            default_short_break_label: "Short break".to_string(),
+            default_focus_label: default_focus_label(),
+            default_long_break_label: default_long_break_label(),
+            default_short_break_label: default_short_break_label(),
             desktop_notifications: true,
             focus_audio: None,
             focus_duration: 25 * 60,
             long_break_audio: None,
             long_break_duration: 20 * 60,
             max_round_number: 4u16,
+            max_session_duration: default_max_session_duration(),
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
             muted: false,
@@ -117,7 +124,7 @@ impl Default for Config {
             short_break_duration: 5 * 60,
             start_minimized: false,
             system_startup_auto_start: false,
-            theme: "pomotroid".to_string(),
+            theme: default_theme(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
         }

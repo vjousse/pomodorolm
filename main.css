@@ -565,6 +565,27 @@ input[type="range"]::-webkit-slider-thumb {
   text-align: left;
 }
 
+.setting-time-input-wrapper {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-background-light);
+  padding: 0.3em;
+  border: 0.56vw solid var(--color-background-lightest);
+  border-radius: 1.1vw;
+}
+
+.setting-time-input {
+  background-color: var(--color-background-light);
+  display: inline-block;
+  font-family: "RobotoMono", monospace;
+  font-size: 3.3vw;
+  color: var(--color-foreground);
+  border: none;
+}
+.setting-time-input:focus {
+  outline: none;
+}
+
 #about h2 {
   color: var(--color-short-round);
   font-weight: 400;

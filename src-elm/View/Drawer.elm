@@ -2,15 +2,15 @@ module View.Drawer exposing (drawerView)
 
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onBlur, onClick, onInput)
 import ListWithCurrent
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Types exposing (Model, Msg(..), SessionType(..), Setting(..), SettingTab(..), SettingType(..))
 
 
-settingWrapper : String -> Msg -> Bool -> Html Msg
-settingWrapper title msg settingActive =
+settingWrapperToggle : String -> Msg -> Bool -> Html Msg
+settingWrapperToggle title msg settingActive =
     div
         [ class "setting-wrapper"
         , onClick msg
@@ -366,7 +366,8 @@ timerSettingView model =
                     [ type_ "text"
                     , class "setting-input"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.step "1"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
                     , onInput <| FocusTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
@@ -380,7 +381,7 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
                     , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
@@ -389,7 +390,7 @@ timerSettingView model =
                     []
                 , div
                     [ class "slider-bar slider-bar--red"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.focusDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.focusDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -408,7 +409,7 @@ timerSettingView model =
                     [ type_ "text"
                     , class "setting-input"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
                     , onInput <| ShortBreakTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)) ++ "ch"
@@ -422,7 +423,7 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
                     , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
@@ -431,7 +432,7 @@ timerSettingView model =
                     []
                 , div
                     [ class "slider-bar slider-bar--green"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.shortBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.shortBreakDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -450,7 +451,7 @@ timerSettingView model =
                     [ type_ "text"
                     , class "setting-input"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
                     , onInput <| LongBreakTime >> UpdateSetting
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.longBreakDuration / 60)) ++ "ch"
@@ -464,7 +465,7 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max "90"
+                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
                     , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
@@ -473,7 +474,7 @@ timerSettingView model =
                     []
                 , div
                     [ class "slider-bar slider-bar--blue"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.longBreakDuration / 60) / 90) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat model.config.longBreakDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -539,15 +540,15 @@ settingsSettingView { config } =
             [ class "drawer-heading"
             ]
             [ text "General Settings" ]
-        , settingWrapper "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) config.alwaysOnTop
-        , settingWrapper "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) config.autoStartWorkTimer
-        , settingWrapper "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) config.autoStartOnAppStartup
-        , settingWrapper "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) config.autoStartBreakTimer
-        , settingWrapper "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) config.systemStartupAutoStart
+        , settingWrapperToggle "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) config.alwaysOnTop
+        , settingWrapperToggle "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) config.autoStartWorkTimer
+        , settingWrapperToggle "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) config.autoStartOnAppStartup
+        , settingWrapperToggle "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) config.autoStartBreakTimer
+        , settingWrapperToggle "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) config.systemStartupAutoStart
         , div
             [ class "setting-wrapper"
             ]
-            [ p [ class "setting-title", style "margin-top" "0.3rem" ] [ text "Auto-quit app" ]
+            [ p [ class "setting-title", style "margin-top" "0.3rem" ] [ text "Auto-quit App" ]
             , div
                 []
                 [ select [ onInput (AutoQuit >> UpdateSetting) ]
@@ -558,10 +559,31 @@ settingsSettingView { config } =
                     ]
                 ]
             ]
-        , settingWrapper "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) config.desktopNotifications
-        , settingWrapper "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) config.minimizeToTray
-        , settingWrapper "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) config.minimizeToTrayOnClose
-        , settingWrapper "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) config.startMinimized
+        , settingWrapperToggle "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) config.desktopNotifications
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title", style "margin-top" "0.3rem" ] [ text "Max Session Duration" ]
+            , div
+                [ class "setting-value setting-time-input-wrapper"
+                ]
+                [ input
+                    [ type_ "text"
+                    , class "setting-time-input"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.step "1"
+                    , value <| String.fromFloat (toFloat config.maxSessionDuration / 60)
+                    , onInput <| MaxSessionDuration >> UpdateSetting
+                    , onBlur <| UpdateSetting SaveMaxSessionDuration
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.maxSessionDuration / 60)) ++ "ch"
+                    ]
+                    []
+                , text ":00"
+                ]
+            ]
+        , settingWrapperToggle "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) config.minimizeToTray
+        , settingWrapperToggle "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) config.minimizeToTrayOnClose
+        , settingWrapperToggle "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) config.startMinimized
         ]
 
 
@@ -572,8 +594,8 @@ soundsSettingView model =
             [ class "drawer-heading"
             ]
             [ text "Sound Settings" ]
-        , settingWrapper "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
-        , settingWrapper "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) model.config.tickSoundsDuringWork
+        , settingWrapperToggle "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
+        , settingWrapperToggle "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) model.config.tickSoundsDuringWork
         , audioFileWrapper model.config.shortBreakAudio ShortBreak "Short break"
         , audioFileWrapper model.config.longBreakAudio LongBreak "Long break"
         , audioFileWrapper model.config.focusAudio Focus "Work session"

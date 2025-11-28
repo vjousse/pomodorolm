@@ -119,6 +119,7 @@ configEncoder config =
           )
         , ( "longBreakDuration", Encode.int config.longBreakDuration )
         , ( "maxRoundNumber", Encode.int config.maxRoundNumber )
+        , ( "maxSessionDuration", Encode.int config.maxSessionDuration )
         , ( "minimizeToTray", Encode.bool config.minimizeToTray )
         , ( "minimizeToTrayOnClose", Encode.bool config.minimizeToTrayOnClose )
         , ( "muted", Encode.bool config.muted )
@@ -153,6 +154,7 @@ configDecoder =
         |> Pipe.optional "long_break_audio" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "long_break_duration" Decode.int
         |> Pipe.required "max_round_number" Decode.int
+        |> Pipe.required "max_session_duration" Decode.int
         |> Pipe.required "minimize_to_tray" Decode.bool
         |> Pipe.required "minimize_to_tray_on_close" Decode.bool
         |> Pipe.required "muted" Decode.bool
