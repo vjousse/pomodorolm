@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.7.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.7.0)] - 2025-11-28
+
+### 🚀 Features
+
+- Configure max session length ([#203](https://github.com/vjousse/pomodorolm/issues/203))
+- Add reset session button ([#204](https://github.com/vjousse/pomodorolm/issues/204))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update AUR checksum
+- Update deps ([#201](https://github.com/vjousse/pomodorolm/issues/201))
+
 ## [[app-v0.6.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.2)] - 2025-11-21
 
 ### 🐛 Bug Fixes
@@ -13,6 +25,7 @@ All notable changes to this project will be documented in this file.
 
 - Update aur package
 - Update to latest deps and tauri 2.8 ([#191](https://github.com/vjousse/pomodorolm/issues/191))
+- Bump to 0.6.2
 
 ## [[app-v0.6.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.1)] - 2025-10-01
 
