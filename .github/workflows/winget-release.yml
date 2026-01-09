@@ -9,5 +9,5 @@ jobs:
       - uses: vedantmgoyal9/winget-releaser@main
         with:
           identifier: jousse.pomodorolm
-          installers-regex: '\.msi$' # Only .exe files
+          installers-regex: '\.msi$' # Only .msi files
           token: ${{ secrets.WINGET_TOKEN }}
