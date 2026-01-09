@@ -15,7 +15,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
-use tauri::tray::TrayIconBuilder;
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::AppHandle;
 use tauri::Runtime;
 use tauri::{path::BaseDirectory, Manager};
@@ -234,55 +234,69 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
-                .on_menu_event(move |app, event| {
-                    println!("On menu event {event:?}");
-                    match event.id().as_ref() {
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        "toggle_play" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("toggle-play", "");
-                            }
-                        }
-                        "skip" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("skip", "");
-                            }
-                        }
-                        "toggle_visibility" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let new_title = if window.is_visible().unwrap_or_default() {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.hide();
-                                    #[cfg(not(target_os = "macos"))]
-                                    let _ = window.hide();
-                                    "Show"
-                                } else {
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.show();
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                    "Hide"
-                                };
+                .on_tray_icon_event(|tray, event| match event {
+                    TrayIconEvent::DoubleClick {
+                        button: MouseButton::Left,
+                        ..
+                    } => {
+                        println!("double click pressed and released");
 
-                                let state: tauri::State<'_, AppMenuStates<R>> = app.state();
-
-                                let state_guard = state.0.lock();
-                                match state_guard {
-                                    Ok(guard) => {
-                                        let set_text_result =
-                                            guard.toggle_visibility_menu.set_text(new_title);
-                                        if let Err(e) = set_text_result {
-                                            eprintln!("Error setting MenuItem title: {e:?}.");
-                                        }
-                                    }
-                                    Err(e) => eprintln!("Error getting state lock: {e:?}."),
-                                };
-                            }
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
-                        _ => (),
                     }
+                    _ => {
+                        println!("unhandled event {event:?}");
+                    }
+                })
+                .on_menu_event(move |app, event| match event.id().as_ref() {
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    "toggle_play" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("toggle-play", "");
+                        }
+                    }
+                    "skip" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("skip", "");
+                        }
+                    }
+                    "toggle_visibility" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let new_title = if window.is_visible().unwrap_or_default() {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.hide();
+                                #[cfg(not(target_os = "macos"))]
+                                let _ = window.hide();
+                                "Show"
+                            } else {
+                                #[cfg(target_os = "macos")]
+                                let _ = app.show();
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                "Hide"
+                            };
+
+                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
+
+                            let state_guard = state.0.lock();
+                            match state_guard {
+                                Ok(guard) => {
+                                    let set_text_result =
+                                        guard.toggle_visibility_menu.set_text(new_title);
+                                    if let Err(e) = set_text_result {
+                                        eprintln!("Error setting MenuItem title: {e:?}.");
+                                    }
+                                }
+                                Err(e) => eprintln!("Error getting state lock: {e:?}."),
+                            };
+                        }
+                    }
+                    _ => (),
                 })
                 .build(app);
 
