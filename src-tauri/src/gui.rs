@@ -15,7 +15,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
 use tauri::AppHandle;
 use tauri::Runtime;
 use tauri::{path::BaseDirectory, Manager};
@@ -234,21 +234,18 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
 
             let _ = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::DoubleClick {
+                .on_tray_icon_event(|tray, event| {
+                    // Doesn’t work on Linux for now due to tauri limitations
+                    if let TrayIconEvent::DoubleClick {
                         button: MouseButton::Left,
                         ..
-                    } => {
-                        println!("double click pressed and released");
-
+                    } = event
+                    {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
-                    }
-                    _ => {
-                        println!("unhandled event {event:?}");
                     }
                 })
                 .on_menu_event(move |app, event| match event.id().as_ref() {
