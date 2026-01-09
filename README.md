@@ -37,11 +37,17 @@
 
 # 📘 Installation
 
+## Windows
+
+Installer: Download the .exe or .msi file from the latest release on https://github.com/vjousse/pomodorolm/releases/
+
+winget: `winget install pomodorolm`
+
 ## Archlinux
 
     yay -S pomodorolm-bin
 
-## Windows, Mac OS X, Debian, AppImage
+## Mac OS X, Debian, AppImage
 
 Download the install file for your OS from the latest release on https://github.com/vjousse/pomodorolm/releases/
 
