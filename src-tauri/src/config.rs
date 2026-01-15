@@ -1,4 +1,5 @@
-use crate::pomodoro;
+use crate::pomodoro::{self, default_session_file};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::OpenOptions;
@@ -32,6 +33,8 @@ pub struct Config {
     pub minimize_to_tray_on_close: bool,
     #[serde(default)]
     pub muted: bool,
+    #[serde(default = "default_session_file")]
+    pub session_file: PathBuf,
     pub short_break_audio: Option<String>,
     pub short_break_duration: u16,
     #[serde(default)]
@@ -69,7 +72,7 @@ impl Config {
     pub fn get_or_create_from_disk(
         config_dir: &Path,
         config_file_name: Option<String>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
 
         // Create the config dir and the themes one if they don’t exist
@@ -120,6 +123,7 @@ impl Default for Config {
             minimize_to_tray: true,
             minimize_to_tray_on_close: true,
             muted: false,
+            session_file: default_session_file(),
             short_break_audio: None,
             short_break_duration: 5 * 60,
             start_minimized: false,
@@ -128,5 +132,28 @@ impl Default for Config {
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
         }
+    }
+}
+
+pub fn pomodoro_config(config: &Config) -> pomodoro::Config {
+    pomodoro::Config {
+        auto_start_long_break_timer: config.auto_start_break_timer,
+        auto_start_short_break_timer: config.auto_start_break_timer,
+        auto_start_focus_timer: config.auto_start_work_timer,
+        default_focus_label: config.default_focus_label.clone(),
+        default_short_break_label: config.default_short_break_label.clone(),
+        default_long_break_label: config.default_long_break_label.clone(),
+        focus_duration: config.focus_duration,
+        long_break_duration: config.long_break_duration,
+        max_focus_rounds: config.max_round_number,
+        session_file: config.session_file.clone(),
+        short_break_duration: config.short_break_duration,
+    }
+}
+
+pub fn pomodoro_state_from_config(config: &Config) -> pomodoro::Pomodoro {
+    pomodoro::Pomodoro {
+        config: pomodoro_config(config),
+        ..pomodoro::Pomodoro::default()
     }
 }
