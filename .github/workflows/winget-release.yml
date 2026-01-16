@@ -3,7 +3,6 @@ name: Publish to WinGet
 on:
   release:
     types: [released]
-
   workflow_dispatch:
     inputs:
       tag_name:
@@ -15,10 +14,23 @@ jobs:
   publish:
     runs-on: windows-latest
     steps:
+      # use regex to transform the tag to a semantical versioning number
+      - name: Get Clean Version
+        id: get_version
+        shell: pwsh
+        run: |
+          $rawTag = "${{ inputs.tag_name || github.event.release.tag_name }}"
+          $cleanVersion = $rawTag -replace '^app-v', '' -replace '^v', ''
+
+          Write-Host "Raw Tag: $rawTag"
+          Write-Host "Clean Version: $cleanVersion"
+          "version=$cleanVersion" >> $env:GITHUB_OUTPUT
+
+      # release to winget using .exe installer and clean semver
       - uses: vedantmgoyal9/winget-releaser@v2
         with:
           identifier: jousse.pomodorolm
-          installers-regex: '\.msi$'
+          installers-regex: 'setup\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
-          # If run manually, use the input. If run automatically, use the release tag.
+          version: ${{ steps.get_version.outputs.version }}
           release-tag: ${{ inputs.tag_name || github.event.release.tag_name }}
