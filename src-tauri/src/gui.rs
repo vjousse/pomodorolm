@@ -804,11 +804,10 @@ async fn handle_external_message<R: tauri::Runtime>(
             app.exit(0);
         }
         "reset_round" => {
-            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
+            app_state_guard.pomodoro = pomodoro::reset_round(&app_state_guard.pomodoro);
         }
         "reset_session" => {
-            app_state_guard.pomodoro = pomodoro::reset(&app_state_guard.pomodoro);
-            app_state_guard.pomodoro.current_work_round_number = 1;
+            app_state_guard.pomodoro = pomodoro::reset_session(&app_state_guard.pomodoro);
         }
 
         "skip" => {

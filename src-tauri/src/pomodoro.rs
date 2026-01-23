@@ -145,7 +145,7 @@ pub fn play(pomodoro: &Pomodoro) -> Pomodoro {
     }
 }
 
-pub fn reset(pomodoro: &Pomodoro) -> Pomodoro {
+pub fn reset_round(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: Session {
             status: SessionStatus::NotStarted,
@@ -153,6 +153,19 @@ pub fn reset(pomodoro: &Pomodoro) -> Pomodoro {
             label: pomodoro.current_session.label.clone(),
             ..pomodoro.current_session
         },
+        ..*pomodoro
+    }
+}
+
+pub fn reset_session(pomodoro: &Pomodoro) -> Pomodoro {
+    Pomodoro {
+        current_session: Session {
+            status: SessionStatus::NotStarted,
+            current_time: 0,
+            label: pomodoro.current_session.label.clone(),
+            session_type: SessionType::Focus,
+        },
+        current_work_round_number: 1,
         ..*pomodoro
     }
 }
