@@ -202,7 +202,12 @@ def bump_version(
     ] = None,
 ):
     if version_number is None or version_date is None:
-        git_cliff_output = json.loads(sp.getoutput("git-cliff --bump --context"))
+        sp.run("git-cliff --bump --context --output cliff-output.json".split(" "))
+
+        with open("cliff-output.json") as f:
+            git_cliff_output = json.load(f)
+
+        pathlib.Path.unlink("cliff-output.json")
 
     if version_number is None:
         # Get next version number from `git-cliff`
