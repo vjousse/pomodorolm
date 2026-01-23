@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.8.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.8.0)] - 2026-01-23
+
+### 🚀 Features
+
+- *(win,mac)* Show app on tray double click ([#210](https://github.com/vjousse/pomodorolm/issues/210))
+
+### 🐛 Bug Fixes
+
+- Use exe for winget ([#213](https://github.com/vjousse/pomodorolm/issues/213))
+- Reset session should go back to focus ([#214](https://github.com/vjousse/pomodorolm/issues/214))
+
+### 📚 Documentation
+
+- Add winget instructions ([#208](https://github.com/vjousse/pomodorolm/issues/208))
+
+### ⚙️ Miscellaneous Tasks
+
+- Add winget release action ([#211](https://github.com/vjousse/pomodorolm/issues/211))
+- Update bump script to avoid parsing warnings
+
 ## [[app-v0.7.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.7.0)] - 2025-11-28
 
 ### 🚀 Features
@@ -13,6 +33,7 @@ All notable changes to this project will be documented in this file.
 
 - Update AUR checksum
 - Update deps ([#201](https://github.com/vjousse/pomodorolm/issues/201))
+- Bump to 0.7.0
 
 ## [[app-v0.6.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.6.2)] - 2025-11-21
 
