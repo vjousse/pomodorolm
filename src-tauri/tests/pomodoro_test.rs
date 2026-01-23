@@ -112,7 +112,7 @@ fn reset_should_stop_the_current_round() {
         initial_state.current_session.current_time + 1
     );
 
-    let new_state = pomodoro::reset(&new_state);
+    let new_state = pomodoro::reset_round(&new_state);
 
     assert_eq!(new_state.current_session.current_time, 0);
     assert_eq!(new_state.current_session.status, SessionStatus::NotStarted);
