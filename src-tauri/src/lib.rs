@@ -6,8 +6,10 @@ pub mod gui;
 mod icon;
 pub mod pomodoro;
 mod sound;
+use anyhow::Result;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run_gui(config_dir_name: &str) {
-    gui::run_app(config_dir_name, tauri::Builder::default())
+pub fn run_gui(config_dir_name: &str) -> Result<()> {
+    gui::run_app(config_dir_name, tauri::Builder::default());
+    Ok(())
 }
