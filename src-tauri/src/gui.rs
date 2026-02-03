@@ -455,8 +455,6 @@ async fn tick(app_handle: AppHandle, path: String) {
     match app_handle.get_webview_window("main") {
         Some(window) => {
             while let Some(_ts) = stream.next().await {
-                let new_path = path.clone();
-
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
                 let mut state_guard = new_state.0.lock().await;
@@ -468,8 +466,10 @@ async fn tick(app_handle: AppHandle, path: String) {
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
-                tauri::async_runtime::spawn_blocking(move || {
-                    if play_tick {
+                if play_tick {
+                    let new_path = path.clone();
+
+                    tauri::async_runtime::spawn_blocking(move || {
                         // Fail silently if we can't play sound file
                         let play_sound_file_result = sound::play_sound_file(&new_path);
                         if play_sound_file_result.is_err() {
@@ -477,8 +477,8 @@ async fn tick(app_handle: AppHandle, path: String) {
                                 "Unable to play sound file {new_path:?}: {play_sound_file_result:?}"
                             );
                         }
-                    }
-                });
+                    });
+                }
             }
         }
         None => eprintln!("Impossible to get main window for tick sound"),
