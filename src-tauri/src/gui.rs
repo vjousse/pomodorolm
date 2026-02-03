@@ -514,7 +514,7 @@ async fn change_icon<R: tauri::Runtime>(
             ) {
                 Ok(icon_path_buf) => {
                     if let Some(tray) = app_handle.tray_by_id("app-tray") {
-                        let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
+                        let icon_img = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
 
                         // Don't let tauri choose where to store the temp icon path as it will by default store it to `/tmp`.
                         // Setting it manually allows the tray icon to work properly in sandboxes env like Flatpak
@@ -527,7 +527,7 @@ async fn change_icon<R: tauri::Runtime>(
                             .unwrap();
 
                         let _ = tray.set_temp_dir_path(Some(local_data_path));
-                        let _ = tray.set_icon(icon_path);
+                        let _ = tray.set_icon(icon_img);
                     }
                 }
                 Err(e) => eprintln!("{e:?}"),
