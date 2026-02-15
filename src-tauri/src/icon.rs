@@ -81,22 +81,22 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
     } else {
         // Draw the circle
         for y in 0..icon.height {
+            let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
+
             for x in 0..icon.width {
                 // Calculate the distance of the current pixel from the center of the outer circle
                 let dx = x as f32 - center_x;
-                let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
                 let distance_squared = dx * dx + dy * dy;
 
                 // Check if the pixel is within the outer circle
-                if distance_squared <= outer_radius * outer_radius {
+                if distance_squared >= inner_radius * inner_radius
+                    && distance_squared <= outer_radius * outer_radius
+                {
                     // Calculate the angle of the current pixel relative to the center of the circle
                     let pixel_angle = (dx.atan2(dy).to_degrees() + 360.0) % 360.0;
 
                     // Check if the pixel angle is within the specified range and outside the inner circle
-                    if pixel_angle >= start_angle
-                        && pixel_angle <= end_angle
-                        && distance_squared >= inner_radius * inner_radius
-                    {
+                    if pixel_angle >= start_angle && pixel_angle <= end_angle {
                         imgbuf.put_pixel(x, y, Rgba([icon.red, icon.green, icon.blue, 255]));
                         // Fill with red
                     }
