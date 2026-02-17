@@ -455,8 +455,6 @@ async fn tick(app_handle: AppHandle, path: String) {
     match app_handle.get_webview_window("main") {
         Some(window) => {
             while let Some(_ts) = stream.next().await {
-                let new_path = path.clone();
-
                 let state: tauri::State<AppState> = app_handle.state();
                 let new_state = state.clone();
                 let mut state_guard = new_state.0.lock().await;
@@ -468,8 +466,10 @@ async fn tick(app_handle: AppHandle, path: String) {
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
-                tauri::async_runtime::spawn_blocking(move || {
-                    if play_tick {
+                if play_tick {
+                    let new_path = path.clone();
+
+                    tauri::async_runtime::spawn_blocking(move || {
                         // Fail silently if we can't play sound file
                         let play_sound_file_result = sound::play_sound_file(&new_path);
                         if play_sound_file_result.is_err() {
@@ -477,8 +477,8 @@ async fn tick(app_handle: AppHandle, path: String) {
                                 "Unable to play sound file {new_path:?}: {play_sound_file_result:?}"
                             );
                         }
-                    }
-                });
+                    });
+                }
             }
         }
         None => eprintln!("Impossible to get main window for tick sound"),
@@ -514,7 +514,7 @@ async fn change_icon<R: tauri::Runtime>(
             ) {
                 Ok(icon_path_buf) => {
                     if let Some(tray) = app_handle.tray_by_id("app-tray") {
-                        let icon_path = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
+                        let icon_img = tauri::image::Image::from_path(icon_path_buf.clone()).ok();
 
                         // Don't let tauri choose where to store the temp icon path as it will by default store it to `/tmp`.
                         // Setting it manually allows the tray icon to work properly in sandboxes env like Flatpak
@@ -527,7 +527,7 @@ async fn change_icon<R: tauri::Runtime>(
                             .unwrap();
 
                         let _ = tray.set_temp_dir_path(Some(local_data_path));
-                        let _ = tray.set_icon(icon_path);
+                        let _ = tray.set_icon(icon_img);
                     }
                 }
                 Err(e) => eprintln!("{e:?}"),
