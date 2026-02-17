@@ -212,7 +212,6 @@ pub struct Session {
     pub label: Option<String>,
     pub session_file: Option<PathBuf>,
     pub session_type: SessionType,
-    pub start_time: Option<SystemTime>,
     pub status: SessionStatus,
 }
 
@@ -236,7 +235,6 @@ impl Default for Session {
             label: None,
             session_file: None,
             session_type: SessionType::Focus,
-            start_time: None,
             status: SessionStatus::NotStarted,
         }
     }
@@ -270,7 +268,7 @@ pub fn pause_with_session_file(
         ..*pomodoro
     };
 
-    write_session_file(
+    write_session_file_from_pomodoro(
         &new_pomodoro,
         new_pomodoro.current_session.session_type,
         SessionStatus::Paused,
@@ -283,24 +281,35 @@ pub fn play_with_session_file(
     pomodoro: &Pomodoro,
     session_info: Option<SessionInfo>,
 ) -> Result<Pomodoro> {
+    eprintln!("### -> session_info: {session_info:?}");
+
+    let mut new_pomodoro = pomodoro.clone();
+
+    if let Some(info) = session_info {
+        let current_session = Session {
+            elapsed_seconds: info.elapsed_seconds,
+            label: Some(info.label),
+            session_file: Some(pomodoro.config.session_file.clone()),
+            session_type: SessionType::Focus,
+            status: SessionStatus::NotStarted,
+        };
+
+        new_pomodoro.current_session = current_session;
+    }
+
     if pomodoro.current_session.session_file.is_none() {
         eprintln!("[rust] creating session file");
-        write_session_file(
+        write_session_file_from_pomodoro(
             pomodoro,
             pomodoro.current_session.session_type,
             SessionStatus::Running,
         )?;
-    }
+    };
 
-    // @TODO: Are we really sure we want logic here?
-    let _current_session_info = session_info.unwrap_or(get_session_info_with_default(
-        &pomodoro.config.session_file,
-        pomodoro,
-    ));
+    new_pomodoro = play(&new_pomodoro)?;
 
-    let new_pomodoro = play(pomodoro)?;
-
-    // new_pomodoro.current_session.start_time = Some(current_session_info.start_time);
+    new_pomodoro.current_session.session_file = Some(pomodoro.config.session_file.clone());
+    // new_pomodoro.current_session.elapsed_seconds = session_info.elapsed_seconds;
 
     Ok(new_pomodoro)
 }
@@ -331,30 +340,30 @@ pub fn remove_session_file(pomodoro: &Pomodoro) -> io::Result<()> {
     Ok(())
 }
 
-pub fn write_session_file(
+pub fn write_session_file_from_pomodoro(
     pomodoro: &Pomodoro,
     session_type: SessionType,
     session_status: SessionStatus,
 ) -> io::Result<PathBuf> {
-    eprintln!("[rust] creating {:?}", pomodoro.config.session_file);
-    fs::create_dir_all(pomodoro.config.session_file.clone().parent().unwrap())?;
-    File::create(pomodoro.config.session_file.clone())?;
-    fs::write(
-        &pomodoro.config.session_file,
-        format!(
-            "{}",
-            Session {
-                status: session_status,
-                label: pomodoro.current_session.label.clone(),
-                session_file: Some(pomodoro.config.session_file.clone()),
-                session_type,
-                elapsed_seconds: pomodoro.current_session.elapsed_seconds,
-                ..pomodoro.current_session
-            }
-        ),
-    )?;
+    write_session_file(
+        &Session {
+            status: session_status,
+            label: pomodoro.current_session.label.clone(),
+            session_file: Some(pomodoro.config.session_file.clone()),
+            session_type,
+            elapsed_seconds: pomodoro.current_session.elapsed_seconds,
+        },
+        pomodoro.config.session_file.clone(),
+    )
+}
 
-    Ok(pomodoro.config.session_file.clone())
+pub fn write_session_file(session: &Session, session_file: PathBuf) -> io::Result<PathBuf> {
+    eprintln!("[rust] creating {:?}", session_file);
+    fs::create_dir_all(session_file.clone().parent().unwrap())?;
+    File::create(session_file.clone())?;
+    fs::write(&session_file, format!("{}", session))?;
+
+    Ok(session_file.clone())
 }
 
 pub fn reset_round(pomodoro: &Pomodoro) -> Result<Pomodoro> {
@@ -366,7 +375,6 @@ pub fn reset_round(pomodoro: &Pomodoro) -> Result<Pomodoro> {
             elapsed_seconds: 0,
             label: pomodoro.current_session.label.clone(),
             session_file: None,
-            start_time: None,
             ..pomodoro.current_session
         },
         config: pomodoro.config.clone(),
@@ -387,7 +395,6 @@ pub fn reset_session(pomodoro: &Pomodoro) -> io::Result<Pomodoro> {
             label: pomodoro.current_session.label.clone(),
             session_file: pomodoro.current_session.session_file.clone(),
             session_type: SessionType::Focus,
-            start_time: None,
         },
         config: pomodoro.config.clone(),
         current_work_round_number: 1,
@@ -401,6 +408,7 @@ pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
             if pomodoro.current_work_round_number == pomodoro.config.max_focus_rounds {
                 Session {
                     session_type: SessionType::LongBreak,
+                    session_file: session.session_file,
                     status: if pomodoro.config.auto_start_long_break_timer {
                         SessionStatus::Running
                     } else {
@@ -412,6 +420,7 @@ pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
             } else {
                 Session {
                     session_type: SessionType::ShortBreak,
+                    session_file: session.session_file,
                     status: if pomodoro.config.auto_start_short_break_timer {
                         SessionStatus::Running
                     } else {
@@ -423,6 +432,7 @@ pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
         }
         _ => Session {
             session_type: SessionType::Focus,
+            session_file: session.session_file,
             status: if pomodoro.config.auto_start_focus_timer {
                 SessionStatus::Running
             } else {
@@ -433,7 +443,7 @@ pub fn get_next_session(pomodoro: &Pomodoro) -> Session {
     }
 }
 
-pub fn next(pomodoro: &Pomodoro) -> Pomodoro {
+pub fn get_next_pomodoro(pomodoro: &Pomodoro) -> Pomodoro {
     Pomodoro {
         current_session: get_next_session(pomodoro),
         current_work_round_number: match pomodoro.current_session.session_type {
@@ -449,10 +459,11 @@ pub fn tick_with_file_session_info(
     pomodoro: &Pomodoro,
     session_info: Option<SessionInfo>,
 ) -> Result<Pomodoro> {
-    let current_session = pomodoro.current_session.clone();
+    let mut new_pomodoro = pomodoro.clone();
 
-    match (session_info, current_session.start_time) {
-        (Some(info), Some(_current_session_start_time)) => {
+    match session_info {
+        // We have some session info from the disk
+        Some(info) => {
             // @TODO: Here we need to check the consistency between the session_info that we have (coming from
             //  reading the session file on disk) and the state of the current pomodoro
             //  We need a way to check that the file has possibly been reset, deleted to adapt the next
@@ -460,7 +471,7 @@ pub fn tick_with_file_session_info(
 
             // If there is no session file let’s play the pomodoro, it means a new file has been
             // created
-            if current_session.session_file.is_none() {
+            if new_pomodoro.current_session.session_file.is_none() {
                 let new_pomodoro = play_with_session_file(pomodoro, Some(info.clone()))?;
 
                 // // If the external file creation time is newer than the current start time, we should
@@ -471,13 +482,58 @@ pub fn tick_with_file_session_info(
                 // };
                 Ok(new_pomodoro)
             } else {
-                Ok(pomodoro.clone())
+                new_pomodoro.current_session.status = info.session_status;
+                new_pomodoro.current_session.session_type = info.session_type;
+                new_pomodoro.current_session.status = info.session_status;
+                new_pomodoro.current_session.elapsed_seconds = info.elapsed_seconds;
+                new_pomodoro.current_session.label = Some(info.label.clone());
+
+                let next_pomodoro = match new_pomodoro.current_session.status {
+                    // Tick should do something if the current session is in running mode
+                    SessionStatus::Running => {
+                        // If it was the last tick, return the next status
+                        if is_end_of_session(&new_pomodoro) {
+                            get_next_pomodoro(&new_pomodoro)
+                        } else {
+                            // If we're not a the end of a session, just update the time of the current session
+                            Pomodoro {
+                                // The source of truth is always the file on the disk
+                                current_session: Session {
+                                    elapsed_seconds: new_pomodoro.current_session.elapsed_seconds
+                                        + 1,
+                                    label: Some(info.label),
+                                    session_file: new_pomodoro.current_session.session_file.clone(),
+                                    session_type: new_pomodoro.current_session.session_type,
+                                    status: new_pomodoro.current_session.status,
+                                },
+                                config: new_pomodoro.config.clone(),
+                                ..*pomodoro
+                            }
+                        }
+                    }
+                    // If it’s not running we don’t do anything at tick
+                    _ => {
+                        Pomodoro {
+                            // The source of truth is always the file on the disk
+                            current_session: new_pomodoro.current_session,
+                            config: pomodoro.config.clone(),
+                            ..*pomodoro
+                        }
+                    }
+                };
+
+                Ok(next_pomodoro)
             }
         }
-
-        (Some(info), None) => play_with_session_file(pomodoro, Some(info)),
-        _ => reset_round(pomodoro),
+        // File is not present on disk, it may have been deleted
+        // so we should reset the current round
+        None => reset_round(pomodoro),
     }
+}
+
+pub fn is_end_of_session(pomodoro: &Pomodoro) -> bool {
+    pomodoro.current_session.elapsed_seconds + 1
+        >= pomodoro.duration_of_session(&pomodoro.current_session)
 }
 
 pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
@@ -488,17 +544,12 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
         // File created externally, start the pomodoro
         play_with_session_file(pomodoro, None)
     } else {
-        let _next_pomodoro =
-            get_next_pomodoro_from_session_file(&pomodoro.config.session_file, pomodoro)?;
-
         let mut new_pomodoro = match current_session.status {
             // Tick should do something if the current session is in running mode
             SessionStatus::Running => {
                 // If it was the last tick, return the next status
-                if current_session.elapsed_seconds + 1
-                    == pomodoro.duration_of_session(&current_session)
-                {
-                    next(pomodoro)
+                if is_end_of_session(pomodoro) {
+                    get_next_pomodoro(pomodoro)
                 } else {
                     // If we're not a the end of a session, just update the time of the current session
                     Pomodoro {
@@ -537,16 +588,15 @@ pub fn tick(pomodoro: &Pomodoro) -> Result<Pomodoro> {
 //
 // echo "focus;working" > ~/.cache/pomodorolm_session
 
-pub fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
+pub fn get_session_info(session_file_path: &PathBuf) -> Option<SessionInfo> {
     if file_exists(session_file_path) {
-        let line: String =
-            fs::read_to_string(session_file_path).context("Unable to read the session file")?;
+        let line: String = fs::read_to_string(session_file_path)
+            .context("Unable to read the session file")
+            .ok()?;
 
-        let session_line_content = parse_line(line)?;
+        let session_line_content = parse_line(line).ok()?;
 
-        let _modified = fs::metadata(session_file_path)?.modified()?;
-
-        Ok(SessionInfo {
+        Some(SessionInfo {
             elapsed_seconds: session_line_content.elapsed_seconds.unwrap_or(0),
             label: session_line_content.label,
             session_status: session_line_content.session_status,
@@ -556,6 +606,7 @@ pub fn get_session_info(session_file_path: &PathBuf) -> Result<SessionInfo> {
         Err(anyhow!(
             "Unable to read session file {session_file_path:?}, file doesn’t exist"
         ))
+        .ok()
     }
 }
 
@@ -579,6 +630,8 @@ pub fn get_session_info_with_default(
 
         let session_line_content = parse_line(line);
 
+        // eprintln!("session line content: {:?}", session_line_content);
+
         match session_line_content {
             Ok(line_content) => {
                 let elapsed_seconds = match line_content.elapsed_seconds {
@@ -591,13 +644,21 @@ pub fn get_session_info_with_default(
                         .unwrap_or(Duration::from_secs(pomodoro.config.focus_duration.into()))
                         .as_secs() as u16;
 
-                        if line_content.session_status == SessionStatus::Running {
+                        eprintln!("# -> remaining seconds: {remaining_seconds:?}");
+
+                        let to_return = if line_content.session_status == SessionStatus::Running {
+                            // @FIXME:
                             pomodoro.config.focus_duration - remaining_seconds
                         } else {
                             pomodoro.current_session.elapsed_seconds
-                        }
+                        };
+
+                        eprintln!("# -> remaining seconds to return: {to_return:?}");
+                        to_return
                     }
                 };
+
+                // eprintln!("# -> elapsed seconds: {elapsed_seconds:?}");
 
                 SessionInfo {
                     elapsed_seconds,
@@ -671,56 +732,67 @@ fn get_remaining_time(path: &Path, duration: u64) -> Result<Duration> {
     let total_duration = Duration::from_secs(duration);
 
     if elapsed >= total_duration {
+        eprintln!("# Remaining returning {:?}", Duration::from_secs(0));
         return Ok(Duration::from_secs(0)); // Return zero if the time is up
     }
     let remaining = total_duration - elapsed;
 
+    eprintln!("# Remaining: {remaining:?}");
     Ok(remaining)
 }
 
-pub fn get_next_pomodoro_from_session_file(
-    session_file_path: &PathBuf,
+pub fn get_next_pomodoro_from_session_info(
     previous_pomodoro: &Pomodoro,
+    session_info: SessionInfo,
 ) -> Result<Pomodoro> {
-    if file_exists(session_file_path) {
-        let session_info = get_session_info_with_default(session_file_path, previous_pomodoro);
-        // eprintln!("Session info: {:?}", session_info);
+    // eprintln!("Got session info: {:?}", session_info);
 
-        let total_seconds = previous_pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
+    let total_seconds = previous_pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
 
-        let elapsed_seconds = session_info.elapsed_seconds as u64;
-        let remaining_seconds = total_seconds - session_info.elapsed_seconds as u64;
+    let elapsed_seconds = session_info.elapsed_seconds as u64;
+    let remaining_seconds = total_seconds - session_info.elapsed_seconds as u64;
 
-        // eprintln!("Remaining seconds: {:?}", remaining_seconds);
+    // eprintln!(
+    //     "Remaining and elapsed seconds: {:?} {:?}",
+    //     remaining_seconds, elapsed_seconds
+    // );
 
-        let next_pomodoro = Pomodoro {
-            current_session: Session {
-                label: Some(session_info.label.clone()),
-                session_type: session_info.session_type,
-                session_file: Some(session_file_path.to_path_buf()),
-                elapsed_seconds: elapsed_seconds as u16,
-                status: if remaining_seconds == 0 {
-                    SessionStatus::NotStarted
-                } else {
-                    session_info.session_status
-                },
-                ..previous_pomodoro.current_session
+    let new_pomodoro = Pomodoro {
+        current_session: get_next_session(previous_pomodoro),
+        current_work_round_number: match previous_pomodoro.current_session.session_type {
+            SessionType::ShortBreak => previous_pomodoro.current_work_round_number + 1,
+            SessionType::LongBreak => 1,
+            _ => previous_pomodoro.current_work_round_number,
+        },
+        config: previous_pomodoro.config.clone(),
+    };
+
+    // @TODO: Implement get_next_session
+    let next_pomodoro = get_next_pomodoro(previous_pomodoro);
+
+    let next_pomodoro = Pomodoro {
+        current_session: Session {
+            label: Some(session_info.label.clone()),
+            session_type: session_info.session_type,
+            session_file: previous_pomodoro.current_session.session_file.clone(),
+            elapsed_seconds: elapsed_seconds as u16,
+            status: if remaining_seconds == 0 {
+                SessionStatus::NotStarted
+            } else {
+                session_info.session_status
             },
-            config: previous_pomodoro.config.clone(),
-            ..*previous_pomodoro
-        };
-        if previous_pomodoro.current_session.status == SessionStatus::NotStarted
-            && elapsed_seconds > 0
-            && session_info.session_status != SessionStatus::Paused
-        {
-            play_with_session_file(&next_pomodoro, None)
-        } else {
-            Ok(next_pomodoro)
-        }
+            ..previous_pomodoro.current_session
+        },
+        config: previous_pomodoro.config.clone(),
+        ..*previous_pomodoro
+    };
+    if previous_pomodoro.current_session.status == SessionStatus::NotStarted
+        && elapsed_seconds > 0
+        && session_info.session_status != SessionStatus::Paused
+    {
+        play_with_session_file(&next_pomodoro, None)
     } else {
-        // Whatever the current status, if there is no session file, we should reset the pomodoro
-        // to a not started state
-        reset_round(previous_pomodoro)
+        Ok(next_pomodoro)
     }
 }
 
