@@ -741,61 +741,6 @@ fn get_remaining_time(path: &Path, duration: u64) -> Result<Duration> {
     Ok(remaining)
 }
 
-pub fn get_next_pomodoro_from_session_info(
-    previous_pomodoro: &Pomodoro,
-    session_info: SessionInfo,
-) -> Result<Pomodoro> {
-    // eprintln!("Got session info: {:?}", session_info);
-
-    let total_seconds = previous_pomodoro.config.focus_duration as u64; // Total time for Pomodoro in seconds
-
-    let elapsed_seconds = session_info.elapsed_seconds as u64;
-    let remaining_seconds = total_seconds - session_info.elapsed_seconds as u64;
-
-    // eprintln!(
-    //     "Remaining and elapsed seconds: {:?} {:?}",
-    //     remaining_seconds, elapsed_seconds
-    // );
-
-    let new_pomodoro = Pomodoro {
-        current_session: get_next_session(previous_pomodoro),
-        current_work_round_number: match previous_pomodoro.current_session.session_type {
-            SessionType::ShortBreak => previous_pomodoro.current_work_round_number + 1,
-            SessionType::LongBreak => 1,
-            _ => previous_pomodoro.current_work_round_number,
-        },
-        config: previous_pomodoro.config.clone(),
-    };
-
-    // @TODO: Implement get_next_session
-    let next_pomodoro = get_next_pomodoro(previous_pomodoro);
-
-    let next_pomodoro = Pomodoro {
-        current_session: Session {
-            label: Some(session_info.label.clone()),
-            session_type: session_info.session_type,
-            session_file: previous_pomodoro.current_session.session_file.clone(),
-            elapsed_seconds: elapsed_seconds as u16,
-            status: if remaining_seconds == 0 {
-                SessionStatus::NotStarted
-            } else {
-                session_info.session_status
-            },
-            ..previous_pomodoro.current_session
-        },
-        config: previous_pomodoro.config.clone(),
-        ..*previous_pomodoro
-    };
-    if previous_pomodoro.current_session.status == SessionStatus::NotStarted
-        && elapsed_seconds > 0
-        && session_info.session_status != SessionStatus::Paused
-    {
-        play_with_session_file(&next_pomodoro, None)
-    } else {
-        Ok(next_pomodoro)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
