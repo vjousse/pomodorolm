@@ -1,6 +1,6 @@
 extern crate dirs;
 use crate::config::{Config, pomodoro_state_from_config};
-use crate::pomodoro::{SessionStatus, get_next_pomodoro_from_session_file};
+use crate::pomodoro::{SessionStatus, get_session_info, tick_with_file_session_info};
 
 use anyhow::{Context, Result};
 use std::fs;
@@ -29,8 +29,10 @@ async fn run_pomodoro_checker(config: Config, display_label: bool) -> Result<()>
     loop {
         interval.tick().await;
 
-        let next_pomodoro =
-            get_next_pomodoro_from_session_file(&pomodoro.config.session_file, &pomodoro)?;
+        let next_pomodoro = tick_with_file_session_info(
+            &pomodoro,
+            get_session_info(&pomodoro.config.session_file),
+        )?;
 
         if next_pomodoro.current_session.elapsed_seconds == 1 {
             println!("-> New pomodoro created");
