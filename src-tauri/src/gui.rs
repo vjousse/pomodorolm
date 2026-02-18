@@ -491,19 +491,11 @@ async fn tick(app_handle: AppHandle, path: String) {
                 let play_tick: bool =
                     should_play_tick_sound(&state_guard.config, &state_guard.pomodoro);
 
-                eprintln!("old tick state: {:?}", state_guard.pomodoro);
-
-                // state_guard.pomodoro =
-                //     pomodoro::get_next_pomodoro_from_session_file(&state_guard.pomodoro)
-                //         .expect("Error when ticking pomodoro");
-
                 state_guard.pomodoro = pomodoro::tick_with_file_session_info(
                     &state_guard.pomodoro,
                     pomodoro::get_session_info(&state_guard.pomodoro.config.session_file),
                 )
                 .expect("Error when ticking pomodoro");
-
-                eprintln!("new tick state: {:?}", state_guard.pomodoro);
 
                 let _ = window.emit("external-message", state_guard.pomodoro.to_unborrowed());
 
