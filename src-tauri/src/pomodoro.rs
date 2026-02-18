@@ -358,7 +358,7 @@ pub fn write_session_file_from_pomodoro(
 }
 
 pub fn write_session_file(session: &Session, session_file: PathBuf) -> io::Result<PathBuf> {
-    eprintln!("[rust] creating {:?}", session_file);
+    eprintln!("[rust] writing session file {:?}", session_file);
     fs::create_dir_all(session_file.clone().parent().unwrap())?;
     File::create(session_file.clone())?;
     fs::write(&session_file, format!("{}", session))?;
@@ -461,7 +461,7 @@ pub fn tick_with_file_session_info(
 ) -> Result<Pomodoro> {
     let mut new_pomodoro = pomodoro.clone();
 
-    match session_info {
+    let pomodoro_result = match session_info {
         // We have some session info from the disk
         Some(info) => {
             // @TODO: Here we need to check the consistency between the session_info that we have (coming from
@@ -528,7 +528,14 @@ pub fn tick_with_file_session_info(
         // File is not present on disk, it may have been deleted
         // so we should reset the current round
         None => reset_round(pomodoro),
-    }
+    }?;
+
+    write_session_file_from_pomodoro(
+        &pomodoro_result,
+        pomodoro_result.current_session.session_type,
+        pomodoro_result.current_session.status,
+    )?;
+    Ok(pomodoro_result)
 }
 
 pub fn is_end_of_session(pomodoro: &Pomodoro) -> bool {
