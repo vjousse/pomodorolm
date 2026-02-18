@@ -33,9 +33,10 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
 
     // Draw the thin border circle
     for y in 0..icon.height {
+        let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
+
         for x in 0..icon.width {
             let dx = x as f32 - center_x;
-            let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
             let distance_squared = dx * dx + dy * dy;
 
             // Check if the pixel is within the border ring
@@ -57,22 +58,18 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
 
         let bar_y = (icon.height as i32 - bar_height) / 2;
 
-        // Draw the first pause bar
         for y in bar_y..bar_y + bar_height {
-            for x in first_bar_x..first_bar_x + bar_thickness {
+            for dx in 0..bar_thickness {
+                // First pause bar
                 imgbuf.put_pixel(
-                    x as u32,
+                    (first_bar_x + dx) as u32,
                     y as u32,
                     Rgba([icon.red, icon.green, icon.blue, 255]),
                 );
-            }
-        }
 
-        // Draw the second pause bar
-        for y in bar_y..bar_y + bar_height {
-            for x in second_bar_x..second_bar_x + bar_thickness {
+                // Second pause bar
                 imgbuf.put_pixel(
-                    x as u32,
+                    (second_bar_x + dx) as u32,
                     y as u32,
                     Rgba([icon.red, icon.green, icon.blue, 255]),
                 );
@@ -81,22 +78,22 @@ pub fn create_icon(icon: PomodorolmIcon, path_name: &str) -> Result<PathBuf, Str
     } else {
         // Draw the circle
         for y in 0..icon.height {
+            let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
+
             for x in 0..icon.width {
                 // Calculate the distance of the current pixel from the center of the outer circle
                 let dx = x as f32 - center_x;
-                let dy = center_y - y as f32; // Reverse y-axis to make it go upwards
                 let distance_squared = dx * dx + dy * dy;
 
                 // Check if the pixel is within the outer circle
-                if distance_squared <= outer_radius * outer_radius {
+                if distance_squared >= inner_radius * inner_radius
+                    && distance_squared <= outer_radius * outer_radius
+                {
                     // Calculate the angle of the current pixel relative to the center of the circle
                     let pixel_angle = (dx.atan2(dy).to_degrees() + 360.0) % 360.0;
 
                     // Check if the pixel angle is within the specified range and outside the inner circle
-                    if pixel_angle >= start_angle
-                        && pixel_angle <= end_angle
-                        && distance_squared >= inner_radius * inner_radius
-                    {
+                    if pixel_angle >= start_angle && pixel_angle <= end_angle {
                         imgbuf.put_pixel(x, y, Rgba([icon.red, icon.green, icon.blue, 255]));
                         // Fill with red
                     }
