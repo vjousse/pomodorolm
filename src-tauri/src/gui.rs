@@ -575,7 +575,6 @@ async fn update_config(
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut state_guard = state.0.lock().await;
 
-    // config: pomodoro_config(config),
     match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();

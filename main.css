@@ -276,7 +276,7 @@ input:focus {
   padding: 8px;
   position: absolute;
   top: -61px;
-  right: -29px;
+  right: -25px;
 }
 .slider::-webkit-slider-runnable-track {
   background-color: var(--color-background-lightest);
