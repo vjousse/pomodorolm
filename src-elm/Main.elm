@@ -538,7 +538,11 @@ update msg ({ config } as model) =
             let
                 newVolume =
                     if config.muted then
-                        model.config.volume
+                        if model.config.volume > 0 then
+                            model.config.volume
+
+                        else
+                            100
 
                     else
                         0
