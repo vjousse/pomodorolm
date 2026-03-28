@@ -68,6 +68,7 @@ type alias Flags =
     , theme : String
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
+    , volume : Int
     }
 
 
@@ -126,6 +127,7 @@ init flags =
             , theme = flags.theme
             , tickSoundsDuringWork = flags.tickSoundsDuringWork
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
+            , volume = flags.volume
             }
       , currentColor = fromCSSHexToRGB theme.colors.focusRound
       , currentState = currentState
@@ -138,7 +140,6 @@ init flags =
       , strokeDasharray = 691.3321533203125
       , theme = theme
       , themes = EmptyListWithCurrent
-      , volume = 1
       , volumeSliderHidden = True
       }
     , Cmd.batch
@@ -487,6 +488,9 @@ update msg ({ config } as model) =
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
+        ShowVolumeBar ->
+            ( { model | volumeSliderHidden = False }, Cmd.none )
+
         SkipCurrentRound ->
             ( model
             , sendMessageFromElm (elmMessageEncoder { name = "skip", value = Nothing })
@@ -534,19 +538,20 @@ update msg ({ config } as model) =
             let
                 newVolume =
                     if config.muted then
-                        model.volume
+                        if model.config.volume > 0 then
+                            model.config.volume
+
+                        else
+                            100
 
                     else
                         0
 
                 newConfig =
-                    { config | muted = not config.muted }
+                    { config | muted = not config.muted, volume = newVolume }
             in
-            ( { model | volume = newVolume, config = newConfig }
-            , Cmd.batch
-                [ setVolume newVolume
-                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
-                ]
+            ( { model | config = newConfig }
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
         TogglePlayStatus ->
@@ -723,19 +728,16 @@ update msg ({ config } as model) =
                 newVolume =
                     case String.toInt volumeStr of
                         Nothing ->
-                            model.volume
+                            model.config.volume
 
                         Just v ->
-                            toFloat v / 100
+                            v
 
                 newConfig =
-                    { config | muted = newVolume <= 0 }
+                    { config | muted = newVolume <= 0, volume = newVolume }
             in
-            ( { model
-                | volume = newVolume
-                , config = newConfig
-              }
-            , setVolume newVolume
+            ( { model | config = newConfig }
+            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
 
 
@@ -789,9 +791,6 @@ port sendMessageToElm : (Decode.Value -> msg) -> Sub msg
 
 
 port sendMessageFromElm : Encode.Value -> Cmd msg
-
-
-port setVolume : Float -> Cmd msg
 
 
 port closeWindow : () -> Cmd msg

@@ -42,6 +42,7 @@ pub struct Config {
     pub theme: String,
     pub tick_sounds_during_work: bool,
     pub tick_sounds_during_break: bool,
+    pub volume: Option<u16>,
 }
 
 fn default_focus_label() -> String {
@@ -127,6 +128,7 @@ impl Default for Config {
             theme: default_theme(),
             tick_sounds_during_work: true,
             tick_sounds_during_break: true,
+            volume: Some(100),
         }
     }
 }

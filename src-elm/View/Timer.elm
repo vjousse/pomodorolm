@@ -3,7 +3,7 @@ module View.Timer exposing (timerView)
 import ColorHelper exposing (computeCurrentColor)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
-import Html.Events exposing (onClick, onInput, onMouseLeave)
+import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
@@ -224,7 +224,7 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onClick ToggleMute, title "Mute" ]
+            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver ShowVolumeBar, onClick ToggleMute, title "Mute" ]
                 [ if model.config.muted == False then
                     svg
                         [ SvgAttr.version "1.2"
@@ -286,7 +286,7 @@ footerView model =
                     , Html.Attributes.max "100"
                     , class "slider"
                     , onInput UpdateVolume
-                    , value (model.volume * 100 |> String.fromFloat)
+                    , value (model.config.volume |> String.fromInt)
                     ]
                     []
                 , div [ class "slider-bar", class "slider-bar--blue-grey" ] []

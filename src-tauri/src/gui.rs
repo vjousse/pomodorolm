@@ -468,10 +468,16 @@ async fn tick(app_handle: AppHandle, path: String) {
 
                 if play_tick {
                     let new_path = path.clone();
+                    let volume = state_guard
+                        .config
+                        .volume
+                        .map_or(if state_guard.config.muted { 0.0 } else { 1.0 }, |v| {
+                            v as f32 / 100.0
+                        });
 
                     tauri::async_runtime::spawn_blocking(move || {
                         // Fail silently if we can't play sound file
-                        let play_sound_file_result = sound::play_sound_file(&new_path);
+                        let play_sound_file_result = sound::play_sound_file(&new_path, volume);
                         if play_sound_file_result.is_err() {
                             eprintln!(
                                 "Unable to play sound file {new_path:?}: {play_sound_file_result:?}"
@@ -575,7 +581,6 @@ async fn update_config(
 ) -> Result<pomodoro::PomodoroUnborrowed, ()> {
     let mut state_guard = state.0.lock().await;
 
-    // config: pomodoro_config(config),
     match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
         Ok(config_file_pathbuf) => {
             let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
@@ -669,6 +674,13 @@ async fn play_sound_command(app_handle: tauri::AppHandle, play_sound_message: Pl
     let state: tauri::State<AppState> = app.state();
     let state_guard = state.0.lock().await;
 
+    let volume = state_guard
+        .config
+        .volume
+        .map_or(if state_guard.config.muted { 0.0 } else { 1.0 }, |v| {
+            v as f32 / 100.0
+        });
+
     match get_sound_file(
         play_sound_message.sound_id.as_str(),
         &app_handle,
@@ -678,7 +690,8 @@ async fn play_sound_command(app_handle: tauri::AppHandle, play_sound_message: Pl
             // Fail silently if we can't play sound file
 
             tauri::async_runtime::spawn_blocking(move || {
-                let play_sound_file_result = sound::play_sound_file(&sound_file.to_string_lossy());
+                let play_sound_file_result =
+                    sound::play_sound_file(&sound_file.to_string_lossy(), volume);
                 if play_sound_file_result.is_err() {
                     eprintln!(
                         "Unable to play sound file {sound_file:?}: {play_sound_file_result:?}"

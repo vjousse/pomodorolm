@@ -46,7 +46,6 @@ type alias Model =
     , strokeDasharray : Float
     , theme : Theme
     , themes : ListWithCurrent Theme
-    , volume : Float
     , volumeSliderHidden : Bool
     }
 
@@ -64,6 +63,7 @@ type Msg
     | ResetSettings
     | ResetAudioFile SessionType
     | SkipCurrentRound
+    | ShowVolumeBar
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus
@@ -119,6 +119,7 @@ type alias Config =
     , theme : String
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
+    , volume : Int
     }
 
 

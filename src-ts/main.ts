@@ -98,6 +98,7 @@ type ElmConfig = {
   theme: string;
   tickSoundsDuringWork: boolean;
   tickSoundsDuringBreak: boolean;
+  volume: number;
 };
 
 type RustConfig = {
@@ -126,6 +127,7 @@ type RustConfig = {
   theme: string;
   tick_sounds_during_work: boolean;
   tick_sounds_during_break: boolean;
+  volume: number;
 };
 
 const root = document.querySelector("#app div");
@@ -156,6 +158,7 @@ let rustConfig: RustConfig = {
   theme: "pomodorolm",
   tick_sounds_during_work: true,
   tick_sounds_during_break: true,
+  volume: 100,
 };
 
 let app;
@@ -187,6 +190,7 @@ app = Elm.Main.init({
     theme: rustConfig.theme,
     tickSoundsDuringWork: rustConfig.tick_sounds_during_work,
     tickSoundsDuringBreak: rustConfig.tick_sounds_during_break,
+    volume: rustConfig.volume,
   },
 });
 
@@ -276,14 +280,9 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
       break;
 
     case "update_config":
-      console.log("Should update config");
-
-      console.log(message);
-
       let config: ElmConfig = message.value as ElmConfig;
 
       console.log(config);
-      // break;
 
       invoke("update_config", {
         config: {
@@ -312,6 +311,7 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
           theme: config.theme,
           tick_sounds_during_work: config.tickSoundsDuringWork,
           tick_sounds_during_break: config.tickSoundsDuringBreak,
+          volume: config.volume,
         },
       }).then((newState) => {
         app.ports.sendMessageToElm.send(newState);
