@@ -72,6 +72,12 @@ Pomodorolm provides many themes. It's also theme-able, allowing you to customize
 
 Visit the [theme documentation](./docs/themes/themes.md) to view the full list of official themes and for instruction on creating your own.
 
+# 🤖 No IAgen policy
+
+I am not using any IAgen (Claude, Copilot, _you name it_), never will and I don’t want to review any Pull Request coming from such systems. I made this choice in order to be aligned with my values so, please, respect it and **don’t push code here that may have been written by an IAgen system**.
+
+I write software because **I like creating things by myself for people** to use it: Free software of the people, by the people, for the people.
+
 # Command Line Interface
 
 > [!WARNING]
