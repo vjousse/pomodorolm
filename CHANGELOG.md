@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.9.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.0)] - 2026-04-07
+
+### 🚀 Features
+
+- Add volume option ([#224](https://github.com/vjousse/pomodorolm/issues/224))
+
+### 📚 Documentation
+
+- Add no IAgen policy
+
+### ⚙️ Miscellaneous Tasks
+
+- Not spawn play_sound_file if playing is muted ([#217](https://github.com/vjousse/pomodorolm/issues/217))
+- Small optimization and refactor of create_icon  ([#221](https://github.com/vjousse/pomodorolm/issues/221))
+
 ## [[app-v0.8.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.8.0)] - 2026-01-23
 
 ### 🚀 Features
@@ -21,6 +36,7 @@ All notable changes to this project will be documented in this file.
 
 - Add winget release action ([#211](https://github.com/vjousse/pomodorolm/issues/211))
 - Update bump script to avoid parsing warnings
+- Bump to 0.8.0
 
 ## [[app-v0.7.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.7.0)] - 2025-11-28
 
