@@ -282,8 +282,6 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
     case "update_config":
       let config: ElmConfig = message.value as ElmConfig;
 
-      console.log(config);
-
       invoke("update_config", {
         config: {
           always_on_top: config.alwaysOnTop,
@@ -365,10 +363,6 @@ app.ports.setThemeColors.subscribe(function (themeColors: ThemeColors) {
     themeColors.foregroundDarkest
   );
   mainHtmlElement.style.setProperty("--color-accent", themeColors.accent);
-});
-
-await listen("tick-event", () => {
-  app.ports.tick.send(null);
 });
 
 await listen("external-message", (message) => {
