@@ -13,7 +13,7 @@
   "devDependencies": {
     "@lydell/elm": "^0.19.1-14",
     "@tauri-apps/cli": "^2.8.4",
-    "@types/node": "^22.5.4",
+    "@types/node": "^25.6.0",
     "elm-debug-transformer": "^1.2.1",
     "elm-review": "^2.12.0",
     "elm-tooling": "^1.15.1",
