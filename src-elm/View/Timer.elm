@@ -224,82 +224,83 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver ShowVolumeBar, onClick ToggleMute, title "Mute" ]
-                [ if model.config.muted == False then
-                    svg
-                        [ SvgAttr.version "1.2"
-                        , SvgAttr.id "Layer_1"
-                        , SvgAttr.x "0px"
-                        , SvgAttr.y "0px"
-                        , SvgAttr.viewBox "0 0 12.3 12"
-                        , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.height "4vw"
-                        , SvgAttr.class "icon--mute"
-                        , SvgAttr.baseProfile "tiny"
-                        ]
-                        [ path
-                            [ SvgAttr.fill "var(--color-background-lightest)"
-                            , SvgAttr.d "M0,3.9v4.1h2.7l3.4,3.4V0.5L2.7,3.9H0z M9.2,6c0-1.2-0.7-2.3-1.7-2.8v5.5C8.5,8.3,9.2,7.2,9.2,6z M7.5,0v1.4 c2,0.6,3.4,2.4,3.4,4.6s-1.4,4-3.4,4.6V12c2.7-0.6,4.8-3.1,4.8-6S10.3,0.6,7.5,0z"
-                            ]
-                            []
-                        ]
+            , div [ onMouseOver ShowVolumeBar, onMouseLeave HideVolumeBar ]
+                [ div
+                    [ class "slider-wrapper"
+                    , class "slider-wrapper--vert"
+                    , id "volume-slider"
+                    , style "display"
+                        (if model.volumeSliderHidden then
+                            "none"
 
-                  else
-                    svg
-                        [ SvgAttr.version "1.1"
-                        , SvgAttr.id "Layer_1"
-                        , SvgAttr.x "0px"
-                        , SvgAttr.y "0px"
-                        , SvgAttr.viewBox "-467 269 24 24"
-                        , SvgAttr.xmlSpace "preserve"
-                        , SvgAttr.height "5vw"
-                        , SvgAttr.class "icon--muted"
-                        ]
-                        [ path
-                            [ SvgAttr.fill "var(--color-background-lightest)"
-                            , SvgAttr.d "M-450.5,281c0-1.8-1-3.3-2.5-4v2.2l2.5,2.5C-450.5,281.4-450.5,281.2-450.5,281z M-448,281c0,0.9-0.2,1.8-0.5,2.6l1.5,1.5\n            c0.7-1.2,1-2.6,1-4.1c0-4.3-3-7.9-7-8.8v2.1C-450.1,275.1-448,277.8-448,281z M-462.7,272l-1.3,1.3l4.7,4.7h-4.7v6h4l5,5v-6.7\n            l4.3,4.3c-0.7,0.5-1.4,0.9-2.3,1.2v2.1c1.4-0.3,2.6-1,3.7-1.8l2,2l1.3-1.3l-9-9L-462.7,272z M-455,273l-2.1,2.1l2.1,2.1V273z"
-                            ]
-                            []
-                        , path
-                            [ SvgAttr.fill "none"
-                            , SvgAttr.d "M-467,269h24v24h-24V269z"
-                            ]
-                            []
-                        ]
-                ]
-            , div
-                [ class "slider-wrapper"
-                , class "slider-wrapper--vert"
-                , id "volume-slider"
-                , style "display"
-                    (if model.volumeSliderHidden then
-                        "none"
-
-                     else
-                        "block"
-                    )
-                , onMouseLeave HideVolumeBar
-                ]
-                [ input
-                    [ type_ "range"
-                    , Html.Attributes.min "0"
-                    , Html.Attributes.max "100"
-                    , class "slider"
-                    , onInput UpdateVolume
-                    , value
-                        (model.config.volume
-                            |> Maybe.withDefault
-                                (if model.config.muted then
-                                    0
-
-                                 else
-                                    100
-                                )
-                            |> String.fromInt
+                         else
+                            "block"
                         )
                     ]
-                    []
-                , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
+                    [ input
+                        [ type_ "range"
+                        , Html.Attributes.min "0"
+                        , Html.Attributes.max "100"
+                        , class "slider"
+                        , onInput UpdateVolume
+                        , value
+                            (model.config.volume
+                                |> Maybe.withDefault
+                                    (if model.config.muted then
+                                        0
+
+                                     else
+                                        100
+                                    )
+                                |> String.fromInt
+                            )
+                        ]
+                        []
+                    , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
+                    ]
+                , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver ShowVolumeBar, onClick ToggleMute, title "Mute" ]
+                    [ if model.config.muted == False then
+                        svg
+                            [ SvgAttr.version "1.2"
+                            , SvgAttr.id "Layer_1"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "0 0 12.3 12"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.height "4vw"
+                            , SvgAttr.class "icon--mute"
+                            , SvgAttr.baseProfile "tiny"
+                            ]
+                            [ path
+                                [ SvgAttr.fill "var(--color-background-lightest)"
+                                , SvgAttr.d "M0,3.9v4.1h2.7l3.4,3.4V0.5L2.7,3.9H0z M9.2,6c0-1.2-0.7-2.3-1.7-2.8v5.5C8.5,8.3,9.2,7.2,9.2,6z M7.5,0v1.4 c2,0.6,3.4,2.4,3.4,4.6s-1.4,4-3.4,4.6V12c2.7-0.6,4.8-3.1,4.8-6S10.3,0.6,7.5,0z"
+                                ]
+                                []
+                            ]
+
+                      else
+                        svg
+                            [ SvgAttr.version "1.1"
+                            , SvgAttr.id "Layer_1"
+                            , SvgAttr.x "0px"
+                            , SvgAttr.y "0px"
+                            , SvgAttr.viewBox "-467 269 24 24"
+                            , SvgAttr.xmlSpace "preserve"
+                            , SvgAttr.height "5vw"
+                            , SvgAttr.class "icon--muted"
+                            ]
+                            [ path
+                                [ SvgAttr.fill "var(--color-background-lightest)"
+                                , SvgAttr.d "M-450.5,281c0-1.8-1-3.3-2.5-4v2.2l2.5,2.5C-450.5,281.4-450.5,281.2-450.5,281z M-448,281c0,0.9-0.2,1.8-0.5,2.6l1.5,1.5\n            c0.7-1.2,1-2.6,1-4.1c0-4.3-3-7.9-7-8.8v2.1C-450.1,275.1-448,277.8-448,281z M-462.7,272l-1.3,1.3l4.7,4.7h-4.7v6h4l5,5v-6.7\n            l4.3,4.3c-0.7,0.5-1.4,0.9-2.3,1.2v2.1c1.4-0.3,2.6-1,3.7-1.8l2,2l1.3-1.3l-9-9L-462.7,272z M-455,273l-2.1,2.1l2.1,2.1V273z"
+                                ]
+                                []
+                            , path
+                                [ SvgAttr.fill "none"
+                                , SvgAttr.d "M-467,269h24v24h-24V269z"
+                                ]
+                                []
+                            ]
+                    ]
                 ]
             ]
         ]
