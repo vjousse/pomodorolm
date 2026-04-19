@@ -286,7 +286,17 @@ footerView model =
                     , Html.Attributes.max "100"
                     , class "slider"
                     , onInput UpdateVolume
-                    , value (model.config.volume |> String.fromInt)
+                    , value
+                        (model.config.volume
+                            |> Maybe.withDefault
+                                (if model.config.muted then
+                                    0
+
+                                 else
+                                    100
+                                )
+                            |> String.fromInt
+                        )
                     ]
                     []
                 , div [ class "slider-bar", class "slider-bar--blue-grey" ] []

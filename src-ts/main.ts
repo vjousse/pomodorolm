@@ -98,7 +98,7 @@ type ElmConfig = {
   theme: string;
   tickSoundsDuringWork: boolean;
   tickSoundsDuringBreak: boolean;
-  volume: number;
+  volume: number | null;
 };
 
 type RustConfig = {
@@ -127,7 +127,7 @@ type RustConfig = {
   theme: string;
   tick_sounds_during_work: boolean;
   tick_sounds_during_break: boolean;
-  volume: number;
+  volume: number | number;
 };
 
 const root = document.querySelector("#app div");
