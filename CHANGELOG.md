@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.9.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.1)] - 2026-04-19
+
+### 🐛 Bug Fixes
+
+- Volume setting should be optional for backward compat ([#246](https://github.com/vjousse/pomodorolm/issues/246))
+- Hide volume slider on mouse leave ([#247](https://github.com/vjousse/pomodorolm/issues/247))
+
+### ⚙️ Miscellaneous Tasks
+
+- Create dependabot.yml ([#232](https://github.com/vjousse/pomodorolm/issues/232))
+
 ## [[app-v0.9.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.0)] - 2026-04-07
 
 ### 🚀 Features
@@ -16,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 - Not spawn play_sound_file if playing is muted ([#217](https://github.com/vjousse/pomodorolm/issues/217))
 - Small optimization and refactor of create_icon  ([#221](https://github.com/vjousse/pomodorolm/issues/221))
+- Bump to 0.9.0
 
 ## [[app-v0.8.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.8.0)] - 2026-01-23
 
