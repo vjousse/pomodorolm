@@ -134,7 +134,11 @@ configEncoder config =
         , ( "theme", Encode.string config.theme )
         , ( "tickSoundsDuringBreak", Encode.bool config.tickSoundsDuringBreak )
         , ( "tickSoundsDuringWork", Encode.bool config.tickSoundsDuringWork )
-        , ( "volume", Encode.int config.volume )
+        , ( "volume"
+          , config.volume
+                |> Maybe.map Encode.int
+                |> Maybe.withDefault Encode.null
+          )
         ]
 
 
@@ -166,7 +170,7 @@ configDecoder =
         |> Pipe.required "theme" Decode.string
         |> Pipe.required "tick_sounds_during_break" Decode.bool
         |> Pipe.required "tick_sounds_during_work" Decode.bool
-        |> Pipe.required "volume" Decode.int
+        |> Pipe.optional "volume" (Decode.maybe Decode.int) Nothing
 
 
 initDataDecoder : Decode.Decoder InitData

@@ -119,7 +119,7 @@ type alias Config =
     , theme : String
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
-    , volume : Int
+    , volume : Maybe Int
     }
 
 

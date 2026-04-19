@@ -98,7 +98,7 @@ type ElmConfig = {
   theme: string;
   tickSoundsDuringWork: boolean;
   tickSoundsDuringBreak: boolean;
-  volume: number;
+  volume: number | null;
 };
 
 type RustConfig = {
@@ -127,7 +127,7 @@ type RustConfig = {
   theme: string;
   tick_sounds_during_work: boolean;
   tick_sounds_during_break: boolean;
-  volume: number;
+  volume: number | number;
 };
 
 const root = document.querySelector("#app div");
@@ -147,7 +147,7 @@ let rustConfig: RustConfig = {
   long_break_audio: null,
   long_break_duration: 1200,
   max_round_number: 4,
-  max_session_duration: 90,
+  max_session_duration: 90 * 60,
   minimize_to_tray: true,
   minimize_to_tray_on_close: true,
   muted: false,

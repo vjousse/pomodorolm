@@ -68,7 +68,7 @@ type alias Flags =
     , theme : String
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
-    , volume : Int
+    , volume : Maybe Int
     }
 
 
@@ -538,14 +538,14 @@ update msg ({ config } as model) =
             let
                 newVolume =
                     if config.muted then
-                        if model.config.volume > 0 then
+                        if (model.config.volume |> Maybe.withDefault 0) > 0 then
                             model.config.volume
 
                         else
-                            100
+                            Just 100
 
                     else
-                        0
+                        Just 0
 
                 newConfig =
                     { config | muted = not config.muted, volume = newVolume }
@@ -731,10 +731,10 @@ update msg ({ config } as model) =
                             model.config.volume
 
                         Just v ->
-                            v
+                            Just v
 
                 newConfig =
-                    { config | muted = newVolume <= 0, volume = newVolume }
+                    { config | muted = (newVolume |> Maybe.withDefault 0) <= 0, volume = newVolume }
             in
             ( { model | config = newConfig }
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
