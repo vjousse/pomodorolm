@@ -9,4 +9,8 @@ dependencies = [
     "pre-commit>=3.8.0",
     "packaging>=24.1",
     "typer>=0.12.5",
+    "flatpak-node-generator",
 ]
+
+[tool.uv.sources]
+flatpak-node-generator = { git = "https://github.com/flatpak/flatpak-builder-tools.git", subdirectory = "node" }
