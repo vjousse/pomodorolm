@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import topLevelAwait from "vite-plugin-top-level-await";
 import elmPlugin from "vite-plugin-elm";
 
 export default defineConfig({
@@ -21,19 +20,12 @@ export default defineConfig({
   ],
   build: {
     // Tauri uses Chromium on Windows and WebKit on macOS and Linux
-    target: process.env.TAURI_PLATFORM == "windows" ? "chrome105" : "safari13",
+    target:
+      process.env.TAURI_PLATFORM == "windows" ? "chrome111" : "safari16.4",
     // don't minify for debug builds
-    minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
+    minify: !process.env.TAURI_DEBUG ? "oxc" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
   },
-  plugins: [
-    elmPlugin(),
-    topLevelAwait({
-      // The export name of top-level await promise for each chunk module
-      promiseExportName: "__tla",
-      // The function to generate import names of top-level await promise in each chunk module
-      promiseImportName: (i) => `__tla_${i}`,
-    }),
-  ],
+  plugins: [elmPlugin()],
 });
