@@ -16,7 +16,7 @@
     "@types/node": "^25.8.0",
     "elm-debug-transformer": "^1.2.1",
     "elm-review": "^2.12.0",
-    "elm-tooling": "^1.17.0",
+    "elm-tooling": "^1.19.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.13",
     "vite-plugin-elm": "^3.0.1"
