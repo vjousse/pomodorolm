@@ -676,7 +676,7 @@ aboutSettingView appVersion =
     div [ class "container", id "about" ]
         [ p [ class "drawer-heading" ] [ text "About" ]
         , section []
-            [ h2 [] [ text "Pomodrolm" ]
+            [ h2 [] [ text "Pomodorolm" ]
             , p [ class "label" ]
                 [ text <| "Version: " ++ appVersion ++ " "
                 , a
