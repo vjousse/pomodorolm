@@ -30,7 +30,7 @@ tokio-stream = "0.1.15"
 hex_color = "3.0.0"
 hyper-tls = "0.6.0"
 rustls-pemfile = "2.2.0"
-rodio = "0.19.0"
+rodio = "0.22.2"
 clap = { version = "4.0.32", features = ["derive"] }
 dirs = "6.0.0"
 [features]
