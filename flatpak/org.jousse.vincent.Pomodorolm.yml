@@ -1,11 +1,10 @@
 id: org.jousse.vincent.Pomodorolm
 
 runtime: org.gnome.Platform
-runtime-version: "48"
+runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
-  - org.freedesktop.Sdk.Extension.llvm20
   - org.freedesktop.Sdk.Extension.node20
 
 command: pomodorolm

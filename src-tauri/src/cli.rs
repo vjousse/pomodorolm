@@ -62,19 +62,19 @@ async fn file_exists(path: &Path) -> bool {
 }
 
 async fn get_remaining_time(path: &Path, duration: u64) -> Option<Duration> {
-    if let Ok(metadata) = fs::metadata(path) {
-        if let Ok(modified_time) = metadata.modified() {
-            let now = SystemTime::now();
-            let elapsed = now.duration_since(modified_time).ok()?;
-            let total_duration = Duration::from_secs(duration);
+    if let Ok(metadata) = fs::metadata(path)
+        && let Ok(modified_time) = metadata.modified()
+    {
+        let now = SystemTime::now();
+        let elapsed = now.duration_since(modified_time).ok()?;
+        let total_duration = Duration::from_secs(duration);
 
-            if elapsed >= total_duration {
-                return Some(Duration::from_secs(0)); // Return zero if the time is up
-            }
-
-            let remaining = total_duration - elapsed;
-            return Some(remaining);
+        if elapsed >= total_duration {
+            return Some(Duration::from_secs(0)); // Return zero if the time is up
         }
+
+        let remaining = total_duration - elapsed;
+        return Some(remaining);
     }
     None
 }

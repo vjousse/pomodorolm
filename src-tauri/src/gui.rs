@@ -14,11 +14,11 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::menu::{MenuBuilder, MenuItemBuilder};
-use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
 use tauri::AppHandle;
 use tauri::Runtime;
-use tauri::{path::BaseDirectory, Manager};
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
+use tauri::{Manager, path::BaseDirectory};
 use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
 pub struct AppState(Arc<Mutex<App>>);
