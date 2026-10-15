@@ -696,6 +696,18 @@ aboutSettingView appVersion =
                     ]
                     [ text "Licence, Documentation and Source Code" ]
                 ]
+            , p [ class "label", style "padding-top" "2em" ]
+                [ text "❤️ Support Pomodorolm"
+                ]
+            , p [ class "label" ]
+                [ a
+                    [ href "https://ko-fi.com/vjousse"
+                    , class "label"
+                    , class "link"
+                    , target "_blank"
+                    ]
+                    [ text "Support development on Ko-fi →" ]
+                ]
             ]
         ]
 
