@@ -6,6 +6,11 @@
 <!-- tag line -->
 <h2 align='center'>Pomodorolm<br />simple yet powerful time tracker</h3>
 <br/>
+### ❤️ Support Pomodorolm
+
+Pomodorolm is free and open source. If it helps you stay focused, consider supporting its development.
+
+[Support development on Ko-fi →](https://ko-fi.com/vjousse)
 <br/>
 
 ---
