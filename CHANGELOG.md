@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.9.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.2)] - 2026-10-15
+
+### 🐛 Bug Fixes
+
+- Minor typo in About tab ([#291](https://github.com/vjousse/pomodorolm/issues/291))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update AUR checksum
+- Update deps ([#249](https://github.com/vjousse/pomodorolm/issues/249))
+- Update deps ([#265](https://github.com/vjousse/pomodorolm/issues/265))
+- Update node and cargo deps ([#292](https://github.com/vjousse/pomodorolm/issues/292))
+- Upgrade node deps ([#293](https://github.com/vjousse/pomodorolm/issues/293))
+- Update to latest rodio 0.22.2 ([#295](https://github.com/vjousse/pomodorolm/issues/295))
+- Update rust versions to 1.97.1 and 2024 edition ([#296](https://github.com/vjousse/pomodorolm/issues/296))
+- Update node & cargo deps ([#303](https://github.com/vjousse/pomodorolm/issues/303))
+- Add ko-fi link ([#329](https://github.com/vjousse/pomodorolm/issues/329))
+- Add ko-fi to funding ([#330](https://github.com/vjousse/pomodorolm/issues/330))
+- Add donation links ([#334](https://github.com/vjousse/pomodorolm/issues/334))
+- Update deps ([#336](https://github.com/vjousse/pomodorolm/issues/336))
+
 ## [[app-v0.9.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.1)] - 2026-04-19
 
 ### 🐛 Bug Fixes
@@ -12,6 +33,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Create dependabot.yml ([#232](https://github.com/vjousse/pomodorolm/issues/232))
+- Bump to 0.9.1
 
 ## [[app-v0.9.0](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.0)] - 2026-04-07
 
