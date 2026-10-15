@@ -12,6 +12,12 @@
 
 ![Screenshot of the app](screenshot.png?)
 
+# ❤️ Support Pomodorolm
+
+Pomodorolm is free and open source. If it helps you stay focused, consider supporting its development.
+
+[Support development on Ko-fi →](https://ko-fi.com/vjousse)
+
 # 🌟 Features
 
 - [x] **Customize round numbers, focus and break times**
