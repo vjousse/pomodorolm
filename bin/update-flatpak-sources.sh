@@ -10,3 +10,4 @@ uv run $ROOT_DIR/bin/flatpak-cargo-generator.py -d $ROOT_DIR/src-tauri/Cargo.loc
 echo "Deleting $ROOT_DIR/node_modules/*"
 rm -rf $ROOT_DIR/node_modules/*
 uv run flatpak-node-generator npm -o $ROOT_DIR/flatpak/node-sources.json $ROOT_DIR/package-lock.json
+npm ci
