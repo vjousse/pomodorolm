@@ -545,21 +545,20 @@ update msg ({ config } as model) =
             , Cmd.none
             )
 
-        ToggleMute ->
+        ToggleMute muted ->
             let
                 newVolume =
-                    if config.muted then
-                        if (model.config.volume |> Maybe.withDefault 0) > 0 then
-                            model.config.volume
-
-                        else
-                            Just 100
-
-                    else
+                    if muted then
                         Just 0
 
+                    else if (model.config.volume |> Maybe.withDefault 0) > 0 then
+                        model.config.volume
+
+                    else
+                        Just 100
+
                 newConfig =
-                    { config | muted = not config.muted, volume = newVolume }
+                    { config | muted = muted, volume = newVolume }
             in
             ( { model | config = newConfig }
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)

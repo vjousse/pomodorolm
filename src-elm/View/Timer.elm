@@ -286,7 +286,7 @@ footerView model =
                     , class "icon-wrapper--double--right"
                     , id "toggle-mute"
                     , onMouseOver (SetVolumeBarVisibility True)
-                    , onClick ToggleMute
+                    , onClick (ToggleMute (not model.config.muted))
                     , title "Mute"
                     ]
                     [ if model.config.muted == False then

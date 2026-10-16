@@ -20,7 +20,7 @@ type Msg
     | ResetAudioFile SessionType
     | SkipCurrentRound
     | ToggleDrawer
-    | ToggleMute
+    | ToggleMute Bool
     | TogglePlayStatus
     | UpdateLabel SessionType String
     | UpdateSetting SettingType
