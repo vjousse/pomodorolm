@@ -254,7 +254,6 @@ rustSessionDecoder : Decode.Decoder Pomodoro.Session
 rustSessionDecoder =
     Decode.succeed Pomodoro.Session
         |> Pipe.required "current_time" Decode.int
-        |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
         |> Pipe.required "status" sessionStatusDecoder
 

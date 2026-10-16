@@ -16,7 +16,6 @@ type alias State =
 
 type alias Session =
     { currentTime : Seconds
-    , label : Maybe String
     , sessionType : SessionType
     , status : SessionStatus
     }
