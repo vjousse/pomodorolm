@@ -15,16 +15,11 @@ module Json exposing
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
+import Pomodoro exposing (PomodoroSession, PomodoroState)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors)
-import Types
-    exposing
-        ( Config
-        , CurrentState
-        , PomodoroSession
-        , PomodoroState
-        )
+import Types exposing (Config, CurrentState)
 
 
 type alias ElmMessage =

@@ -9,12 +9,13 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Msg exposing (Msg(..))
+import Pomodoro exposing (PomodoroState)
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, PomodoroState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Config, CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer
 import View.Nav
 import View.Timer

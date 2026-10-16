@@ -5,6 +5,7 @@ import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Msg exposing (Msg(..))
+import Pomodoro exposing (PomodoroState)
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
@@ -12,7 +13,7 @@ import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, PomodoroState, ResetType(..))
+import Types exposing (Config, ResetType(..))
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg

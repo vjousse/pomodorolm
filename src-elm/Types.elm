@@ -1,8 +1,6 @@
 module Types exposing
     ( Config
     , CurrentState
-    , PomodoroSession
-    , PomodoroState
     , ResetType(..)
     , Setting(..)
     , SettingTab(..)
@@ -90,17 +88,3 @@ type SettingType
     | SaveMaxSessionDuration
     | ShortBreakTime String
     | Toggle Setting
-
-
-type alias PomodoroSession =
-    { currentTime : Seconds
-    , label : Maybe String
-    , sessionType : SessionType
-    , status : SessionStatus
-    }
-
-
-type alias PomodoroState =
-    { currentSession : PomodoroSession
-    , currentWorkRoundNumber : Int
-    }
