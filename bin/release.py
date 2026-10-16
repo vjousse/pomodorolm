@@ -15,7 +15,7 @@ import tomllib
 import typer
 import yaml
 from packaging.version import Version as Semver
-from typing_extensions import Annotated
+from typing import Annotated
 
 METAINFO = "org.jousse.vincent.Pomodorolm.metainfo.xml"
 PACKAGE_JSON = "package.json"
