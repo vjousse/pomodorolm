@@ -188,7 +188,7 @@ configDecoder =
 
 type alias InitData =
     { config : Config
-    , pomodoroState : Pomodoro.PomodoroState
+    , pomodoroState : Pomodoro.State
     , themes : List Theme
     }
 
@@ -201,9 +201,9 @@ initDataDecoder =
         |> Pipe.required "themes" themesDecoder
 
 
-rustStateDecoder : Decode.Decoder Pomodoro.PomodoroState
+rustStateDecoder : Decode.Decoder Pomodoro.State
 rustStateDecoder =
-    Decode.succeed Pomodoro.PomodoroState
+    Decode.succeed Pomodoro.State
         |> Pipe.required "current_session" rustSessionDecoder
         |> Pipe.required "current_work_round_number" Decode.int
 
@@ -250,9 +250,9 @@ sessionStatusFromStringDecoder string =
             Decode.fail ("Unknown sessionStatus: " ++ string)
 
 
-rustSessionDecoder : Decode.Decoder Pomodoro.PomodoroSession
+rustSessionDecoder : Decode.Decoder Pomodoro.Session
 rustSessionDecoder =
-    Decode.succeed Pomodoro.PomodoroSession
+    Decode.succeed Pomodoro.Session
         |> Pipe.required "current_time" Decode.int
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
@@ -260,7 +260,7 @@ rustSessionDecoder =
 
 
 type ExternalMessage
-    = RustStateMsg Pomodoro.PomodoroState
+    = RustStateMsg Pomodoro.State
     | InitDataMsg InitData
     | SoundFilePath SessionType String
 

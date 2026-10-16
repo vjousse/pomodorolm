@@ -1,6 +1,6 @@
 module Pomodoro exposing
-    ( PomodoroSession
-    , PomodoroState
+    ( Session
+    , State
     )
 
 import Seconds exposing (Seconds)
@@ -8,13 +8,13 @@ import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 
 
-type alias PomodoroState =
-    { currentSession : PomodoroSession
+type alias State =
+    { currentSession : Session
     , currentWorkRoundNumber : Int
     }
 
 
-type alias PomodoroSession =
+type alias Session =
     { currentTime : Seconds
     , label : Maybe String
     , sessionType : SessionType

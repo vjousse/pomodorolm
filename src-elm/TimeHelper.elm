@@ -6,7 +6,7 @@ import SessionType exposing (SessionType(..))
 import Types exposing (Config)
 
 
-getCurrentMaxTime : Config -> Pomodoro.PomodoroSession -> Seconds
+getCurrentMaxTime : Config -> Pomodoro.Session -> Seconds
 getCurrentMaxTime config currentSession =
     case currentSession.sessionType of
         Focus ->

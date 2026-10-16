@@ -110,7 +110,7 @@ timerView :
         | config : Config
         , strokeDasharray : Float
         , theme : Theme
-        , pomodoroState : Maybe Pomodoro.PomodoroState
+        , pomodoroState : Maybe Pomodoro.State
         , focusLabel : String
         , shortBreakLabel : String
         , longBreakLabel : String
@@ -203,7 +203,7 @@ playPauseView sessionStatus =
 
 footerView :
     { model
-        | pomodoroState : Maybe Pomodoro.PomodoroState
+        | pomodoroState : Maybe Pomodoro.State
         , config : Config
         , volumeSliderHidden : Bool
     }

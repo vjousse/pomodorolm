@@ -39,7 +39,7 @@ type alias Model =
     , drawerOpen : Bool
     , focusLabel : String
     , longBreakLabel : String
-    , pomodoroState : Maybe Pomodoro.PomodoroState
+    , pomodoroState : Maybe Pomodoro.State
     , settingTab : SettingTab
     , shortBreakLabel : String
     , strokeDasharray : Float
