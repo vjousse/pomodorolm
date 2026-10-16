@@ -764,7 +764,7 @@ view model =
             View.Drawer.view model
 
           else
-            View.Timer.timerView
+            View.Timer.view
                 { onReset = Reset
                 , onCurrentRoundSkip = SkipCurrentRound
                 , onSetVolumeBarVisibility = SetVolumeBarVisibility

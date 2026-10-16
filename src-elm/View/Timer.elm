@@ -1,4 +1,4 @@
-module View.Timer exposing (EventHandlers, timerView)
+module View.Timer exposing (EventHandlers, view)
 
 import ColorHelper exposing (RGB(..), computeCurrentColor)
 import Config exposing (Config)
@@ -126,7 +126,7 @@ type alias EventHandlers msg =
     }
 
 
-timerView :
+view :
     EventHandlers msg
     ->
         { model
@@ -140,7 +140,7 @@ timerView :
             , volumeSliderHidden : Bool
         }
     -> Html msg
-timerView eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
+view eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
     pomodoroState
         |> Maybe.map
             (\state ->
