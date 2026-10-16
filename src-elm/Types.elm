@@ -1,7 +1,6 @@
 module Types exposing
     ( Config
     , CurrentState
-    , InitData
     , PomodoroSession
     , PomodoroState
     , ResetType(..)
@@ -13,7 +12,6 @@ module Types exposing
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
-import Themes exposing (Theme)
 
 
 type ResetType
@@ -48,13 +46,6 @@ type alias Config =
     , tickSoundsDuringBreak : Bool
     , tickSoundsDuringWork : Bool
     , volume : Maybe Int
-    }
-
-
-type alias InitData =
-    { config : Config
-    , pomodoroState : PomodoroState
-    , themes : List Theme
     }
 
 

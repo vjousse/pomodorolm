@@ -1,4 +1,16 @@
-module Json exposing (ElmMessage, ExternalMessage(..), SoundMessageValue, configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+module Json exposing
+    ( ElmMessage
+    , ExternalMessage(..)
+    , InitData
+    , SoundMessageValue
+    , configEncoder
+    , currentStateEncoder
+    , elmMessageBuilder
+    , elmMessageEncoder
+    , externalMessageDecoder
+    , sessionTypeDecoder
+    , soundMessageEncoder
+    )
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -10,7 +22,6 @@ import Types
     exposing
         ( Config
         , CurrentState
-        , InitData
         , PomodoroSession
         , PomodoroState
         )
@@ -178,6 +189,13 @@ configDecoder =
         |> Pipe.required "tick_sounds_during_break" Decode.bool
         |> Pipe.required "tick_sounds_during_work" Decode.bool
         |> Pipe.optional "volume" (Decode.maybe Decode.int) Nothing
+
+
+type alias InitData =
+    { config : Config
+    , pomodoroState : PomodoroState
+    , themes : List Theme
+    }
 
 
 initDataDecoder : Decode.Decoder InitData
