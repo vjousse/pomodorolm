@@ -129,20 +129,14 @@ computeCurrentColor currentTime maxTime sessionType theme =
                     else
                         1
 
-                ( startRed, startGreen, startBlue ) =
-                    case fromCSSHexToRGB theme.colors.focusRound of
-                        RGB r g b ->
-                            ( r, g, b )
+                (RGB startRed startGreen startBlue) =
+                    fromCSSHexToRGB theme.colors.focusRound
 
-                ( middleRed, middleGreen, middleBlue ) =
-                    case fromCSSHexToRGB theme.colors.focusRoundMiddle of
-                        RGB r g b ->
-                            ( r, g, b )
+                (RGB middleRed middleGreen middleBlue) =
+                    fromCSSHexToRGB theme.colors.focusRoundMiddle
 
-                ( endRed, endGreen, endBlue ) =
-                    case fromCSSHexToRGB theme.colors.focusRoundEnd of
-                        RGB r g b ->
-                            ( r, g, b )
+                (RGB endRed endGreen endBlue) =
+                    fromCSSHexToRGB theme.colors.focusRoundEnd
             in
             if remainingPercent > 0.5 then
                 RGB
