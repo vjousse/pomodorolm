@@ -8,6 +8,7 @@ import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elm
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
+import Seconds exposing (Seconds)
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types
@@ -20,7 +21,6 @@ import Types
         , Notification
         , RGB(..)
         , ResetType(..)
-        , Seconds
         , SessionStatus(..)
         , SessionType(..)
         , Setting(..)

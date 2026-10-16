@@ -12,7 +12,6 @@ module Types exposing
     , PomodoroState
     , RGB(..)
     , ResetType(..)
-    , Seconds
     , SessionStatus(..)
     , SessionType(..)
     , Setting(..)
@@ -25,6 +24,7 @@ module Types exposing
     )
 
 import ListWithCurrent exposing (ListWithCurrent)
+import Seconds exposing (Seconds)
 import Themes exposing (Theme)
 
 
@@ -75,10 +75,6 @@ type Msg
 type ResetType
     = CurrentRound
     | EntireSession
-
-
-type alias Seconds =
-    Int
 
 
 type alias ElmMessage =
