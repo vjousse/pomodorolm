@@ -3,7 +3,6 @@ module Types exposing
     , CurrentState
     , Defaults
     , InitData
-    , Model
     , PomodoroSession
     , PomodoroState
     , ResetType(..)
@@ -12,30 +11,10 @@ module Types exposing
     , SettingType(..)
     )
 
-import ColorHelper exposing (RGB)
-import ListWithCurrent exposing (ListWithCurrent)
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 import Themes exposing (Theme)
-
-
-type alias Model =
-    { appVersion : String
-    , config : Config
-    , currentColor : RGB
-    , currentState : CurrentState
-    , drawerOpen : Bool
-    , focusLabel : String
-    , longBreakLabel : String
-    , pomodoroState : Maybe PomodoroState
-    , settingTab : SettingTab
-    , shortBreakLabel : String
-    , strokeDasharray : Float
-    , theme : Theme
-    , themes : ListWithCurrent Theme
-    , volumeSliderHidden : Bool
-    }
 
 
 type ResetType

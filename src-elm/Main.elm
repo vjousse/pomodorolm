@@ -1,4 +1,4 @@
-port module Main exposing (Flags, main)
+port module Main exposing (Flags, Model, main)
 
 import Browser
 import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
@@ -12,18 +12,9 @@ import Msg exposing (Msg(..))
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import Themes exposing (ThemeColors, pomodorolmTheme)
+import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types
-    exposing
-        ( Config
-        , Defaults
-        , Model
-        , ResetType(..)
-        , Setting(..)
-        , SettingTab(..)
-        , SettingType(..)
-        )
+import Types exposing (Config, CurrentState, Defaults, PomodoroState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer
 import View.Nav
 import View.Timer
@@ -37,6 +28,24 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
+
+
+type alias Model =
+    { appVersion : String
+    , config : Config
+    , currentColor : RGB
+    , currentState : CurrentState
+    , drawerOpen : Bool
+    , focusLabel : String
+    , longBreakLabel : String
+    , pomodoroState : Maybe PomodoroState
+    , settingTab : SettingTab
+    , shortBreakLabel : String
+    , strokeDasharray : Float
+    , theme : Theme
+    , themes : ListWithCurrent Theme
+    , volumeSliderHidden : Bool
+    }
 
 
 type alias Flags =
