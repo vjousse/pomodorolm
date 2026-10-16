@@ -201,36 +201,7 @@ update msg ({ config } as model) =
             ( { model | settingTab = settingTab }, Cmd.none )
 
         ChangeTheme theme ->
-            let
-                currentState =
-                    model.currentState
-
-                newState =
-                    { currentState
-                        | color =
-                            fromRGBToCSSHex
-                                (model.pomodoroState
-                                    |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme)
-                                    |> Maybe.withDefault (fromCSSHexToRGB <| theme.colors.focusRound)
-                                )
-                    }
-
-                newConfig =
-                    { config
-                        | theme = theme.name |> String.toLower
-                    }
-            in
-            ( { model
-                | config = newConfig
-                , currentState = newState
-                , theme = theme
-              }
-            , Cmd.batch
-                [ setThemeColors theme.colors
-                , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
-                , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
-                ]
-            )
+            changeTheme theme model
 
         CloseWindow ->
             ( model
@@ -769,6 +740,40 @@ update msg ({ config } as model) =
             ( { model | config = newConfig }
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
+
+
+changeTheme : Theme -> Model -> ( Model, Cmd msg )
+changeTheme theme ({ config } as model) =
+    let
+        currentState =
+            model.currentState
+
+        newState =
+            { currentState
+                | color =
+                    fromRGBToCSSHex
+                        (model.pomodoroState
+                            |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme)
+                            |> Maybe.withDefault (fromCSSHexToRGB <| theme.colors.focusRound)
+                        )
+            }
+
+        newConfig =
+            { config
+                | theme = theme.name |> String.toLower
+            }
+    in
+    ( { model
+        | config = newConfig
+        , currentState = newState
+        , theme = theme
+      }
+    , Cmd.batch
+        [ setThemeColors theme.colors
+        , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
+        , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
+        ]
+    )
 
 
 view : Model -> Html Msg
