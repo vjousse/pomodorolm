@@ -12,7 +12,7 @@ import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Model, ResetType(..))
+import Types exposing (Config, PomodoroState, ResetType(..))
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
@@ -104,7 +104,18 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
         ]
 
 
-timerView : Model -> Html Msg
+timerView :
+    { model
+        | config : Config
+        , strokeDasharray : Float
+        , theme : Theme
+        , pomodoroState : Maybe PomodoroState
+        , focusLabel : String
+        , shortBreakLabel : String
+        , longBreakLabel : String
+        , volumeSliderHidden : Bool
+    }
+    -> Html Msg
 timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
     pomodoroState
         |> Maybe.map
@@ -189,7 +200,13 @@ playPauseView sessionStatus =
         ]
 
 
-footerView : Model -> Html Msg
+footerView :
+    { model
+        | pomodoroState : Maybe PomodoroState
+        , config : Config
+        , volumeSliderHidden : Bool
+    }
+    -> Html Msg
 footerView model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
