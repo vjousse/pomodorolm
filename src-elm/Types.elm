@@ -1,7 +1,6 @@
 module Types exposing
     ( Config
     , CurrentState
-    , Defaults
     , InitData
     , PomodoroSession
     , PomodoroState
@@ -88,14 +87,6 @@ type Setting
     | SystemStartupAutoStart
     | TickSoundsDuringWork
     | TickSoundsDuringBreak
-
-
-type alias Defaults =
-    { longBreakDuration : Seconds
-    , pomodoroDuration : Seconds
-    , shortBreakDuration : Seconds
-    , maxRoundNumber : Int
-    }
 
 
 type SettingType

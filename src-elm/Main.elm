@@ -14,7 +14,7 @@ import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, Defaults, PomodoroState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Config, CurrentState, PomodoroState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer
 import View.Nav
 import View.Timer
@@ -73,6 +73,14 @@ type alias Flags =
     , tickSoundsDuringWork : Bool
     , tickSoundsDuringBreak : Bool
     , volume : Maybe Int
+    }
+
+
+type alias Defaults =
+    { longBreakDuration : Seconds
+    , pomodoroDuration : Seconds
+    , shortBreakDuration : Seconds
+    , maxRoundNumber : Int
     }
 
 
