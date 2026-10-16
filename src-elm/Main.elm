@@ -267,7 +267,7 @@ update msg ({ config } as model) =
                             in
                             ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
 
-                        _ ->
+                        Nothing ->
                             ( newModel, newCmd )
             in
             -- Auto start if config is set
