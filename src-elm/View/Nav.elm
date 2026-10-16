@@ -6,18 +6,17 @@ import Html.Events exposing (onClick)
 import Msg exposing (Msg(..))
 import Svg exposing (svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model)
 
 
-navView : Model -> Html Msg
-navView model =
+navView : Bool -> Html Msg
+navView drawerOpen =
     nav [ class "titlebar" ]
         [ div [ class "icon-group" ]
             [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick ToggleDrawer ]
                 [ div
                     [ class "menu-wrapper"
                     , class
-                        (if model.drawerOpen then
+                        (if drawerOpen then
                             "is-collapsed"
 
                          else

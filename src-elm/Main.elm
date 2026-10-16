@@ -739,7 +739,7 @@ update msg ({ config } as model) =
 view : Model -> Html Msg
 view model =
     div [ id "app" ]
-        [ View.Nav.navView model
+        [ View.Nav.navView model.drawerOpen
         , if model.drawerOpen then
             View.Drawer.drawerView model
 
