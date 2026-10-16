@@ -1,6 +1,7 @@
 module View.Timer exposing (timerView)
 
 import ColorHelper exposing (RGB(..), computeCurrentColor)
+import Config exposing (Config)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
@@ -13,7 +14,7 @@ import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, ResetType(..))
+import Types exposing (ResetType(..))
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg

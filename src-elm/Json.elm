@@ -12,6 +12,7 @@ module Json exposing
     , soundMessageEncoder
     )
 
+import Config exposing (Config)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
@@ -19,7 +20,7 @@ import Pomodoro
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors)
-import Types exposing (Config, CurrentState)
+import Types exposing (CurrentState)
 
 
 type alias ElmMessage =

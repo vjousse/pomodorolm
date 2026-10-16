@@ -1,13 +1,11 @@
 module Types exposing
-    ( Config
-    , CurrentState
+    ( CurrentState
     , ResetType(..)
     , Setting(..)
     , SettingTab(..)
     , SettingType(..)
     )
 
-import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 
@@ -15,36 +13,6 @@ import SessionType exposing (SessionType)
 type ResetType
     = CurrentRound
     | EntireSession
-
-
-type alias Config =
-    { alwaysOnTop : Bool
-    , autoQuit : Maybe SessionType
-    , autoStartBreakTimer : Bool
-    , autoStartOnAppStartup : Bool
-    , autoStartWorkTimer : Bool
-    , defaultFocusLabel : String
-    , defaultLongBreakLabel : String
-    , defaultShortBreakLabel : String
-    , desktopNotifications : Bool
-    , focusAudio : Maybe String
-    , focusDuration : Seconds
-    , longBreakAudio : Maybe String
-    , longBreakDuration : Seconds
-    , maxRoundNumber : Int
-    , maxSessionDuration : Seconds
-    , minimizeToTray : Bool
-    , minimizeToTrayOnClose : Bool
-    , muted : Bool
-    , shortBreakAudio : Maybe String
-    , shortBreakDuration : Seconds
-    , startMinimized : Bool
-    , systemStartupAutoStart : Bool
-    , theme : String
-    , tickSoundsDuringBreak : Bool
-    , tickSoundsDuringWork : Bool
-    , volume : Maybe Int
-    }
 
 
 type alias CurrentState =

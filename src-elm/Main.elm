@@ -2,6 +2,7 @@ port module Main exposing (Flags, Model, main)
 
 import Browser
 import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+import Config exposing (Config)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
 import Json exposing (ExternalMessage(..), configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
@@ -15,7 +16,7 @@ import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Config, CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer
 import View.Nav
 import View.Timer

@@ -1,5 +1,6 @@
 module View.Drawer exposing (drawerView)
 
+import Config exposing (Config)
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
@@ -9,7 +10,7 @@ import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
-import Types exposing (Config, Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Setting(..), SettingTab(..), SettingType(..))
 
 
 settingWrapperToggle : String -> Msg -> Bool -> Html Msg
