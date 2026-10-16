@@ -25,9 +25,9 @@ toStringWithZeroPadding num =
 
 fromCSSHexToRGB : String -> RGB
 fromCSSHexToRGB hexcode =
-    RGB (fromList (List.take 2 (List.drop 1 (String.toList hexcode))))
-        (fromList (List.take 2 (List.drop 3 (String.toList hexcode))))
-        (fromList (List.take 2 (List.drop 5 (String.toList hexcode))))
+    RGB (fromList (List.take 2 (String.toList (String.dropLeft 1 hexcode))))
+        (fromList (List.take 2 (String.toList (String.dropLeft 3 hexcode))))
+        (fromList (List.take 2 (String.toList (String.dropLeft 5 hexcode))))
 
 
 fromRGBToCSSHex : RGB -> String
