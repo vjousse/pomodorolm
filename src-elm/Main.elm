@@ -1,7 +1,7 @@
 port module Main exposing (Flags, main)
 
 import Browser
-import ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
 import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
@@ -20,7 +20,6 @@ import Types
         , Model
         , Msg(..)
         , Notification
-        , RGB(..)
         , ResetType(..)
         , SessionStatus(..)
         , Setting(..)

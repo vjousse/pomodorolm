@@ -10,7 +10,6 @@ module Types exposing
     , Notification
     , PomodoroSession
     , PomodoroState
-    , RGB(..)
     , ResetType(..)
     , SessionStatus(..)
     , Setting(..)
@@ -20,14 +19,11 @@ module Types exposing
     , sessionStatusToString
     )
 
+import ColorHelper exposing (RGB)
 import ListWithCurrent exposing (ListWithCurrent)
 import Seconds exposing (Seconds)
 import SessionType exposing (SessionType)
 import Themes exposing (Theme)
-
-
-type RGB
-    = RGB Int Int Int
 
 
 type alias Model =

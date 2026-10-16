@@ -1,13 +1,16 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+module ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 
 import Hex
 import Seconds exposing (Seconds)
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme)
-import Types exposing (RGB(..))
+
+
+type RGB
+    = RGB Int Int Int
 
 
 toStringWithZeroPadding : Int -> String
