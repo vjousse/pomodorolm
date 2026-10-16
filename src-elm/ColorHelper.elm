@@ -3,8 +3,6 @@
 
 module ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 
-import Bitwise
-import Dict exposing (Dict)
 import Hex
 import Themes exposing (Theme)
 import Types exposing (RGB(..), Seconds, SessionType(..))
@@ -25,57 +23,14 @@ toStringWithZeroPadding num =
 
 fromCSSHexToRGB : String -> RGB
 fromCSSHexToRGB hexcode =
-    RGB (fromList (String.toList (String.slice 1 3 hexcode)))
-        (fromList (String.toList (String.slice 3 5 hexcode)))
-        (fromList (String.toList (String.slice 5 7 hexcode)))
+    RGB (Hex.fromString (String.slice 1 3 hexcode) |> Result.withDefault 0)
+        (Hex.fromString (String.slice 3 5 hexcode) |> Result.withDefault 0)
+        (Hex.fromString (String.slice 5 7 hexcode) |> Result.withDefault 0)
 
 
 fromRGBToCSSHex : RGB -> String
 fromRGBToCSSHex (RGB r g b) =
     "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
-
-
-fromList : List Char -> Int
-fromList chars =
-    List.sum (List.indexedMap (\i v -> Bitwise.shiftLeftBy (i * 4) v) (List.reverse (List.map fromChar chars)))
-
-
-fromChar : Char -> Int
-fromChar ch =
-    case Dict.get ch hexmap of
-        Just v ->
-            v
-
-        Nothing ->
-            0
-
-
-hexmap : Dict Char Int
-hexmap =
-    Dict.fromList
-        [ ( '0', 0 )
-        , ( '1', 1 )
-        , ( '2', 2 )
-        , ( '3', 3 )
-        , ( '4', 4 )
-        , ( '5', 5 )
-        , ( '6', 6 )
-        , ( '7', 7 )
-        , ( '8', 8 )
-        , ( '9', 9 )
-        , ( 'A', 10 )
-        , ( 'B', 11 )
-        , ( 'C', 12 )
-        , ( 'D', 13 )
-        , ( 'E', 14 )
-        , ( 'F', 15 )
-        , ( 'a', 10 )
-        , ( 'b', 11 )
-        , ( 'c', 12 )
-        , ( 'd', 13 )
-        , ( 'e', 14 )
-        , ( 'f', 15 )
-        ]
 
 
 colorForSessionType : SessionType -> Theme -> RGB
