@@ -1,4 +1,4 @@
-module Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+module Json exposing (ElmMessage, configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -10,13 +10,18 @@ import Types
     exposing
         ( Config
         , CurrentState
-        , ElmMessage
         , ExternalMessage(..)
         , InitData
         , PomodoroSession
         , PomodoroState
         , SoundMessageValue
         )
+
+
+type alias ElmMessage =
+    { name : String
+    , value : Maybe String
+    }
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value

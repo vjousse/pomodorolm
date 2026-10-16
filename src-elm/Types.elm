@@ -2,7 +2,6 @@ module Types exposing
     ( Config
     , CurrentState
     , Defaults
-    , ElmMessage
     , ExternalMessage(..)
     , InitData
     , Model
@@ -67,12 +66,6 @@ type Msg
 type ResetType
     = CurrentRound
     | EntireSession
-
-
-type alias ElmMessage =
-    { name : String
-    , value : Maybe String
-    }
 
 
 type alias SoundMessageValue =
