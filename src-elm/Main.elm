@@ -9,6 +9,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Seconds exposing (Seconds)
+import SessionType exposing (SessionType(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types
@@ -22,12 +23,9 @@ import Types
         , RGB(..)
         , ResetType(..)
         , SessionStatus(..)
-        , SessionType(..)
         , Setting(..)
         , SettingTab(..)
         , SettingType(..)
-        , sessionTypeFromString
-        , sessionTypeToString
         )
 import View.Drawer
 import View.Nav
@@ -158,7 +156,7 @@ update msg ({ config } as model) =
             , sendMessageFromElm
                 (elmMessageEncoder
                     { name = "choose_sound_file"
-                    , value = Just <| sessionTypeToString sessionType
+                    , value = Just <| SessionType.sessionTypeToString sessionType
                     }
                 )
             )
@@ -646,7 +644,7 @@ update msg ({ config } as model) =
                 newConfig =
                     case settingType of
                         AutoQuit sessionTypeString ->
-                            { config | autoQuit = sessionTypeFromString sessionTypeString }
+                            { config | autoQuit = SessionType.sessionTypeFromString sessionTypeString }
 
                         FocusTime value ->
                             { config | focusDuration = min (config.maxSessionDuration * 60) (toInt value * 60) }

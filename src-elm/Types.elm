@@ -13,18 +13,16 @@ module Types exposing
     , RGB(..)
     , ResetType(..)
     , SessionStatus(..)
-    , SessionType(..)
     , Setting(..)
     , SettingTab(..)
     , SettingType(..)
     , SoundMessageValue
     , sessionStatusToString
-    , sessionTypeFromString
-    , sessionTypeToString
     )
 
 import ListWithCurrent exposing (ListWithCurrent)
 import Seconds exposing (Seconds)
+import SessionType exposing (SessionType)
 import Themes exposing (Theme)
 
 
@@ -144,12 +142,6 @@ type alias Notification =
     }
 
 
-type SessionType
-    = Focus
-    | ShortBreak
-    | LongBreak
-
-
 type SessionStatus
     = NotStarted
     | Paused
@@ -217,35 +209,6 @@ type ExternalMessage
     = RustStateMsg PomodoroState
     | InitDataMsg InitData
     | SoundFilePath SessionType String
-
-
-sessionTypeToString : SessionType -> String
-sessionTypeToString sessionType =
-    case sessionType of
-        Focus ->
-            "Focus"
-
-        ShortBreak ->
-            "ShortBreak"
-
-        LongBreak ->
-            "LongBreak"
-
-
-sessionTypeFromString : String -> Maybe SessionType
-sessionTypeFromString string =
-    case String.toLower string of
-        "focus" ->
-            Just Focus
-
-        "shortbreak" ->
-            Just ShortBreak
-
-        "longbreak" ->
-            Just LongBreak
-
-        _ ->
-            Nothing
 
 
 sessionStatusToString : SessionStatus -> String

@@ -5,8 +5,9 @@ module ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHe
 
 import Hex
 import Seconds exposing (Seconds)
+import SessionType exposing (SessionType(..))
 import Themes exposing (Theme)
-import Types exposing (RGB(..), SessionType(..))
+import Types exposing (RGB(..))
 
 
 toStringWithZeroPadding : Int -> String

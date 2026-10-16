@@ -5,11 +5,12 @@ import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Seconds exposing (Seconds)
+import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Model, Msg(..), RGB(..), ResetType(..), SessionStatus(..), SessionType(..))
+import Types exposing (Model, Msg(..), RGB(..), ResetType(..), SessionStatus(..))
 
 
 dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg

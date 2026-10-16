@@ -1,7 +1,8 @@
 module TimeHelper exposing (getCurrentMaxTime)
 
 import Seconds exposing (Seconds)
-import Types exposing (Config, PomodoroState, SessionType(..))
+import SessionType exposing (SessionType(..))
+import Types exposing (Config, PomodoroState)
 
 
 getCurrentMaxTime : Config -> PomodoroState -> Seconds

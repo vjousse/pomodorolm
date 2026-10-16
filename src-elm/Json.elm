@@ -3,6 +3,7 @@ module Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elm
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
+import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors)
 import Types
     exposing
@@ -14,10 +15,8 @@ import Types
         , PomodoroSession
         , PomodoroState
         , SessionStatus(..)
-        , SessionType(..)
         , SoundMessageValue
         , sessionStatusToString
-        , sessionTypeToString
         )
 
 
@@ -96,7 +95,7 @@ configEncoder config =
         [ ( "alwaysOnTop", Encode.bool config.alwaysOnTop )
         , ( "autoQuit"
           , config.autoQuit
-                |> Maybe.map (\c -> Encode.string (sessionTypeToString c))
+                |> Maybe.map (\c -> Encode.string (SessionType.sessionTypeToString c))
                 |> Maybe.withDefault Encode.null
           )
         , ( "autoStartBreakTimer", Encode.bool config.autoStartBreakTimer )
