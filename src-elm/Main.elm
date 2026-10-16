@@ -282,131 +282,7 @@ update msg ({ config } as model) =
                 ( modelWithTheme, cmdWithTheme )
 
         ProcessExternalMessage (RustStateMsg pomodoroState) ->
-            let
-                getNotification : String -> String -> String -> Seconds -> RGB -> Notification
-                getNotification title body name duration (RGB r g b) =
-                    let
-                        minutes =
-                            (duration |> toFloat) / 60 |> round
-                    in
-                    { title = title
-                    , body =
-                        "Start a "
-                            ++ String.fromInt minutes
-                            ++ " minute"
-                            ++ (if minutes > 1 then
-                                    "s"
-
-                                else
-                                    ""
-                               )
-                            ++ " "
-                            ++ body
-                    , name = name
-                    , red = r
-                    , green = g
-                    , blue = b
-                    }
-
-                getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> Bool -> List (Cmd Msg)
-                getCmds { desktopNotifications, muted } soundName title body name duration rgb quit =
-                    [ if desktopNotifications then
-                        notify <| getNotification title body name duration rgb
-
-                      else
-                        Cmd.none
-                    , if muted then
-                        if quit then
-                            sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing })
-
-                        else
-                            Cmd.none
-
-                      else
-                        sendMessageFromElm (elmMessageBuilder "play_sound" { soundId = soundName, quitAfterPlay = quit } soundMessageEncoder)
-                    ]
-
-                maxTime =
-                    getCurrentMaxTime config pomodoroState.currentSession
-
-                currentColor =
-                    computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
-
-                percent =
-                    if maxTime /= 0 then
-                        toFloat (maxTime - pomodoroState.currentSession.currentTime) / toFloat maxTime
-
-                    else
-                        1
-
-                currentState =
-                    { color = fromRGBToCSSHex currentColor
-                    , percentage = percent
-                    , paused =
-                        pomodoroState.currentSession.status == Paused
-                    , sessionStatus = pomodoroState.currentSession.status
-                    }
-
-                cmds =
-                    model.pomodoroState
-                        |> Maybe.map
-                            (\state ->
-                                -- If we’ve changed the session type
-                                if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
-                                    case pomodoroState.currentSession.sessionType of
-                                        Focus ->
-                                            getCmds
-                                                config
-                                                "audio-work"
-                                                (if state.currentSession.sessionType == ShortBreak then
-                                                    "Short break completed"
-
-                                                 else
-                                                    "Long break completed"
-                                                )
-                                                "focus round"
-                                                "start_focus"
-                                                model.config.focusDuration
-                                                currentColor
-                                                ((config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
-                                                    || (config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
-                                                )
-
-                                        LongBreak ->
-                                            getCmds
-                                                config
-                                                "audio-long-break"
-                                                "Focus round completed"
-                                                "long break"
-                                                "start_long_break"
-                                                model.config.longBreakDuration
-                                                currentColor
-                                                False
-
-                                        ShortBreak ->
-                                            getCmds
-                                                config
-                                                "audio-short-break"
-                                                "Focus round completed"
-                                                "short break"
-                                                "start_short_break"
-                                                model.config.shortBreakDuration
-                                                currentColor
-                                                (config.autoQuit == Just Focus)
-
-                                else
-                                    []
-                            )
-                        |> Maybe.withDefault []
-            in
-            ( { model
-                | currentColor = currentColor
-                , currentState = currentState
-                , pomodoroState = Just pomodoroState
-              }
-            , Cmd.batch
-                (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
-            )
+            processExternalRustMessage pomodoroState model
 
         ProcessExternalMessage (SoundFilePath sessionType path) ->
             let
@@ -773,6 +649,135 @@ changeTheme theme ({ config } as model) =
         , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
         , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
         ]
+    )
+
+
+processExternalRustMessage : Pomodoro.State -> Model -> ( Model, Cmd Msg )
+processExternalRustMessage pomodoroState model =
+    let
+        getNotification : String -> String -> String -> Seconds -> RGB -> Notification
+        getNotification title body name duration (RGB r g b) =
+            let
+                minutes =
+                    (duration |> toFloat) / 60 |> round
+            in
+            { title = title
+            , body =
+                "Start a "
+                    ++ String.fromInt minutes
+                    ++ " minute"
+                    ++ (if minutes > 1 then
+                            "s"
+
+                        else
+                            ""
+                       )
+                    ++ " "
+                    ++ body
+            , name = name
+            , red = r
+            , green = g
+            , blue = b
+            }
+
+        getCmds : Config -> String -> String -> String -> String -> Seconds -> RGB -> Bool -> List (Cmd Msg)
+        getCmds { desktopNotifications, muted } soundName title body name duration rgb quit =
+            [ if desktopNotifications then
+                notify <| getNotification title body name duration rgb
+
+              else
+                Cmd.none
+            , if muted then
+                if quit then
+                    sendMessageFromElm (elmMessageEncoder { name = "quit", value = Nothing })
+
+                else
+                    Cmd.none
+
+              else
+                sendMessageFromElm (elmMessageBuilder "play_sound" { soundId = soundName, quitAfterPlay = quit } soundMessageEncoder)
+            ]
+
+        maxTime =
+            getCurrentMaxTime model.config pomodoroState.currentSession
+
+        currentColor =
+            computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
+
+        percent =
+            if maxTime /= 0 then
+                toFloat (maxTime - pomodoroState.currentSession.currentTime) / toFloat maxTime
+
+            else
+                1
+
+        currentState =
+            { color = fromRGBToCSSHex currentColor
+            , percentage = percent
+            , paused =
+                pomodoroState.currentSession.status == Paused
+            , sessionStatus = pomodoroState.currentSession.status
+            }
+
+        cmds =
+            model.pomodoroState
+                |> Maybe.map
+                    (\state ->
+                        -- If we’ve changed the session type
+                        if state.currentSession.sessionType /= pomodoroState.currentSession.sessionType then
+                            case pomodoroState.currentSession.sessionType of
+                                Focus ->
+                                    getCmds
+                                        model.config
+                                        "audio-work"
+                                        (if state.currentSession.sessionType == ShortBreak then
+                                            "Short break completed"
+
+                                         else
+                                            "Long break completed"
+                                        )
+                                        "focus round"
+                                        "start_focus"
+                                        model.config.focusDuration
+                                        currentColor
+                                        ((model.config.autoQuit == Just ShortBreak && state.currentSession.sessionType == ShortBreak)
+                                            || (model.config.autoQuit == Just LongBreak && state.currentSession.sessionType == LongBreak)
+                                        )
+
+                                LongBreak ->
+                                    getCmds
+                                        model.config
+                                        "audio-long-break"
+                                        "Focus round completed"
+                                        "long break"
+                                        "start_long_break"
+                                        model.config.longBreakDuration
+                                        currentColor
+                                        False
+
+                                ShortBreak ->
+                                    getCmds
+                                        model.config
+                                        "audio-short-break"
+                                        "Focus round completed"
+                                        "short break"
+                                        "start_short_break"
+                                        model.config.shortBreakDuration
+                                        currentColor
+                                        (model.config.autoQuit == Just Focus)
+
+                        else
+                            []
+                    )
+                |> Maybe.withDefault []
+    in
+    ( { model
+        | currentColor = currentColor
+        , currentState = currentState
+        , pomodoroState = Just pomodoroState
+      }
+    , Cmd.batch
+        (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
     )
 
 
