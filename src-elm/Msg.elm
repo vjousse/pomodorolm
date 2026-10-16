@@ -1,8 +1,9 @@
 module Msg exposing (Msg(..))
 
+import Json exposing (ExternalMessage)
 import SessionType exposing (SessionType)
 import Themes exposing (Theme)
-import Types exposing (ExternalMessage, ResetType, SettingTab, SettingType)
+import Types exposing (ResetType, SettingTab, SettingType)
 
 
 type Msg

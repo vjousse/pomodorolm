@@ -2,7 +2,6 @@ module Types exposing
     ( Config
     , CurrentState
     , Defaults
-    , ExternalMessage(..)
     , InitData
     , Model
     , PomodoroSession
@@ -151,9 +150,3 @@ type alias PomodoroState =
     { currentSession : PomodoroSession
     , currentWorkRoundNumber : Int
     }
-
-
-type ExternalMessage
-    = RustStateMsg PomodoroState
-    | InitDataMsg InitData
-    | SoundFilePath SessionType String

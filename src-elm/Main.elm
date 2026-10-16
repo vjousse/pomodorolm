@@ -4,7 +4,7 @@ import Browser
 import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+import Json exposing (ExternalMessage(..), configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
@@ -18,7 +18,6 @@ import Types
     exposing
         ( Config
         , Defaults
-        , ExternalMessage(..)
         , Model
         , ResetType(..)
         , Setting(..)

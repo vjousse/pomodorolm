@@ -1,4 +1,4 @@
-module Json exposing (ElmMessage, configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+module Json exposing (ElmMessage, ExternalMessage(..), configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -10,7 +10,6 @@ import Types
     exposing
         ( Config
         , CurrentState
-        , ExternalMessage(..)
         , InitData
         , PomodoroSession
         , PomodoroState
@@ -240,6 +239,12 @@ rustSessionDecoder =
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
         |> Pipe.required "status" sessionStatusDecoder
+
+
+type ExternalMessage
+    = RustStateMsg PomodoroState
+    | InitDataMsg InitData
+    | SoundFilePath SessionType String
 
 
 externalMessageDecoder : Decode.Decoder ExternalMessage
