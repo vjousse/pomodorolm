@@ -764,7 +764,16 @@ view model =
             View.Drawer.drawerView model
 
           else
-            View.Timer.timerView model
+            View.Timer.timerView
+                { onReset = Reset
+                , onCurrentRoundSkip = SkipCurrentRound
+                , onSetVolumeBarVisibility = SetVolumeBarVisibility
+                , onVolumeUpdate = UpdateVolume
+                , onToggleMute = ToggleMute
+                , onUpdateLabel = UpdateLabel
+                , onTogglePlayStatus = TogglePlayStatus
+                }
+                model
         ]
 
 

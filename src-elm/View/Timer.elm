@@ -1,11 +1,10 @@
-module View.Timer exposing (timerView)
+module View.Timer exposing (EventHandlers, timerView)
 
 import ColorHelper exposing (RGB(..), computeCurrentColor)
 import Config exposing (Config)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
-import Msg exposing (Msg(..))
 import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
@@ -17,8 +16,18 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (ResetType(..))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
+dialView :
+    { eventHandlers | onUpdateLabel : SessionType -> String -> msg }
+    -> SessionType
+    -> Seconds
+    -> Seconds
+    -> Float
+    -> Theme
+    -> String
+    -> String
+    -> String
+    -> Html msg
+dialView eventHandlers sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
     let
         remainingPercent =
             if maxTime /= 0 then
@@ -54,7 +63,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
                             longBreakLabel
                     )
                 , style "color" color
-                , onInput <| UpdateLabel sessionType
+                , onInput <| eventHandlers.onUpdateLabel sessionType
                 ]
                 []
             ]
@@ -106,39 +115,61 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
         ]
 
 
-timerView :
-    { model
-        | config : Config
-        , strokeDasharray : Float
-        , theme : Theme
-        , pomodoroState : Maybe Pomodoro.State
-        , focusLabel : String
-        , shortBreakLabel : String
-        , longBreakLabel : String
-        , volumeSliderHidden : Bool
+type alias EventHandlers msg =
+    { onReset : ResetType -> msg
+    , onCurrentRoundSkip : msg
+    , onSetVolumeBarVisibility : Bool -> msg
+    , onVolumeUpdate : String -> msg
+    , onToggleMute : Bool -> msg
+    , onUpdateLabel : SessionType -> String -> msg
+    , onTogglePlayStatus : msg
     }
-    -> Html Msg
-timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
+
+
+timerView :
+    EventHandlers msg
+    ->
+        { model
+            | config : Config
+            , strokeDasharray : Float
+            , theme : Theme
+            , pomodoroState : Maybe Pomodoro.State
+            , focusLabel : String
+            , shortBreakLabel : String
+            , longBreakLabel : String
+            , volumeSliderHidden : Bool
+        }
+    -> Html msg
+timerView eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
     pomodoroState
         |> Maybe.map
             (\state ->
                 div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state.currentSession) strokeDasharray theme focusLabel shortBreakLabel longBreakLabel
-                    , playPauseView state.currentSession.status
-                    , footerView model
+                    [ dialView
+                        eventHandlers
+                        state.currentSession.sessionType
+                        state.currentSession.currentTime
+                        (getCurrentMaxTime config state.currentSession)
+                        strokeDasharray
+                        theme
+                        focusLabel
+                        shortBreakLabel
+                        longBreakLabel
+                    , playPauseView eventHandlers state.currentSession.status
+                    , footerView eventHandlers model
                     ]
             )
         |> Maybe.withDefault
             (div
                 [ class "timer-wrapper" ]
-                [ div [] [ text "" ], footerView model ]
+                [ div [] [ text "" ], footerView eventHandlers model ]
             )
 
 
-playPauseView : SessionStatus -> Html Msg
-playPauseView sessionStatus =
+playPauseView : { eventHandlers | onTogglePlayStatus : msg } -> SessionStatus -> Html msg
+playPauseView { onTogglePlayStatus } sessionStatus =
     section [ class "container", class "button-wrapper" ]
-        [ div [ class "button", onClick TogglePlayStatus ]
+        [ div [ class "button", onClick onTogglePlayStatus ]
             [ div [ class "button-icon-wrapper" ]
                 [ case sessionStatus of
                     Running ->
@@ -203,24 +234,32 @@ playPauseView sessionStatus =
 
 
 footerView :
-    { model
-        | pomodoroState : Maybe Pomodoro.State
-        , config : Config
-        , volumeSliderHidden : Bool
+    { eventHandlers
+        | onReset : ResetType -> msg
+        , onCurrentRoundSkip : msg
+        , onSetVolumeBarVisibility : Bool -> msg
+        , onVolumeUpdate : String -> msg
+        , onToggleMute : Bool -> msg
     }
-    -> Html Msg
-footerView model =
+    ->
+        { model
+            | pomodoroState : Maybe Pomodoro.State
+            , config : Config
+            , volumeSliderHidden : Bool
+        }
+    -> Html msg
+footerView eventHandlers model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
             [ p [ class "total-rounds" ] [ text <| String.fromInt (model.pomodoroState |> Maybe.map (\state -> state.currentWorkRoundNumber) |> Maybe.withDefault 1) ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
             , div [ class "reset-rounds" ]
-                [ p [ class "text-button", title "Reset current round", onClick <| Reset CurrentRound ] [ text "Reset round" ]
+                [ p [ class "text-button", title "Reset current round", onClick <| eventHandlers.onReset CurrentRound ] [ text "Reset round" ]
                 , text " or "
-                , p [ class "text-button", title "Reset the whole session", onClick <| Reset EntireSession ] [ text "session" ]
+                , p [ class "text-button", title "Reset the whole session", onClick <| eventHandlers.onReset EntireSession ] [ text "session" ]
                 ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
-            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick SkipCurrentRound ]
+            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick eventHandlers.onCurrentRoundSkip ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -247,7 +286,10 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ onMouseOver (SetVolumeBarVisibility True), onMouseLeave (SetVolumeBarVisibility False) ]
+            , div
+                [ onMouseOver (eventHandlers.onSetVolumeBarVisibility True)
+                , onMouseLeave (eventHandlers.onSetVolumeBarVisibility False)
+                ]
                 [ div
                     [ class "slider-wrapper"
                     , class "slider-wrapper--vert"
@@ -265,7 +307,7 @@ footerView model =
                         , Html.Attributes.min "0"
                         , Html.Attributes.max "100"
                         , class "slider"
-                        , onInput UpdateVolume
+                        , onInput eventHandlers.onVolumeUpdate
                         , value
                             (model.config.volume
                                 |> Maybe.withDefault
@@ -285,8 +327,8 @@ footerView model =
                     [ class "icon-wrapper"
                     , class "icon-wrapper--double--right"
                     , id "toggle-mute"
-                    , onMouseOver (SetVolumeBarVisibility True)
-                    , onClick (ToggleMute (not model.config.muted))
+                    , onMouseOver (eventHandlers.onSetVolumeBarVisibility True)
+                    , onClick (eventHandlers.onToggleMute (not model.config.muted))
                     , title "Mute"
                     ]
                     [ if model.config.muted == False then
