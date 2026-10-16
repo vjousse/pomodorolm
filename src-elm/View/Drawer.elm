@@ -13,85 +13,6 @@ import Themes exposing (Theme)
 import Types exposing (Setting(..), SettingTab(..), SettingType(..))
 
 
-settingWrapperToggle : String -> Msg -> Bool -> Html Msg
-settingWrapperToggle title msg settingActive =
-    div
-        [ class "setting-wrapper"
-        , onClick msg
-        ]
-        [ p [ class "setting-title" ] [ text title ]
-        , div
-            [ class "checkbox"
-            , class <|
-                if settingActive then
-                    "is-active"
-
-                else
-                    "is-inactive"
-            ]
-            []
-        ]
-
-
-audioFileWrapper : Maybe String -> SessionType -> String -> Html Msg
-audioFileWrapper audioFile sessionType soundTitle =
-    div [ class "setting-wrapper-multi" ]
-        [ div
-            [ class "setting-wrapper"
-            ]
-            [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text soundTitle ], text " start sound" ]
-            , p [ class "setting-title" ]
-                [ a
-                    [ class
-                        ("setting-button left"
-                            ++ (case audioFile of
-                                    Nothing ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
-                    , title "Reset to default sound"
-                    , onClick <| ResetAudioFile sessionType
-                    ]
-                    [ text "default" ]
-                , a
-                    [ class
-                        ("setting-button right"
-                            ++ (case audioFile of
-                                    Just _ ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
-                    , title "Choose custom sound"
-                    , onClick <| AudioFileRequested sessionType
-                    ]
-                    [ text "custom" ]
-                ]
-            ]
-        , div
-            [ class "setting-wrapper"
-            ]
-            [ p [ class "setting-title" ]
-                [ span []
-                    [ text
-                        (case audioFile of
-                            Just fileName ->
-                                "Using custom " ++ fileName
-
-                            Nothing ->
-                                "Using default"
-                        )
-                    ]
-                ]
-            ]
-        ]
-
-
 view :
     { model
         | settingTab : SettingTab
@@ -351,6 +272,85 @@ view model =
                                 []
                             ]
                         ]
+                    ]
+                ]
+            ]
+        ]
+
+
+settingWrapperToggle : String -> Msg -> Bool -> Html Msg
+settingWrapperToggle title msg settingActive =
+    div
+        [ class "setting-wrapper"
+        , onClick msg
+        ]
+        [ p [ class "setting-title" ] [ text title ]
+        , div
+            [ class "checkbox"
+            , class <|
+                if settingActive then
+                    "is-active"
+
+                else
+                    "is-inactive"
+            ]
+            []
+        ]
+
+
+audioFileWrapper : Maybe String -> SessionType -> String -> Html Msg
+audioFileWrapper audioFile sessionType soundTitle =
+    div [ class "setting-wrapper-multi" ]
+        [ div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title" ] [ span [ style "font-weight" "bold" ] [ text soundTitle ], text " start sound" ]
+            , p [ class "setting-title" ]
+                [ a
+                    [ class
+                        ("setting-button left"
+                            ++ (case audioFile of
+                                    Nothing ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    , title "Reset to default sound"
+                    , onClick <| ResetAudioFile sessionType
+                    ]
+                    [ text "default" ]
+                , a
+                    [ class
+                        ("setting-button right"
+                            ++ (case audioFile of
+                                    Just _ ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    , title "Choose custom sound"
+                    , onClick <| AudioFileRequested sessionType
+                    ]
+                    [ text "custom" ]
+                ]
+            ]
+        , div
+            [ class "setting-wrapper"
+            ]
+            [ p [ class "setting-title" ]
+                [ span []
+                    [ text
+                        (case audioFile of
+                            Just fileName ->
+                                "Using custom " ++ fileName
+
+                            Nothing ->
+                                "Using default"
+                        )
                     ]
                 ]
             ]
