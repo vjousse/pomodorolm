@@ -3,6 +3,7 @@ module Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elm
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
+import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors)
 import Types
@@ -14,9 +15,7 @@ import Types
         , InitData
         , PomodoroSession
         , PomodoroState
-        , SessionStatus(..)
         , SoundMessageValue
-        , sessionStatusToString
         )
 
 
@@ -77,7 +76,7 @@ currentStateEncoder currentState =
         [ ( "color", Encode.string currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
-        , ( "sessionStatus", Encode.string (sessionStatusToString currentState.sessionStatus) )
+        , ( "sessionStatus", Encode.string (SessionStatus.sessionStatusToString currentState.sessionStatus) )
         ]
 
 

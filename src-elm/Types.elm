@@ -11,17 +11,16 @@ module Types exposing
     , PomodoroSession
     , PomodoroState
     , ResetType(..)
-    , SessionStatus(..)
     , Setting(..)
     , SettingTab(..)
     , SettingType(..)
     , SoundMessageValue
-    , sessionStatusToString
     )
 
 import ColorHelper exposing (RGB)
 import ListWithCurrent exposing (ListWithCurrent)
 import Seconds exposing (Seconds)
+import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 import Themes exposing (Theme)
 
@@ -138,12 +137,6 @@ type alias Notification =
     }
 
 
-type SessionStatus
-    = NotStarted
-    | Paused
-    | Running
-
-
 type SettingTab
     = TimerTab
     | ThemeTab
@@ -205,16 +198,3 @@ type ExternalMessage
     = RustStateMsg PomodoroState
     | InitDataMsg InitData
     | SoundFilePath SessionType String
-
-
-sessionStatusToString : SessionStatus -> String
-sessionStatusToString sessionStatus =
-    case sessionStatus of
-        Paused ->
-            "paused"
-
-        Running ->
-            "running"
-
-        NotStarted ->
-            "not_started"

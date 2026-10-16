@@ -9,6 +9,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Seconds exposing (Seconds)
+import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (ThemeColors, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
@@ -21,7 +22,6 @@ import Types
         , Msg(..)
         , Notification
         , ResetType(..)
-        , SessionStatus(..)
         , Setting(..)
         , SettingTab(..)
         , SettingType(..)
