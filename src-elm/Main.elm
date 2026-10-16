@@ -156,7 +156,7 @@ update msg ({ config } as model) =
             , sendMessageFromElm
                 (elmMessageEncoder
                     { name = "choose_sound_file"
-                    , value = Just <| SessionType.sessionTypeToString sessionType
+                    , value = Just <| SessionType.toString sessionType
                     }
                 )
             )
@@ -644,7 +644,7 @@ update msg ({ config } as model) =
                 newConfig =
                     case settingType of
                         AutoQuit sessionTypeString ->
-                            { config | autoQuit = SessionType.sessionTypeFromString sessionTypeString }
+                            { config | autoQuit = SessionType.fromString sessionTypeString }
 
                         FocusTime value ->
                             { config | focusDuration = min (config.maxSessionDuration * 60) (toInt value * 60) }

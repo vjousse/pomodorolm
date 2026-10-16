@@ -95,7 +95,7 @@ configEncoder config =
         [ ( "alwaysOnTop", Encode.bool config.alwaysOnTop )
         , ( "autoQuit"
           , config.autoQuit
-                |> Maybe.map (\c -> Encode.string (SessionType.sessionTypeToString c))
+                |> Maybe.map (\c -> Encode.string (SessionType.toString c))
                 |> Maybe.withDefault Encode.null
           )
         , ( "autoStartBreakTimer", Encode.bool config.autoStartBreakTimer )

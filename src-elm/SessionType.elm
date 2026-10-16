@@ -1,7 +1,7 @@
 module SessionType exposing
     ( SessionType(..)
-    , sessionTypeFromString
-    , sessionTypeToString
+    , fromString
+    , toString
     )
 
 
@@ -11,8 +11,8 @@ type SessionType
     | LongBreak
 
 
-sessionTypeToString : SessionType -> String
-sessionTypeToString sessionType =
+toString : SessionType -> String
+toString sessionType =
     case sessionType of
         Focus ->
             "Focus"
@@ -24,8 +24,8 @@ sessionTypeToString sessionType =
             "LongBreak"
 
 
-sessionTypeFromString : String -> Maybe SessionType
-sessionTypeFromString string =
+fromString : String -> Maybe SessionType
+fromString string =
     case String.toLower string of
         "focus" ->
             Just Focus
