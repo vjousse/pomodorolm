@@ -42,29 +42,26 @@ view :
         }
     -> Html msg
 view eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
-    pomodoroState
-        |> Maybe.map
-            (\state ->
-                div [ class "timer-wrapper" ]
-                    [ dialView
-                        eventHandlers
-                        state.currentSession.sessionType
-                        state.currentSession.currentTime
-                        (getCurrentMaxTime config state.currentSession)
-                        strokeDasharray
-                        theme
-                        focusLabel
-                        shortBreakLabel
-                        longBreakLabel
-                    , playPauseView eventHandlers state.currentSession.status
-                    , footerView eventHandlers model
-                    ]
-            )
-        |> Maybe.withDefault
-            (div
-                [ class "timer-wrapper" ]
+    div [ class "timer-wrapper" ]
+        (case pomodoroState of
+            Just state ->
+                [ dialView
+                    eventHandlers
+                    state.currentSession.sessionType
+                    state.currentSession.currentTime
+                    (getCurrentMaxTime config state.currentSession)
+                    strokeDasharray
+                    theme
+                    focusLabel
+                    shortBreakLabel
+                    longBreakLabel
+                , playPauseView eventHandlers state.currentSession.status
+                , footerView eventHandlers model
+                ]
+
+            Nothing ->
                 [ div [] [ text "" ], footerView eventHandlers model ]
-            )
+        )
 
 
 dialView :
