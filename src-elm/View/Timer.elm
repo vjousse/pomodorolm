@@ -5,7 +5,7 @@ import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
 import Msg exposing (Msg(..))
-import Pomodoro exposing (PomodoroState)
+import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
@@ -110,7 +110,7 @@ timerView :
         | config : Config
         , strokeDasharray : Float
         , theme : Theme
-        , pomodoroState : Maybe PomodoroState
+        , pomodoroState : Maybe Pomodoro.PomodoroState
         , focusLabel : String
         , shortBreakLabel : String
         , longBreakLabel : String
@@ -203,7 +203,7 @@ playPauseView sessionStatus =
 
 footerView :
     { model
-        | pomodoroState : Maybe PomodoroState
+        | pomodoroState : Maybe Pomodoro.PomodoroState
         , config : Config
         , volumeSliderHidden : Bool
     }

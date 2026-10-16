@@ -15,7 +15,7 @@ module Json exposing
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
-import Pomodoro exposing (PomodoroSession, PomodoroState)
+import Pomodoro
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
 import Themes exposing (Theme, ThemeColors)
@@ -188,7 +188,7 @@ configDecoder =
 
 type alias InitData =
     { config : Config
-    , pomodoroState : PomodoroState
+    , pomodoroState : Pomodoro.PomodoroState
     , themes : List Theme
     }
 
@@ -201,9 +201,9 @@ initDataDecoder =
         |> Pipe.required "themes" themesDecoder
 
 
-rustStateDecoder : Decode.Decoder PomodoroState
+rustStateDecoder : Decode.Decoder Pomodoro.PomodoroState
 rustStateDecoder =
-    Decode.succeed PomodoroState
+    Decode.succeed Pomodoro.PomodoroState
         |> Pipe.required "current_session" rustSessionDecoder
         |> Pipe.required "current_work_round_number" Decode.int
 
@@ -250,9 +250,9 @@ sessionStatusFromStringDecoder string =
             Decode.fail ("Unknown sessionStatus: " ++ string)
 
 
-rustSessionDecoder : Decode.Decoder PomodoroSession
+rustSessionDecoder : Decode.Decoder Pomodoro.PomodoroSession
 rustSessionDecoder =
-    Decode.succeed PomodoroSession
+    Decode.succeed Pomodoro.PomodoroSession
         |> Pipe.required "current_time" Decode.int
         |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
@@ -260,7 +260,7 @@ rustSessionDecoder =
 
 
 type ExternalMessage
-    = RustStateMsg PomodoroState
+    = RustStateMsg Pomodoro.PomodoroState
     | InitDataMsg InitData
     | SoundFilePath SessionType String
 

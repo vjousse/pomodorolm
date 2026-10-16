@@ -9,7 +9,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
 import Msg exposing (Msg(..))
-import Pomodoro exposing (PomodoroState)
+import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
@@ -39,7 +39,7 @@ type alias Model =
     , drawerOpen : Bool
     , focusLabel : String
     , longBreakLabel : String
-    , pomodoroState : Maybe PomodoroState
+    , pomodoroState : Maybe Pomodoro.PomodoroState
     , settingTab : SettingTab
     , shortBreakLabel : String
     , strokeDasharray : Float
