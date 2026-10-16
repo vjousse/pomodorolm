@@ -761,7 +761,7 @@ view model =
             }
             model.drawerOpen
         , if model.drawerOpen then
-            View.Drawer.drawerView model
+            View.Drawer.view model
 
           else
             View.Timer.timerView

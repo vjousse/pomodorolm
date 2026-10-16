@@ -1,4 +1,4 @@
-module View.Drawer exposing (drawerView)
+module View.Drawer exposing (view)
 
 import Config exposing (Config)
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
@@ -92,7 +92,7 @@ audioFileWrapper audioFile sessionType soundTitle =
         ]
 
 
-drawerView :
+view :
     { model
         | settingTab : SettingTab
         , appVersion : String
@@ -101,7 +101,7 @@ drawerView :
         , theme : Theme
     }
     -> Html Msg
-drawerView model =
+view model =
     div
         [ id "drawer"
         ]
