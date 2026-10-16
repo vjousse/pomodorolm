@@ -10,7 +10,6 @@ module Types exposing
     , Setting(..)
     , SettingTab(..)
     , SettingType(..)
-    , SoundMessageValue
     )
 
 import ColorHelper exposing (RGB)
@@ -42,12 +41,6 @@ type alias Model =
 type ResetType
     = CurrentRound
     | EntireSession
-
-
-type alias SoundMessageValue =
-    { soundId : String
-    , quitAfterPlay : Bool
-    }
 
 
 type alias Config =

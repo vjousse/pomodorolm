@@ -1,4 +1,4 @@
-module Json exposing (ElmMessage, ExternalMessage(..), configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+module Json exposing (ElmMessage, ExternalMessage(..), SoundMessageValue, configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -13,7 +13,6 @@ import Types
         , InitData
         , PomodoroSession
         , PomodoroState
-        , SoundMessageValue
         )
 
 
@@ -82,6 +81,12 @@ currentStateEncoder currentState =
         , ( "paused", Encode.bool currentState.paused )
         , ( "sessionStatus", Encode.string (SessionStatus.toString currentState.sessionStatus) )
         ]
+
+
+type alias SoundMessageValue =
+    { soundId : String
+    , quitAfterPlay : Bool
+    }
 
 
 soundMessageEncoder : SoundMessageValue -> Encode.Value
