@@ -25,27 +25,14 @@ toStringWithZeroPadding num =
 
 fromCSSHexToRGB : String -> RGB
 fromCSSHexToRGB hexcode =
-    RGB (getRed hexcode) (getGreen hexcode) (getBlue hexcode)
+    RGB (fromList (List.take 2 (fromCSSString hexcode)))
+        (fromList (List.take 2 (List.drop 2 (fromCSSString hexcode))))
+        (fromList (List.take 2 (List.drop 4 (fromCSSString hexcode))))
 
 
 fromRGBToCSSHex : RGB -> String
 fromRGBToCSSHex (RGB r g b) =
     "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
-
-
-getRed : String -> Int
-getRed hexcode =
-    fromList (List.take 2 (fromCSSString hexcode))
-
-
-getGreen : String -> Int
-getGreen hexcode =
-    fromList (List.take 2 (List.drop 2 (fromCSSString hexcode)))
-
-
-getBlue : String -> Int
-getBlue hexcode =
-    fromList (List.take 2 (List.drop 4 (fromCSSString hexcode)))
 
 
 fromCSSString : String -> List Char
