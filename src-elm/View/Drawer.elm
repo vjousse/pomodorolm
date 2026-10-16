@@ -8,7 +8,8 @@ import Msg exposing (Msg(..))
 import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model, Setting(..), SettingTab(..), SettingType(..))
+import Themes exposing (Theme)
+import Types exposing (Config, Setting(..), SettingTab(..), SettingType(..))
 
 
 settingWrapperToggle : String -> Msg -> Bool -> Html Msg
@@ -90,7 +91,15 @@ audioFileWrapper audioFile sessionType soundTitle =
         ]
 
 
-drawerView : Model -> Html Msg
+drawerView :
+    { model
+        | settingTab : SettingTab
+        , appVersion : String
+        , config : Config
+        , themes : ListWithCurrent.ListWithCurrent Theme
+        , theme : Theme
+    }
+    -> Html Msg
 drawerView model =
     div
         [ id "drawer"
@@ -100,19 +109,19 @@ drawerView model =
                 aboutSettingView model.appVersion
 
             SettingsTab ->
-                settingsSettingView model
+                settingsSettingView model.config
 
             SoundsTab ->
-                soundsSettingView model
+                soundsSettingView model.config
 
             TextTab ->
-                textSettingView model
+                textSettingView model.config
 
             ThemeTab ->
-                themeSettingView model
+                themeSettingView model.themes model.theme
 
             TimerTab ->
-                timerSettingView model
+                timerSettingView model.config
         , div
             [ class "drawer-menu"
             ]
@@ -347,8 +356,8 @@ drawerView model =
         ]
 
 
-timerSettingView : Model -> Html Msg
-timerSettingView model =
+timerSettingView : Config -> Html Msg
+timerSettingView config =
     div [ class "container" ]
         [ p
             [ class "drawer-heading"
@@ -369,10 +378,10 @@ timerSettingView model =
                     , class "setting-input"
                     , Html.Attributes.min "1"
                     , Html.Attributes.step "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
-                    , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
+                    , value <| String.fromFloat (toFloat config.focusDuration / 60)
                     , onInput <| FocusTime >> UpdateSetting
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.focusDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.focusDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -383,16 +392,16 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
-                    , value <| String.fromFloat (toFloat model.config.focusDuration / 60)
+                    , value <| String.fromFloat (toFloat config.focusDuration / 60)
                     , onInput <| FocusTime >> UpdateSetting
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--red"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.focusDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat config.focusDuration / 60) / (toFloat config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -411,10 +420,10 @@ timerSettingView model =
                     [ type_ "text"
                     , class "setting-input"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
-                    , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
+                    , value <| String.fromFloat (toFloat config.shortBreakDuration / 60)
                     , onInput <| ShortBreakTime >> UpdateSetting
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.shortBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -425,16 +434,16 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
-                    , value <| String.fromFloat (toFloat model.config.shortBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat config.shortBreakDuration / 60)
                     , onInput <| ShortBreakTime >> UpdateSetting
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--green"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.shortBreakDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat config.shortBreakDuration / 60) / (toFloat config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -453,10 +462,10 @@ timerSettingView model =
                     [ type_ "text"
                     , class "setting-input"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
-                    , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
+                    , value <| String.fromFloat (toFloat config.longBreakDuration / 60)
                     , onInput <| LongBreakTime >> UpdateSetting
-                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat model.config.longBreakDuration / 60)) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.longBreakDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
@@ -467,16 +476,16 @@ timerSettingView model =
                 [ input
                     [ type_ "range"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.max <| String.fromInt (model.config.maxSessionDuration // 60)
+                    , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
-                    , value <| String.fromFloat (toFloat model.config.longBreakDuration / 60)
+                    , value <| String.fromFloat (toFloat config.longBreakDuration / 60)
                     , onInput <| LongBreakTime >> UpdateSetting
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue"
-                    , style "width" (String.fromFloat ((100 * (toFloat model.config.longBreakDuration / 60) / (toFloat model.config.maxSessionDuration / 60)) - 0.5) ++ "%")
+                    , style "width" (String.fromFloat ((100 * (toFloat config.longBreakDuration / 60) / (toFloat config.maxSessionDuration / 60)) - 0.5) ++ "%")
                     ]
                     []
                 ]
@@ -497,9 +506,9 @@ timerSettingView model =
                     , Html.Attributes.min "0"
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
-                    , value <| String.fromInt model.config.maxRoundNumber
+                    , value <| String.fromInt config.maxRoundNumber
                     , onInput <| Rounds >> UpdateSetting
-                    , style "width" <| String.fromInt (String.length <| String.fromInt model.config.maxRoundNumber) ++ "ch"
+                    , style "width" <| String.fromInt (String.length <| String.fromInt config.maxRoundNumber) ++ "ch"
                     ]
                     []
                 ]
@@ -512,13 +521,13 @@ timerSettingView model =
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
                     , class "slider"
-                    , value <| String.fromInt model.config.maxRoundNumber
+                    , value <| String.fromInt config.maxRoundNumber
                     , onInput <| Rounds >> UpdateSetting
                     ]
                     []
                 , div
                     [ class "slider-bar slider-bar--blue-grey"
-                    , style "width" (String.fromFloat (100 * toFloat model.config.maxRoundNumber / 12) ++ "%")
+                    , style "width" (String.fromFloat (100 * toFloat config.maxRoundNumber / 12) ++ "%")
                     ]
                     []
                 ]
@@ -535,8 +544,8 @@ timerSettingView model =
         ]
 
 
-settingsSettingView : Model -> Html Msg
-settingsSettingView { config } =
+settingsSettingView : Config -> Html Msg
+settingsSettingView config =
     div [ class "container", id "settings" ]
         [ p
             [ class "drawer-heading"
@@ -589,23 +598,23 @@ settingsSettingView { config } =
         ]
 
 
-soundsSettingView : Model -> Html Msg
-soundsSettingView model =
+soundsSettingView : Config -> Html Msg
+soundsSettingView config =
     div [ class "container", id "sound-settings" ]
         [ p
             [ class "drawer-heading"
             ]
             [ text "Sound Settings" ]
-        , settingWrapperToggle "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) model.config.tickSoundsDuringBreak
-        , settingWrapperToggle "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) model.config.tickSoundsDuringWork
-        , audioFileWrapper model.config.shortBreakAudio ShortBreak "Short break"
-        , audioFileWrapper model.config.longBreakAudio LongBreak "Long break"
-        , audioFileWrapper model.config.focusAudio Focus "Work session"
+        , settingWrapperToggle "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) config.tickSoundsDuringBreak
+        , settingWrapperToggle "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) config.tickSoundsDuringWork
+        , audioFileWrapper config.shortBreakAudio ShortBreak "Short break"
+        , audioFileWrapper config.longBreakAudio LongBreak "Long break"
+        , audioFileWrapper config.focusAudio Focus "Work session"
         ]
 
 
-textSettingView : Model -> Html Msg
-textSettingView model =
+textSettingView : Config -> Html Msg
+textSettingView config =
     div [ class "container", id "text-settings" ]
         [ p
             [ class "drawer-heading"
@@ -624,7 +633,7 @@ textSettingView model =
                 [ input
                     [ type_ "text"
                     , class "setting-input"
-                    , value model.config.defaultFocusLabel
+                    , value config.defaultFocusLabel
                     , onInput <| Label Focus >> UpdateSetting
                     ]
                     []
@@ -643,7 +652,7 @@ textSettingView model =
                 [ input
                     [ type_ "text"
                     , class "setting-input"
-                    , value model.config.defaultShortBreakLabel
+                    , value config.defaultShortBreakLabel
                     , onInput <| Label ShortBreak >> UpdateSetting
                     ]
                     []
@@ -664,7 +673,7 @@ textSettingView model =
                 [ input
                     [ type_ "text"
                     , class "setting-input"
-                    , value model.config.defaultLongBreakLabel
+                    , value config.defaultLongBreakLabel
                     , onInput <| Label LongBreak >> UpdateSetting
                     ]
                     []
@@ -714,11 +723,11 @@ aboutSettingView appVersion =
         ]
 
 
-themeSettingView : Model -> Html Msg
-themeSettingView model =
+themeSettingView : ListWithCurrent.ListWithCurrent Theme -> Theme -> Html Msg
+themeSettingView themes theme =
     div [ class "container", id "theme" ]
         (p [ class "drawer-heading" ] [ text "Themes" ]
-            :: (model.themes
+            :: (themes
                     |> ListWithCurrent.toList
                     |> List.map
                         (\t ->
@@ -740,7 +749,7 @@ themeSettingView model =
                                     , style "color" colors.foreground
                                     ]
                                     [ text name ]
-                                , if t == model.theme then
+                                , if t == theme then
                                     svg
                                         [ SvgAttr.viewBox "0 0 24 24"
                                         , SvgAttr.width "5vw"
