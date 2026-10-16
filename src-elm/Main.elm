@@ -221,8 +221,8 @@ update msg ({ config } as model) =
                 closeWindow ()
             )
 
-        HideVolumeBar ->
-            ( { model | volumeSliderHidden = True }, Cmd.none )
+        SetVolumeBarVisibility visible ->
+            ( { model | volumeSliderHidden = not visible }, Cmd.none )
 
         MinimizeWindow ->
             ( model
@@ -501,9 +501,6 @@ update msg ({ config } as model) =
               }
             , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
             )
-
-        ShowVolumeBar ->
-            ( { model | volumeSliderHidden = False }, Cmd.none )
 
         SkipCurrentRound ->
             ( model

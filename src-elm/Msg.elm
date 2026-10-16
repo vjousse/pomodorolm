@@ -11,7 +11,7 @@ type Msg
     | CloseWindow
     | ChangeSettingTab SettingTab
     | ChangeTheme Theme
-    | HideVolumeBar
+    | SetVolumeBarVisibility Bool
     | ProcessExternalMessage ExternalMessage
     | MinimizeWindow
     | NoOp
@@ -19,7 +19,6 @@ type Msg
     | ResetSettings
     | ResetAudioFile SessionType
     | SkipCurrentRound
-    | ShowVolumeBar
     | ToggleDrawer
     | ToggleMute
     | TogglePlayStatus

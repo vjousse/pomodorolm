@@ -247,7 +247,7 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ onMouseOver ShowVolumeBar, onMouseLeave HideVolumeBar ]
+            , div [ onMouseOver (SetVolumeBarVisibility True), onMouseLeave (SetVolumeBarVisibility False) ]
                 [ div
                     [ class "slider-wrapper"
                     , class "slider-wrapper--vert"
@@ -281,7 +281,7 @@ footerView model =
                         []
                     , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
                     ]
-                , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver ShowVolumeBar, onClick ToggleMute, title "Mute" ]
+                , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver (SetVolumeBarVisibility True), onClick ToggleMute, title "Mute" ]
                     [ if model.config.muted == False then
                         svg
                             [ SvgAttr.version "1.2"
