@@ -20,7 +20,6 @@ import Types
         , ExternalMessage(..)
         , Model
         , Msg(..)
-        , Notification
         , ResetType(..)
         , Setting(..)
         , SettingTab(..)
@@ -797,6 +796,16 @@ port minimizeWindow : () -> Cmd msg
 
 
 port hideWindow : () -> Cmd msg
+
+
+type alias Notification =
+    { body : String
+    , title : String
+    , name : String
+    , red : Int
+    , green : Int
+    , blue : Int
+    }
 
 
 port notify : Notification -> Cmd msg

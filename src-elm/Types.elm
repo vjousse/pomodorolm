@@ -7,7 +7,6 @@ module Types exposing
     , InitData
     , Model
     , Msg(..)
-    , Notification
     , PomodoroSession
     , PomodoroState
     , ResetType(..)
@@ -124,16 +123,6 @@ type alias CurrentState =
     , percentage : Float
     , paused : Bool
     , sessionStatus : SessionStatus
-    }
-
-
-type alias Notification =
-    { body : String
-    , title : String
-    , name : String
-    , red : Int
-    , green : Int
-    , blue : Int
     }
 
 
