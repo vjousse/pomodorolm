@@ -16,6 +16,57 @@ import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (ResetType(..))
 
 
+type alias EventHandlers msg =
+    { onReset : ResetType -> msg
+    , onCurrentRoundSkip : msg
+    , onSetVolumeBarVisibility : Bool -> msg
+    , onVolumeUpdate : String -> msg
+    , onToggleMute : Bool -> msg
+    , onUpdateLabel : SessionType -> String -> msg
+    , onTogglePlayStatus : msg
+    }
+
+
+view :
+    EventHandlers msg
+    ->
+        { model
+            | config : Config
+            , strokeDasharray : Float
+            , theme : Theme
+            , pomodoroState : Maybe Pomodoro.State
+            , focusLabel : String
+            , shortBreakLabel : String
+            , longBreakLabel : String
+            , volumeSliderHidden : Bool
+        }
+    -> Html msg
+view eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
+    pomodoroState
+        |> Maybe.map
+            (\state ->
+                div [ class "timer-wrapper" ]
+                    [ dialView
+                        eventHandlers
+                        state.currentSession.sessionType
+                        state.currentSession.currentTime
+                        (getCurrentMaxTime config state.currentSession)
+                        strokeDasharray
+                        theme
+                        focusLabel
+                        shortBreakLabel
+                        longBreakLabel
+                    , playPauseView eventHandlers state.currentSession.status
+                    , footerView eventHandlers model
+                    ]
+            )
+        |> Maybe.withDefault
+            (div
+                [ class "timer-wrapper" ]
+                [ div [] [ text "" ], footerView eventHandlers model ]
+            )
+
+
 dialView :
     { eventHandlers | onUpdateLabel : SessionType -> String -> msg }
     -> SessionType
@@ -113,57 +164,6 @@ dialView eventHandlers sessionType currentTime maxTime maxStrokeDasharray theme 
                 []
             ]
         ]
-
-
-type alias EventHandlers msg =
-    { onReset : ResetType -> msg
-    , onCurrentRoundSkip : msg
-    , onSetVolumeBarVisibility : Bool -> msg
-    , onVolumeUpdate : String -> msg
-    , onToggleMute : Bool -> msg
-    , onUpdateLabel : SessionType -> String -> msg
-    , onTogglePlayStatus : msg
-    }
-
-
-view :
-    EventHandlers msg
-    ->
-        { model
-            | config : Config
-            , strokeDasharray : Float
-            , theme : Theme
-            , pomodoroState : Maybe Pomodoro.State
-            , focusLabel : String
-            , shortBreakLabel : String
-            , longBreakLabel : String
-            , volumeSliderHidden : Bool
-        }
-    -> Html msg
-view eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
-    pomodoroState
-        |> Maybe.map
-            (\state ->
-                div [ class "timer-wrapper" ]
-                    [ dialView
-                        eventHandlers
-                        state.currentSession.sessionType
-                        state.currentSession.currentTime
-                        (getCurrentMaxTime config state.currentSession)
-                        strokeDasharray
-                        theme
-                        focusLabel
-                        shortBreakLabel
-                        longBreakLabel
-                    , playPauseView eventHandlers state.currentSession.status
-                    , footerView eventHandlers model
-                    ]
-            )
-        |> Maybe.withDefault
-            (div
-                [ class "timer-wrapper" ]
-                [ div [] [ text "" ], footerView eventHandlers model ]
-            )
 
 
 playPauseView : { eventHandlers | onTogglePlayStatus : msg } -> SessionStatus -> Html msg
