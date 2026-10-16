@@ -432,70 +432,7 @@ update msg ({ config } as model) =
             )
 
         TogglePlayStatus ->
-            model.pomodoroState
-                |> Maybe.map
-                    (\state ->
-                        case state.currentSession.status of
-                            Running ->
-                                let
-                                    maxTime =
-                                        getCurrentMaxTime config state.currentSession
-
-                                    currentState =
-                                        { color =
-                                            fromRGBToCSSHex <|
-                                                computeCurrentColor
-                                                    state.currentSession.currentTime
-                                                    (getCurrentMaxTime config state.currentSession)
-                                                    state.currentSession.sessionType
-                                                    model.theme
-                                        , percentage =
-                                            if maxTime /= 0 then
-                                                toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
-
-                                            else
-                                                1
-                                        , paused = True
-                                        , sessionStatus = Paused
-                                        }
-                                in
-                                ( { model | currentState = currentState }
-                                , Cmd.batch
-                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                                    , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
-                                    ]
-                                )
-
-                            status ->
-                                let
-                                    maxTime =
-                                        getCurrentMaxTime config state.currentSession
-
-                                    currentState =
-                                        { color =
-                                            fromRGBToCSSHex <|
-                                                computeCurrentColor state.currentSession.currentTime
-                                                    (getCurrentMaxTime config state.currentSession)
-                                                    state.currentSession.sessionType
-                                                    model.theme
-                                        , percentage =
-                                            if maxTime /= 0 then
-                                                toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
-
-                                            else
-                                                1
-                                        , paused = False
-                                        , sessionStatus = status
-                                        }
-                                in
-                                ( { model | currentState = currentState }
-                                , Cmd.batch
-                                    [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
-                                    , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
-                                    ]
-                                )
-                    )
-                |> Maybe.withDefault ( model, Cmd.none )
+            togglePlayStatus model
 
         UpdateLabel sessionType label ->
             ( case sessionType of
@@ -779,6 +716,74 @@ processExternalRustMessage pomodoroState model =
     , Cmd.batch
         (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
     )
+
+
+togglePlayStatus : Model -> ( Model, Cmd Msg )
+togglePlayStatus model =
+    model.pomodoroState
+        |> Maybe.map
+            (\state ->
+                case state.currentSession.status of
+                    Running ->
+                        let
+                            maxTime =
+                                getCurrentMaxTime model.config state.currentSession
+
+                            currentState =
+                                { color =
+                                    fromRGBToCSSHex <|
+                                        computeCurrentColor
+                                            state.currentSession.currentTime
+                                            (getCurrentMaxTime model.config state.currentSession)
+                                            state.currentSession.sessionType
+                                            model.theme
+                                , percentage =
+                                    if maxTime /= 0 then
+                                        toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+
+                                    else
+                                        1
+                                , paused = True
+                                , sessionStatus = Paused
+                                }
+                        in
+                        ( { model | currentState = currentState }
+                        , Cmd.batch
+                            [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
+                            , sendMessageFromElm (elmMessageEncoder { name = "pause", value = Nothing })
+                            ]
+                        )
+
+                    status ->
+                        let
+                            maxTime =
+                                getCurrentMaxTime model.config state.currentSession
+
+                            currentState =
+                                { color =
+                                    fromRGBToCSSHex <|
+                                        computeCurrentColor state.currentSession.currentTime
+                                            (getCurrentMaxTime model.config state.currentSession)
+                                            state.currentSession.sessionType
+                                            model.theme
+                                , percentage =
+                                    if maxTime /= 0 then
+                                        toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
+
+                                    else
+                                        1
+                                , paused = False
+                                , sessionStatus = status
+                                }
+                        in
+                        ( { model | currentState = currentState }
+                        , Cmd.batch
+                            [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
+                            , sendMessageFromElm (elmMessageEncoder { name = "play", value = Nothing })
+                            ]
+                        )
+            )
+        |> Maybe.withDefault ( model, Cmd.none )
 
 
 view : Model -> Html Msg
