@@ -76,7 +76,7 @@ currentStateEncoder currentState =
         [ ( "color", Encode.string currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
-        , ( "sessionStatus", Encode.string (SessionStatus.sessionStatusToString currentState.sessionStatus) )
+        , ( "sessionStatus", Encode.string (SessionStatus.toString currentState.sessionStatus) )
         ]
 
 

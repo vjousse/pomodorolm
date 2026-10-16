@@ -1,6 +1,6 @@
 module SessionStatus exposing
     ( SessionStatus(..)
-    , sessionStatusToString
+    , toString
     )
 
 
@@ -10,8 +10,8 @@ type SessionStatus
     | Running
 
 
-sessionStatusToString : SessionStatus -> String
-sessionStatusToString sessionStatus =
+toString : SessionStatus -> String
+toString sessionStatus =
     case sessionStatus of
         Paused ->
             "paused"
