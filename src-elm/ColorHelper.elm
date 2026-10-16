@@ -6,7 +6,6 @@ module ColorHelper exposing (colorForSessionType, computeCurrentColor, fromCSSHe
 import Bitwise
 import Dict exposing (Dict)
 import Hex
-import List
 import Themes exposing (Theme)
 import Types exposing (RGB(..), Seconds, SessionType(..))
 
@@ -129,22 +128,24 @@ computeCurrentColor currentTime maxTime sessionType theme =
                     else
                         1
 
-                (RGB startRed startGreen startBlue) =
-                    fromCSSHexToRGB theme.colors.focusRound
-
                 (RGB middleRed middleGreen middleBlue) =
                     fromCSSHexToRGB theme.colors.focusRoundMiddle
-
-                (RGB endRed endGreen endBlue) =
-                    fromCSSHexToRGB theme.colors.focusRoundEnd
             in
             if remainingPercent > 0.5 then
+                let
+                    (RGB startRed startGreen startBlue) =
+                        fromCSSHexToRGB theme.colors.focusRound
+                in
                 RGB
                     (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
                     (toFloat middleGreen + (relativePercent * toFloat (startGreen - middleGreen)) |> round)
                     (toFloat middleBlue + (relativePercent * toFloat (startBlue - middleBlue)) |> round)
 
             else
+                let
+                    (RGB endRed endGreen endBlue) =
+                        fromCSSHexToRGB theme.colors.focusRoundEnd
+                in
                 RGB (toFloat endRed + ((1 + relativePercent) * toFloat (middleRed - endRed)) |> round)
                     (toFloat endGreen + ((1 + relativePercent) * toFloat (middleGreen - endGreen)) |> round)
                     (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
