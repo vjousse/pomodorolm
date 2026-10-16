@@ -1,4 +1,4 @@
-port module Main exposing (Flags, Model, main)
+port module Main exposing (Flags, Model, Msg, main)
 
 import Browser
 import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
@@ -9,7 +9,6 @@ import Json exposing (ExternalMessage(..), configEncoder, currentStateEncoder, e
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
-import Msg exposing (Msg(..))
 import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
@@ -162,6 +161,27 @@ init flags =
         , setThemeColors <| theme.colors
         ]
     )
+
+
+type Msg
+    = AudioFileRequested SessionType
+    | CloseWindow
+    | ChangeSettingTab SettingTab
+    | ChangeTheme Theme
+    | SetVolumeBarVisibility Bool
+    | ProcessExternalMessage ExternalMessage
+    | MinimizeWindow
+    | NoOp
+    | Reset ResetType
+    | ResetSettings
+    | ResetAudioFile SessionType
+    | SkipCurrentRound
+    | ToggleDrawer
+    | ToggleMute Bool
+    | TogglePlayStatus
+    | UpdateLabel SessionType String
+    | UpdateSetting SettingType
+    | UpdateVolume String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
