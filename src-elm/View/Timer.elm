@@ -281,7 +281,14 @@ footerView model =
                         []
                     , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
                     ]
-                , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver (SetVolumeBarVisibility True), onClick ToggleMute, title "Mute" ]
+                , div
+                    [ class "icon-wrapper"
+                    , class "icon-wrapper--double--right"
+                    , id "toggle-mute"
+                    , onMouseOver (SetVolumeBarVisibility True)
+                    , onClick ToggleMute
+                    , title "Mute"
+                    ]
                     [ if model.config.muted == False then
                         svg
                             [ SvgAttr.version "1.2"
