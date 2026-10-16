@@ -3,16 +3,15 @@ module View.Nav exposing (navView)
 import Html exposing (Html, a, div, h1, nav, text)
 import Html.Attributes exposing (attribute, class, href, style, target, title)
 import Html.Events exposing (onClick)
-import Msg exposing (Msg(..))
 import Svg exposing (svg)
 import Svg.Attributes as SvgAttr
 
 
-navView : Bool -> Html Msg
-navView drawerOpen =
+navView : { onWindowMinimize : msg, onDrawerToggle : msg, onWindowClose : msg } -> Bool -> Html msg
+navView { onWindowMinimize, onDrawerToggle, onWindowClose } drawerOpen =
     nav [ class "titlebar" ]
         [ div [ class "icon-group" ]
-            [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick ToggleDrawer ]
+            [ div [ title "Settings", class "icon-wrapper", class "icon-wrapper--titlebar", class "icon-wrapper--single", onClick onDrawerToggle ]
                 [ div
                     [ class "menu-wrapper"
                     , class
@@ -55,7 +54,7 @@ navView drawerOpen =
             ]
         , h1 [ class "title", attribute "data-tauri-drag-region" "" ] [ text "Pomodorolm" ]
         , div [ class "icon-group" ]
-            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "5vw", onClick MinimizeWindow ]
+            [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "5vw", onClick onWindowMinimize ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -85,7 +84,7 @@ navView drawerOpen =
             , div
                 [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--right"
                 , style "padding-right" "4vw"
-                , onClick CloseWindow
+                , onClick onWindowClose
                 ]
                 [ svg
                     [ SvgAttr.version "1.2"
