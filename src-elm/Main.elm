@@ -761,7 +761,15 @@ view model =
             }
             model.drawerOpen
         , if model.drawerOpen then
-            View.Drawer.view model
+            View.Drawer.view
+                { onSettingUpdate = UpdateSetting
+                , onSettingsReset = ResetSettings
+                , onChangeSettingTab = ChangeSettingTab
+                , onAudioFileReset = ResetAudioFile
+                , onAudioFileRequested = AudioFileRequested
+                , onThemeChange = ChangeTheme
+                }
+                model
 
           else
             View.Timer.view

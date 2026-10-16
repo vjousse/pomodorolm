@@ -1,11 +1,10 @@
-module View.Drawer exposing (view)
+module View.Drawer exposing (EventHandlers, view)
 
 import Config exposing (Config)
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import ListWithCurrent
-import Msg exposing (Msg(..))
 import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -13,16 +12,28 @@ import Themes exposing (Theme)
 import Types exposing (Setting(..), SettingTab(..), SettingType(..))
 
 
-view :
-    { model
-        | settingTab : SettingTab
-        , appVersion : String
-        , config : Config
-        , themes : ListWithCurrent.ListWithCurrent Theme
-        , theme : Theme
+type alias EventHandlers msg =
+    { onSettingUpdate : SettingType -> msg
+    , onSettingsReset : msg
+    , onChangeSettingTab : SettingTab -> msg
+    , onAudioFileReset : SessionType -> msg
+    , onAudioFileRequested : SessionType -> msg
+    , onThemeChange : Theme -> msg
     }
-    -> Html Msg
-view model =
+
+
+view :
+    EventHandlers msg
+    ->
+        { model
+            | settingTab : SettingTab
+            , appVersion : String
+            , config : Config
+            , themes : ListWithCurrent.ListWithCurrent Theme
+            , theme : Theme
+        }
+    -> Html msg
+view eventHandlers model =
     div
         [ id "drawer"
         ]
@@ -31,19 +42,19 @@ view model =
                 aboutSettingView model.appVersion
 
             SettingsTab ->
-                settingsSettingView model.config
+                settingsSettingView eventHandlers model.config
 
             SoundsTab ->
-                soundsSettingView model.config
+                soundsSettingView eventHandlers model.config
 
             TextTab ->
-                textSettingView model.config
+                textSettingView eventHandlers model.config
 
             ThemeTab ->
-                themeSettingView model.themes model.theme
+                themeSettingView eventHandlers model.themes model.theme
 
             TimerTab ->
-                timerSettingView model.config
+                timerSettingView eventHandlers model.config
         , div
             [ class "drawer-menu"
             ]
@@ -57,7 +68,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab TimerTab
+                , onClick <| eventHandlers.onChangeSettingTab TimerTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -102,7 +113,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab SettingsTab
+                , onClick <| eventHandlers.onChangeSettingTab SettingsTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -136,7 +147,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab ThemeTab
+                , onClick <| eventHandlers.onChangeSettingTab ThemeTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -170,7 +181,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab SoundsTab
+                , onClick <| eventHandlers.onChangeSettingTab SoundsTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -208,7 +219,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab TextTab
+                , onClick <| eventHandlers.onChangeSettingTab TextTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -245,7 +256,7 @@ view model =
                      else
                         ""
                     )
-                , onClick <| ChangeSettingTab AboutTab
+                , onClick <| eventHandlers.onChangeSettingTab AboutTab
                 ]
                 [ div
                     [ class "drawer-menu-button"
@@ -278,7 +289,7 @@ view model =
         ]
 
 
-settingWrapperToggle : String -> Msg -> Bool -> Html Msg
+settingWrapperToggle : String -> msg -> Bool -> Html msg
 settingWrapperToggle title msg settingActive =
     div
         [ class "setting-wrapper"
@@ -298,8 +309,16 @@ settingWrapperToggle title msg settingActive =
         ]
 
 
-audioFileWrapper : Maybe String -> SessionType -> String -> Html Msg
-audioFileWrapper audioFile sessionType soundTitle =
+audioFileWrapper :
+    { eventHandlers
+        | onAudioFileReset : SessionType -> msg
+        , onAudioFileRequested : SessionType -> msg
+    }
+    -> Maybe String
+    -> SessionType
+    -> String
+    -> Html msg
+audioFileWrapper { onAudioFileReset, onAudioFileRequested } audioFile sessionType soundTitle =
     div [ class "setting-wrapper-multi" ]
         [ div
             [ class "setting-wrapper"
@@ -318,7 +337,7 @@ audioFileWrapper audioFile sessionType soundTitle =
                                )
                         )
                     , title "Reset to default sound"
-                    , onClick <| ResetAudioFile sessionType
+                    , onClick <| onAudioFileReset sessionType
                     ]
                     [ text "default" ]
                 , a
@@ -333,7 +352,7 @@ audioFileWrapper audioFile sessionType soundTitle =
                                )
                         )
                     , title "Choose custom sound"
-                    , onClick <| AudioFileRequested sessionType
+                    , onClick <| onAudioFileRequested sessionType
                     ]
                     [ text "custom" ]
                 ]
@@ -357,8 +376,14 @@ audioFileWrapper audioFile sessionType soundTitle =
         ]
 
 
-timerSettingView : Config -> Html Msg
-timerSettingView config =
+timerSettingView :
+    { eventHandlers
+        | onSettingUpdate : SettingType -> msg
+        , onSettingsReset : msg
+    }
+    -> Config
+    -> Html msg
+timerSettingView { onSettingUpdate, onSettingsReset } config =
     div [ class "container" ]
         [ p
             [ class "drawer-heading"
@@ -381,7 +406,7 @@ timerSettingView config =
                     , Html.Attributes.step "1"
                     , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat config.focusDuration / 60)
-                    , onInput <| FocusTime >> UpdateSetting
+                    , onInput <| FocusTime >> onSettingUpdate
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.focusDuration / 60)) ++ "ch"
                     ]
                     []
@@ -397,7 +422,7 @@ timerSettingView config =
                     , Html.Attributes.step "1"
                     , class "slider slider--red"
                     , value <| String.fromFloat (toFloat config.focusDuration / 60)
-                    , onInput <| FocusTime >> UpdateSetting
+                    , onInput <| FocusTime >> onSettingUpdate
                     ]
                     []
                 , div
@@ -423,7 +448,7 @@ timerSettingView config =
                     , Html.Attributes.min "1"
                     , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat config.shortBreakDuration / 60)
-                    , onInput <| ShortBreakTime >> UpdateSetting
+                    , onInput <| ShortBreakTime >> onSettingUpdate
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.shortBreakDuration / 60)) ++ "ch"
                     ]
                     []
@@ -439,7 +464,7 @@ timerSettingView config =
                     , Html.Attributes.step "1"
                     , class "slider slider--green"
                     , value <| String.fromFloat (toFloat config.shortBreakDuration / 60)
-                    , onInput <| ShortBreakTime >> UpdateSetting
+                    , onInput <| ShortBreakTime >> onSettingUpdate
                     ]
                     []
                 , div
@@ -465,7 +490,7 @@ timerSettingView config =
                     , Html.Attributes.min "1"
                     , Html.Attributes.max <| String.fromInt (config.maxSessionDuration // 60)
                     , value <| String.fromFloat (toFloat config.longBreakDuration / 60)
-                    , onInput <| LongBreakTime >> UpdateSetting
+                    , onInput <| LongBreakTime >> onSettingUpdate
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.longBreakDuration / 60)) ++ "ch"
                     ]
                     []
@@ -481,7 +506,7 @@ timerSettingView config =
                     , Html.Attributes.step "1"
                     , class "slider slider--blue"
                     , value <| String.fromFloat (toFloat config.longBreakDuration / 60)
-                    , onInput <| LongBreakTime >> UpdateSetting
+                    , onInput <| LongBreakTime >> onSettingUpdate
                     ]
                     []
                 , div
@@ -508,7 +533,7 @@ timerSettingView config =
                     , Html.Attributes.max "12"
                     , Html.Attributes.step "1"
                     , value <| String.fromInt config.maxRoundNumber
-                    , onInput <| Rounds >> UpdateSetting
+                    , onInput <| Rounds >> onSettingUpdate
                     , style "width" <| String.fromInt (String.length <| String.fromInt config.maxRoundNumber) ++ "ch"
                     ]
                     []
@@ -523,7 +548,7 @@ timerSettingView config =
                     , Html.Attributes.step "1"
                     , class "slider"
                     , value <| String.fromInt config.maxRoundNumber
-                    , onInput <| Rounds >> UpdateSetting
+                    , onInput <| Rounds >> onSettingUpdate
                     ]
                     []
                 , div
@@ -538,32 +563,32 @@ timerSettingView config =
             ]
             [ p
                 [ class "text-button"
-                , onClick ResetSettings
+                , onClick onSettingsReset
                 ]
                 [ text "Reset Defaults" ]
             ]
         ]
 
 
-settingsSettingView : Config -> Html Msg
-settingsSettingView config =
+settingsSettingView : { eventHandlers | onSettingUpdate : SettingType -> msg } -> Config -> Html msg
+settingsSettingView { onSettingUpdate } config =
     div [ class "container", id "settings" ]
         [ p
             [ class "drawer-heading"
             ]
             [ text "General Settings" ]
-        , settingWrapperToggle "Always On Top" (UpdateSetting <| Toggle AlwaysOnTop) config.alwaysOnTop
-        , settingWrapperToggle "Auto-start Work Timer after Break" (UpdateSetting <| Toggle AutoStartWorkTimer) config.autoStartWorkTimer
-        , settingWrapperToggle "Auto-start Work Timer at app startup" (UpdateSetting <| Toggle AutoStartOnAppStartup) config.autoStartOnAppStartup
-        , settingWrapperToggle "Auto-start Break Timer after Work" (UpdateSetting <| Toggle AutoStartBreakTimer) config.autoStartBreakTimer
-        , settingWrapperToggle "Auto-start the app on system startup" (UpdateSetting <| Toggle SystemStartupAutoStart) config.systemStartupAutoStart
+        , settingWrapperToggle "Always On Top" (onSettingUpdate <| Toggle AlwaysOnTop) config.alwaysOnTop
+        , settingWrapperToggle "Auto-start Work Timer after Break" (onSettingUpdate <| Toggle AutoStartWorkTimer) config.autoStartWorkTimer
+        , settingWrapperToggle "Auto-start Work Timer at app startup" (onSettingUpdate <| Toggle AutoStartOnAppStartup) config.autoStartOnAppStartup
+        , settingWrapperToggle "Auto-start Break Timer after Work" (onSettingUpdate <| Toggle AutoStartBreakTimer) config.autoStartBreakTimer
+        , settingWrapperToggle "Auto-start the app on system startup" (onSettingUpdate <| Toggle SystemStartupAutoStart) config.systemStartupAutoStart
         , div
             [ class "setting-wrapper"
             ]
             [ p [ class "setting-title", style "margin-top" "0.3rem" ] [ text "Auto-quit App" ]
             , div
                 []
-                [ select [ onInput (AutoQuit >> UpdateSetting) ]
+                [ select [ onInput (AutoQuit >> onSettingUpdate) ]
                     [ option [ value "", selected (config.autoQuit == Nothing) ] [ text "Never" ]
                     , option [ value "Focus", selected (config.autoQuit == Just Focus) ] [ text "After Focus" ]
                     , option [ value "ShortBreak", selected (config.autoQuit == Just ShortBreak) ] [ text "After Short Break" ]
@@ -571,7 +596,7 @@ settingsSettingView config =
                     ]
                 ]
             ]
-        , settingWrapperToggle "Desktop Notifications" (UpdateSetting <| Toggle DesktopNotifications) config.desktopNotifications
+        , settingWrapperToggle "Desktop Notifications" (onSettingUpdate <| Toggle DesktopNotifications) config.desktopNotifications
         , div
             [ class "setting-wrapper"
             ]
@@ -585,37 +610,37 @@ settingsSettingView config =
                     , Html.Attributes.min "1"
                     , Html.Attributes.step "1"
                     , value <| String.fromFloat (toFloat config.maxSessionDuration / 60)
-                    , onInput <| MaxSessionDuration >> UpdateSetting
-                    , onBlur <| UpdateSetting SaveMaxSessionDuration
+                    , onInput <| MaxSessionDuration >> onSettingUpdate
+                    , onBlur <| onSettingUpdate SaveMaxSessionDuration
                     , style "width" <| String.fromInt (String.length <| String.fromFloat (toFloat config.maxSessionDuration / 60)) ++ "ch"
                     ]
                     []
                 , text ":00"
                 ]
             ]
-        , settingWrapperToggle "Minimize to Tray" (UpdateSetting <| Toggle MinimizeToTray) config.minimizeToTray
-        , settingWrapperToggle "Minimize to Tray on Close" (UpdateSetting <| Toggle MinimizeToTrayOnClose) config.minimizeToTrayOnClose
-        , settingWrapperToggle "Start minimized to Tray" (UpdateSetting <| Toggle StartMinimized) config.startMinimized
+        , settingWrapperToggle "Minimize to Tray" (onSettingUpdate <| Toggle MinimizeToTray) config.minimizeToTray
+        , settingWrapperToggle "Minimize to Tray on Close" (onSettingUpdate <| Toggle MinimizeToTrayOnClose) config.minimizeToTrayOnClose
+        , settingWrapperToggle "Start minimized to Tray" (onSettingUpdate <| Toggle StartMinimized) config.startMinimized
         ]
 
 
-soundsSettingView : Config -> Html Msg
-soundsSettingView config =
+soundsSettingView : EventHandlers msg -> Config -> Html msg
+soundsSettingView eventHandlers config =
     div [ class "container", id "sound-settings" ]
         [ p
             [ class "drawer-heading"
             ]
             [ text "Sound Settings" ]
-        , settingWrapperToggle "Tick Sounds - Break" (UpdateSetting <| Toggle TickSoundsDuringBreak) config.tickSoundsDuringBreak
-        , settingWrapperToggle "Tick Sounds - Work" (UpdateSetting <| Toggle TickSoundsDuringWork) config.tickSoundsDuringWork
-        , audioFileWrapper config.shortBreakAudio ShortBreak "Short break"
-        , audioFileWrapper config.longBreakAudio LongBreak "Long break"
-        , audioFileWrapper config.focusAudio Focus "Work session"
+        , settingWrapperToggle "Tick Sounds - Break" (eventHandlers.onSettingUpdate <| Toggle TickSoundsDuringBreak) config.tickSoundsDuringBreak
+        , settingWrapperToggle "Tick Sounds - Work" (eventHandlers.onSettingUpdate <| Toggle TickSoundsDuringWork) config.tickSoundsDuringWork
+        , audioFileWrapper eventHandlers config.shortBreakAudio ShortBreak "Short break"
+        , audioFileWrapper eventHandlers config.longBreakAudio LongBreak "Long break"
+        , audioFileWrapper eventHandlers config.focusAudio Focus "Work session"
         ]
 
 
-textSettingView : Config -> Html Msg
-textSettingView config =
+textSettingView : { eventHandlers | onSettingUpdate : SettingType -> msg } -> Config -> Html msg
+textSettingView { onSettingUpdate } config =
     div [ class "container", id "text-settings" ]
         [ p
             [ class "drawer-heading"
@@ -635,7 +660,7 @@ textSettingView config =
                     [ type_ "text"
                     , class "setting-input"
                     , value config.defaultFocusLabel
-                    , onInput <| Label Focus >> UpdateSetting
+                    , onInput <| Label Focus >> onSettingUpdate
                     ]
                     []
                 ]
@@ -654,7 +679,7 @@ textSettingView config =
                     [ type_ "text"
                     , class "setting-input"
                     , value config.defaultShortBreakLabel
-                    , onInput <| Label ShortBreak >> UpdateSetting
+                    , onInput <| Label ShortBreak >> onSettingUpdate
                     ]
                     []
 
@@ -675,7 +700,7 @@ textSettingView config =
                     [ type_ "text"
                     , class "setting-input"
                     , value config.defaultLongBreakLabel
-                    , onInput <| Label LongBreak >> UpdateSetting
+                    , onInput <| Label LongBreak >> onSettingUpdate
                     ]
                     []
                 ]
@@ -683,7 +708,7 @@ textSettingView config =
         ]
 
 
-aboutSettingView : String -> Html Msg
+aboutSettingView : String -> Html msg
 aboutSettingView appVersion =
     div [ class "container", id "about" ]
         [ p [ class "drawer-heading" ] [ text "About" ]
@@ -724,8 +749,8 @@ aboutSettingView appVersion =
         ]
 
 
-themeSettingView : ListWithCurrent.ListWithCurrent Theme -> Theme -> Html Msg
-themeSettingView themes theme =
+themeSettingView : { eventHandlers | onThemeChange : Theme -> msg } -> ListWithCurrent.ListWithCurrent Theme -> Theme -> Html msg
+themeSettingView { onThemeChange } themes theme =
     div [ class "container", id "theme" ]
         (p [ class "drawer-heading" ] [ text "Themes" ]
             :: (themes
@@ -743,7 +768,7 @@ themeSettingView themes theme =
                                 [ class "setting-wrapper"
                                 , style "background-color" colors.background
                                 , style "border-color" colors.accent
-                                , onClick <| ChangeTheme t
+                                , onClick <| onThemeChange t
                                 ]
                                 [ p
                                     [ class "setting-title"
