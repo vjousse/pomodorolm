@@ -256,14 +256,14 @@ update msg ({ config } as model) =
                         , shortBreakLabel = c.config.defaultShortBreakLabel
                         , themes = newThemes
                     }
-                        |> update (ProcessExternalMessage (RustStateMsg c.pomodoroState))
+                        |> processExternalRustMessage c.pomodoroState
 
                 ( modelWithTheme, cmdWithTheme ) =
                     case newThemes |> ListWithCurrent.getCurrent of
                         Just currentTheme ->
                             let
                                 ( updatedModel, updatedCmd ) =
-                                    update (ChangeTheme currentTheme) newModel
+                                    changeTheme currentTheme newModel
                             in
                             ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
 
@@ -274,7 +274,7 @@ update msg ({ config } as model) =
             if modelWithTheme.config.autoStartOnAppStartup then
                 let
                     ( updatedModel, updatedCmd ) =
-                        update TogglePlayStatus modelWithTheme
+                        togglePlayStatus modelWithTheme
                 in
                 ( updatedModel, Cmd.batch [ cmdWithTheme, updatedCmd ] )
 
