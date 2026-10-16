@@ -4,10 +4,11 @@ import Html exposing (Html, a, div, h2, input, option, p, section, select, span,
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import ListWithCurrent
+import Msg exposing (Msg(..))
 import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model, Msg(..), Setting(..), SettingTab(..), SettingType(..))
+import Types exposing (Model, Setting(..), SettingTab(..), SettingType(..))
 
 
 settingWrapperToggle : String -> Msg -> Bool -> Html Msg

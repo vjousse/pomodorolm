@@ -8,6 +8,7 @@ import Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elm
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ListWithCurrent exposing (ListWithCurrent(..))
+import Msg exposing (Msg(..))
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
@@ -19,7 +20,6 @@ import Types
         , Defaults
         , ExternalMessage(..)
         , Model
-        , Msg(..)
         , ResetType(..)
         , Setting(..)
         , SettingTab(..)

@@ -3,9 +3,10 @@ module View.Nav exposing (navView)
 import Html exposing (Html, a, div, h1, nav, text)
 import Html.Attributes exposing (attribute, class, href, style, target, title)
 import Html.Events exposing (onClick)
+import Msg exposing (Msg(..))
 import Svg exposing (svg)
 import Svg.Attributes as SvgAttr
-import Types exposing (Model, Msg(..))
+import Types exposing (Model)
 
 
 navView : Model -> Html Msg
