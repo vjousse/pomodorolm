@@ -271,7 +271,7 @@ update msg ({ config } as model) =
                                 updatedThemes
 
                             else
-                                -- If we didn't found a corresponding theme name, pomodorolm should be the default theme
+                                -- If we didn't find a corresponding theme name, pomodorolm should be the default theme
                                 updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
 
                         Nothing ->
