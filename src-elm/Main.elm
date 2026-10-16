@@ -334,7 +334,7 @@ update msg ({ config } as model) =
                     ]
 
                 maxTime =
-                    getCurrentMaxTime config pomodoroState
+                    getCurrentMaxTime config pomodoroState.currentSession
 
                 currentColor =
                     computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
@@ -574,14 +574,14 @@ update msg ({ config } as model) =
                             Running ->
                                 let
                                     maxTime =
-                                        getCurrentMaxTime config state
+                                        getCurrentMaxTime config state.currentSession
 
                                     currentState =
                                         { color =
                                             fromRGBToCSSHex <|
                                                 computeCurrentColor
                                                     state.currentSession.currentTime
-                                                    (getCurrentMaxTime config state)
+                                                    (getCurrentMaxTime config state.currentSession)
                                                     state.currentSession.sessionType
                                                     model.theme
                                         , percentage =
@@ -604,13 +604,13 @@ update msg ({ config } as model) =
                             status ->
                                 let
                                     maxTime =
-                                        getCurrentMaxTime config state
+                                        getCurrentMaxTime config state.currentSession
 
                                     currentState =
                                         { color =
                                             fromRGBToCSSHex <|
                                                 computeCurrentColor state.currentSession.currentTime
-                                                    (getCurrentMaxTime config state)
+                                                    (getCurrentMaxTime config state.currentSession)
                                                     state.currentSession.sessionType
                                                     model.theme
                                         , percentage =

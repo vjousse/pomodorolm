@@ -121,7 +121,7 @@ timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBre
         |> Maybe.map
             (\state ->
                 div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusLabel shortBreakLabel longBreakLabel
+                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state.currentSession) strokeDasharray theme focusLabel shortBreakLabel longBreakLabel
                     , playPauseView state.currentSession.status
                     , footerView model
                     ]
