@@ -17,9 +17,11 @@ import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoExposingEverything
 import NoImportingEverything
+import NoMissingSubscriptionsCall
 import NoMissingTypeAnnotation
 import NoMissingTypeExpose
 import NoPrematureLetComputation
+import NoRecursiveUpdate
 import NoSimpleLetBody
 import NoUnused.CustomTypeConstructorArgs
 import NoUnused.CustomTypeConstructors
@@ -28,6 +30,7 @@ import NoUnused.Exports
 import NoUnused.Parameters
 import NoUnused.Patterns
 import NoUnused.Variables
+import NoUselessSubscriptions
 import Review.Rule as Rule exposing (Rule)
 import Simplify
 
@@ -55,4 +58,7 @@ config =
     , NoUnused.Patterns.rule
     , NoUnused.Variables.rule
     , Simplify.rule Simplify.defaults
+    , NoMissingSubscriptionsCall.rule
+    , NoRecursiveUpdate.rule
+    , NoUselessSubscriptions.rule
     ]
