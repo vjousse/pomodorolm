@@ -228,9 +228,6 @@ update msg ({ config } as model) =
 
         ProcessExternalMessage (InitDataMsg c) ->
             let
-                maybeCurrentTheme =
-                    find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes
-
                 ( newModel, newCmd ) =
                     { model
                         | config = c.config
@@ -242,7 +239,7 @@ update msg ({ config } as model) =
                         |> processExternalRustMessage c.pomodoroState
 
                 ( modelWithTheme, cmdWithTheme ) =
-                    case maybeCurrentTheme of
+                    case find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes of
                         Just currentTheme ->
                             let
                                 ( updatedModel, updatedCmd ) =
