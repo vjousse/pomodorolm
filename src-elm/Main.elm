@@ -8,7 +8,6 @@ import Html.Attributes exposing (id)
 import Json exposing (ExternalMessage(..), configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import ListWithCurrent exposing (ListWithCurrent(..))
 import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
@@ -233,28 +232,7 @@ update msg ({ config } as model) =
                     find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes
 
                 newThemes =
-                    case maybeCurrentTheme of
-                        Just theme ->
-                            -- We found a theme with the same name than in the config: everything's fine
-                            if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
-                                c.themes
-                                    |> ListWithCurrent.fromList
-                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
-                                    |> ListWithCurrent.toList
-
-                            else
-                                -- If we didn't find a corresponding theme name, pomodorolm should be the default theme
-                                c.themes
-                                    |> ListWithCurrent.fromList
-                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
-                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
-                                    |> ListWithCurrent.toList
-
-                        Nothing ->
-                            c.themes
-                                |> ListWithCurrent.fromList
-                                |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
-                                |> ListWithCurrent.toList
+                    c.themes
 
                 ( newModel, newCmd ) =
                     { model
