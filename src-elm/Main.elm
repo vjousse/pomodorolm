@@ -44,7 +44,7 @@ type alias Model =
     , shortBreakLabel : String
     , strokeDasharray : Float
     , theme : Theme
-    , themes : ListWithCurrent Theme
+    , themes : List Theme
     , volumeSliderHidden : Bool
     }
 
@@ -152,7 +152,7 @@ init flags =
       , shortBreakLabel = flags.defaultShortBreakLabel
       , strokeDasharray = 691.3321533203125
       , theme = theme
-      , themes = EmptyListWithCurrent
+      , themes = []
       , volumeSliderHidden = True
       }
     , Cmd.batch
@@ -254,7 +254,7 @@ update msg ({ config } as model) =
                         , focusLabel = c.config.defaultFocusLabel
                         , longBreakLabel = c.config.defaultLongBreakLabel
                         , shortBreakLabel = c.config.defaultShortBreakLabel
-                        , themes = newThemes
+                        , themes = ListWithCurrent.toList newThemes
                     }
                         |> processExternalRustMessage c.pomodoroState
 

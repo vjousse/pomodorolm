@@ -4,7 +4,6 @@ import Config exposing (Config)
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
-import ListWithCurrent
 import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
@@ -29,7 +28,7 @@ view :
             | settingTab : SettingTab
             , appVersion : String
             , config : Config
-            , themes : ListWithCurrent.ListWithCurrent Theme
+            , themes : List Theme
             , theme : Theme
         }
     -> Html msg
@@ -749,12 +748,11 @@ aboutSettingView appVersion =
         ]
 
 
-themeSettingView : { eventHandlers | onThemeChange : Theme -> msg } -> ListWithCurrent.ListWithCurrent Theme -> Theme -> Html msg
+themeSettingView : { eventHandlers | onThemeChange : Theme -> msg } -> List Theme -> Theme -> Html msg
 themeSettingView { onThemeChange } themes theme =
     div [ class "container", id "theme" ]
         (p [ class "drawer-heading" ] [ text "Themes" ]
             :: (themes
-                    |> ListWithCurrent.toList
                     |> List.map
                         (\t ->
                             let
