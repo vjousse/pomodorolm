@@ -13,6 +13,7 @@ module Json exposing
     , themeColorsEncoder
     )
 
+import ColorHelper exposing (ThemeColors)
 import Config exposing (Config)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -20,7 +21,6 @@ import Json.Encode as Encode
 import Pomodoro
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import ThemeColors exposing (ThemeColors)
 import Themes exposing (Theme)
 import Types exposing (CurrentState)
 
