@@ -12,7 +12,8 @@ import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import Themes exposing (Theme, ThemeColors, pomodorolmTheme)
+import ThemeColors exposing (ThemeColors)
+import Themes exposing (Theme, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer

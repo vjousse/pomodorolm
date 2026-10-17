@@ -19,7 +19,8 @@ import Json.Encode as Encode
 import Pomodoro
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import Themes exposing (Theme, ThemeColors)
+import ThemeColors exposing (ThemeColors)
+import Themes exposing (Theme)
 import Types exposing (CurrentState)
 
 
