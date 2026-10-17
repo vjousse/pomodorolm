@@ -226,20 +226,22 @@ update msg ({ config } as model) =
         NoOp ->
             ( model, Cmd.none )
 
-        ProcessExternalMessage (InitDataMsg c) ->
-            processExternalInitMessage c model
+        ProcessExternalMessage externalMessage ->
+            case externalMessage of
+                InitDataMsg c ->
+                    processExternalInitMessage c model
 
-        ProcessExternalMessage (RustStateMsg pomodoroState) ->
-            processExternalRustMessage pomodoroState model
+                RustStateMsg pomodoroState ->
+                    processExternalRustMessage pomodoroState model
 
-        ProcessExternalMessage (SoundFilePath sessionType path) ->
-            let
-                ( newConfig, cmd ) =
-                    processExternalSoundFilePathMessage sessionType path config
-            in
-            ( { model | config = newConfig }
-            , cmd
-            )
+                SoundFilePath sessionType path ->
+                    let
+                        ( newConfig, cmd ) =
+                            processExternalSoundFilePathMessage sessionType path config
+                    in
+                    ( { model | config = newConfig }
+                    , cmd
+                    )
 
         Reset resetType ->
             let
