@@ -227,58 +227,18 @@ update msg ({ config } as model) =
             ( model, Cmd.none )
 
         ProcessExternalMessage (InitDataMsg c) ->
-            let
-                ( newModel, newCmd ) =
-                    { model
-                        | config = c.config
-                        , focusLabel = c.config.defaultFocusLabel
-                        , longBreakLabel = c.config.defaultLongBreakLabel
-                        , shortBreakLabel = c.config.defaultShortBreakLabel
-                        , themes = c.themes
-                    }
-                        |> processExternalRustMessage c.pomodoroState
-
-                ( modelWithTheme, cmdWithTheme ) =
-                    case find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes of
-                        Just currentTheme ->
-                            let
-                                ( updatedModel, updatedCmd ) =
-                                    changeTheme currentTheme newModel
-                            in
-                            ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
-
-                        Nothing ->
-                            ( newModel, newCmd )
-            in
-            -- Auto start if config is set
-            if modelWithTheme.config.autoStartOnAppStartup then
-                let
-                    ( updatedModel, updatedCmd ) =
-                        togglePlayStatus modelWithTheme
-                in
-                ( updatedModel, Cmd.batch [ cmdWithTheme, updatedCmd ] )
-
-            else
-                ( modelWithTheme, cmdWithTheme )
+            processExternalInitMessage c model
 
         ProcessExternalMessage (RustStateMsg pomodoroState) ->
             processExternalRustMessage pomodoroState model
 
         ProcessExternalMessage (SoundFilePath sessionType path) ->
             let
-                newConfig =
-                    case sessionType of
-                        Focus ->
-                            { config | focusAudio = Just path }
-
-                        ShortBreak ->
-                            { config | shortBreakAudio = Just path }
-
-                        LongBreak ->
-                            { config | longBreakAudio = Just path }
+                ( newConfig, cmd ) =
+                    processExternalSoundFilePathMessage sessionType path config
             in
             ( { model | config = newConfig }
-            , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
+            , cmd
             )
 
         Reset resetType ->
@@ -569,6 +529,43 @@ changeTheme theme ({ config } as model) =
     )
 
 
+processExternalInitMessage : Json.InitData -> Model -> ( Model, Cmd Msg )
+processExternalInitMessage c model =
+    let
+        ( newModel, newCmd ) =
+            { model
+                | config = c.config
+                , focusLabel = c.config.defaultFocusLabel
+                , longBreakLabel = c.config.defaultLongBreakLabel
+                , shortBreakLabel = c.config.defaultShortBreakLabel
+                , themes = c.themes
+            }
+                |> processExternalRustMessage c.pomodoroState
+
+        ( modelWithTheme, cmdWithTheme ) =
+            case find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes of
+                Just currentTheme ->
+                    let
+                        ( updatedModel, updatedCmd ) =
+                            changeTheme currentTheme newModel
+                    in
+                    ( updatedModel, Cmd.batch [ updatedCmd, newCmd ] )
+
+                Nothing ->
+                    ( newModel, newCmd )
+    in
+    -- Auto start if config is set
+    if modelWithTheme.config.autoStartOnAppStartup then
+        let
+            ( updatedModel, updatedCmd ) =
+                togglePlayStatus modelWithTheme
+        in
+        ( updatedModel, Cmd.batch [ cmdWithTheme, updatedCmd ] )
+
+    else
+        ( modelWithTheme, cmdWithTheme )
+
+
 processExternalRustMessage : Pomodoro.State -> Model -> ( Model, Cmd Msg )
 processExternalRustMessage pomodoroState model =
     let
@@ -695,6 +692,25 @@ processExternalRustMessage pomodoroState model =
       }
     , Cmd.batch
         (sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder) :: cmds)
+    )
+
+
+processExternalSoundFilePathMessage : SessionType -> String -> Config -> ( Config, Cmd msg )
+processExternalSoundFilePathMessage sessionType path config =
+    let
+        newConfig =
+            case sessionType of
+                Focus ->
+                    { config | focusAudio = Just path }
+
+                ShortBreak ->
+                    { config | shortBreakAudio = Just path }
+
+                LongBreak ->
+                    { config | longBreakAudio = Just path }
+    in
+    ( newConfig
+    , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
     )
 
 
