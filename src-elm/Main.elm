@@ -235,7 +235,7 @@ update msg ({ config } as model) =
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
 
                 maybeCurrentTheme =
-                    ListWithCurrent.getCurrent updatedThemes
+                    find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes
 
                 newThemes =
                     case maybeCurrentTheme of
@@ -787,6 +787,20 @@ togglePlayStatus model =
                         )
             )
         |> Maybe.withDefault ( model, Cmd.none )
+
+
+find : (a -> Bool) -> List a -> Maybe a
+find predicate list =
+    case list of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            if predicate x then
+                Just x
+
+            else
+                find predicate xs
 
 
 view : Model -> Html Msg
