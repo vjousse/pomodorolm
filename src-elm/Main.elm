@@ -229,11 +229,6 @@ update msg ({ config } as model) =
 
         ProcessExternalMessage (InitDataMsg c) ->
             let
-                updatedThemes =
-                    c.themes
-                        |> ListWithCurrent.fromList
-                        |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
-
                 maybeCurrentTheme =
                     find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes
 
@@ -242,17 +237,23 @@ update msg ({ config } as model) =
                         Just theme ->
                             -- We found a theme with the same name than in the config: everything's fine
                             if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
-                                updatedThemes
+                                c.themes
+                                    |> ListWithCurrent.fromList
+                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
                                     |> ListWithCurrent.toList
 
                             else
                                 -- If we didn't find a corresponding theme name, pomodorolm should be the default theme
-                                updatedThemes
+                                c.themes
+                                    |> ListWithCurrent.fromList
+                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
                                     |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
                                     |> ListWithCurrent.toList
 
                         Nothing ->
-                            updatedThemes
+                            c.themes
+                                |> ListWithCurrent.fromList
+                                |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
                                 |> ListWithCurrent.toList
 
                 ( newModel, newCmd ) =
