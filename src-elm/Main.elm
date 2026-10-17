@@ -231,16 +231,13 @@ update msg ({ config } as model) =
                 maybeCurrentTheme =
                     find (\t -> (t.name |> String.toLower) == c.config.theme) c.themes
 
-                newThemes =
-                    c.themes
-
                 ( newModel, newCmd ) =
                     { model
                         | config = c.config
                         , focusLabel = c.config.defaultFocusLabel
                         , longBreakLabel = c.config.defaultLongBreakLabel
                         , shortBreakLabel = c.config.defaultShortBreakLabel
-                        , themes = newThemes
+                        , themes = c.themes
                     }
                         |> processExternalRustMessage c.pomodoroState
 
