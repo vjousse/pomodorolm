@@ -1,7 +1,7 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, encode, fromCSSHex, toCSSHex)
+module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, encode, fromCSSHex, toCSSHex, toHtmlRgbString)
 
 import Hex
 import Json.Encode as Encode
@@ -52,6 +52,11 @@ fromCSSHex hexcode =
 toCSSHex : RGB -> String
 toCSSHex (RGB r g b) =
     "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
+
+
+toHtmlRgbString : RGB -> String
+toHtmlRgbString (RGB r g b) =
+    "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
 
 
 colorForSessionType : SessionType -> ThemeColors -> RGB

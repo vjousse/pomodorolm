@@ -1,6 +1,6 @@
 module View.Timer exposing (EventHandlers, view)
 
-import Color exposing (RGB(..), computeCurrentColor)
+import Color exposing (computeCurrentColor)
 import Config exposing (Config)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
@@ -87,11 +87,8 @@ dialView eventHandlers sessionType currentTime maxTime maxStrokeDasharray theme 
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * remainingPercent
 
-        colorToHtmlRgbString (RGB r g b) =
-            "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
-
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme.colors
+            Color.toHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme.colors
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
