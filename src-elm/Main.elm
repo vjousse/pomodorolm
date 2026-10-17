@@ -168,9 +168,8 @@ type Msg
     | ChangeSettingTab SettingTab
     | ChangeTheme Theme
     | SetVolumeBarVisibility Bool
-    | ProcessExternalMessage ExternalMessage
+    | ProcessExternalMessage Decode.Value
     | MinimizeWindow
-    | NoOp
     | Reset ResetType
     | ResetSettings
     | ResetAudioFile SessionType
@@ -223,18 +222,15 @@ update msg ({ config } as model) =
                 minimizeWindow ()
             )
 
-        NoOp ->
-            ( model, Cmd.none )
-
         ProcessExternalMessage externalMessage ->
-            case externalMessage of
-                InitDataMsg c ->
+            case Decode.decodeValue externalMessageDecoder externalMessage of
+                Ok (InitDataMsg c) ->
                     processExternalInitMessage c model
 
-                RustStateMsg pomodoroState ->
+                Ok (RustStateMsg pomodoroState) ->
                     processExternalRustMessage pomodoroState model
 
-                SoundFilePath sessionType path ->
+                Ok (SoundFilePath sessionType path) ->
                     let
                         ( newConfig, cmd ) =
                             processExternalSoundFilePathMessage sessionType path config
@@ -242,6 +238,10 @@ update msg ({ config } as model) =
                     ( { model | config = newConfig }
                     , cmd
                     )
+
+                Err _ ->
+                    --@FIX: don't fail silently
+                    ( model, Cmd.none )
 
         Reset resetType ->
             let
@@ -836,23 +836,12 @@ view model =
 -- SUBSCRIPTIONS
 
 
-mapJsonMessage : Decode.Decoder a -> (a -> Msg) -> Decode.Value -> Msg
-mapJsonMessage decoder msg value =
-    case Decode.decodeValue decoder value of
-        Ok model ->
-            msg model
-
-        Err _ ->
-            --@FIX: don't fail silently
-            NoOp
-
-
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ togglePlay (always TogglePlayStatus)
         , skip (always SkipCurrentRound)
-        , sendMessageToElm (mapJsonMessage externalMessageDecoder ProcessExternalMessage)
+        , sendMessageToElm ProcessExternalMessage
         ]
 
 
