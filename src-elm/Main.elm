@@ -250,7 +250,7 @@ update msg ({ config } as model) =
                         case model.pomodoroState of
                             Just state ->
                                 fromRGBToCSSHex
-                                    (colorForSessionType state.currentSession.sessionType model.theme)
+                                    (colorForSessionType state.currentSession.sessionType model.theme.colors)
 
                             Nothing ->
                                 model.theme.colors.focusRound
@@ -510,7 +510,7 @@ changeTheme theme ({ config } as model) =
                 | color =
                     fromRGBToCSSHex
                         (model.pomodoroState
-                            |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme)
+                            |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme.colors)
                             |> Maybe.withDefault (fromCSSHexToRGB <| theme.colors.focusRound)
                         )
             }
@@ -620,7 +620,7 @@ processExternalRustMessage pomodoroState model =
             getCurrentMaxTime model.config pomodoroState.currentSession
 
         currentColor =
-            computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme
+            computeCurrentColor pomodoroState.currentSession.currentTime maxTime pomodoroState.currentSession.sessionType model.theme.colors
 
         percent =
             if maxTime /= 0 then
@@ -736,7 +736,7 @@ togglePlayStatus model =
                                             state.currentSession.currentTime
                                             (getCurrentMaxTime model.config state.currentSession)
                                             state.currentSession.sessionType
-                                            model.theme
+                                            model.theme.colors
                                 , percentage =
                                     if maxTime /= 0 then
                                         toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
@@ -765,7 +765,7 @@ togglePlayStatus model =
                                         computeCurrentColor state.currentSession.currentTime
                                             (getCurrentMaxTime model.config state.currentSession)
                                             state.currentSession.sessionType
-                                            model.theme
+                                            model.theme.colors
                                 , percentage =
                                     if maxTime /= 0 then
                                         toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime

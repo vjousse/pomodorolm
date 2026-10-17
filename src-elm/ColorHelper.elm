@@ -6,7 +6,7 @@ module ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, 
 import Hex
 import Seconds exposing (Seconds)
 import SessionType exposing (SessionType(..))
-import Themes exposing (Theme)
+import ThemeColors exposing (ThemeColors)
 
 
 type RGB
@@ -38,21 +38,21 @@ fromRGBToCSSHex (RGB r g b) =
     "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
 
 
-colorForSessionType : SessionType -> Theme -> RGB
-colorForSessionType sessionType theme =
+colorForSessionType : SessionType -> ThemeColors -> RGB
+colorForSessionType sessionType colors =
     case sessionType of
         Focus ->
-            fromCSSHexToRGB <| theme.colors.focusRound
+            fromCSSHexToRGB <| colors.focusRound
 
         ShortBreak ->
-            fromCSSHexToRGB <| theme.colors.shortRound
+            fromCSSHexToRGB <| colors.shortRound
 
         LongBreak ->
-            fromCSSHexToRGB <| theme.colors.longRound
+            fromCSSHexToRGB <| colors.longRound
 
 
-computeCurrentColor : Seconds -> Seconds -> SessionType -> Theme -> RGB
-computeCurrentColor currentTime maxTime sessionType theme =
+computeCurrentColor : Seconds -> Seconds -> SessionType -> ThemeColors -> RGB
+computeCurrentColor currentTime maxTime sessionType colors =
     case sessionType of
         Focus ->
             let
@@ -71,12 +71,12 @@ computeCurrentColor currentTime maxTime sessionType theme =
                         1
 
                 (RGB middleRed middleGreen middleBlue) =
-                    fromCSSHexToRGB theme.colors.focusRoundMiddle
+                    fromCSSHexToRGB colors.focusRoundMiddle
             in
             if remainingPercent > 0.5 then
                 let
                     (RGB startRed startGreen startBlue) =
-                        fromCSSHexToRGB theme.colors.focusRound
+                        fromCSSHexToRGB colors.focusRound
                 in
                 RGB
                     (toFloat middleRed + (relativePercent * toFloat (startRed - middleRed)) |> round)
@@ -86,11 +86,11 @@ computeCurrentColor currentTime maxTime sessionType theme =
             else
                 let
                     (RGB endRed endGreen endBlue) =
-                        fromCSSHexToRGB theme.colors.focusRoundEnd
+                        fromCSSHexToRGB colors.focusRoundEnd
                 in
                 RGB (toFloat endRed + ((1 + relativePercent) * toFloat (middleRed - endRed)) |> round)
                     (toFloat endGreen + ((1 + relativePercent) * toFloat (middleGreen - endGreen)) |> round)
                     (toFloat endBlue + ((1 + relativePercent) * toFloat (middleBlue - endBlue)) |> round)
 
         s ->
-            colorForSessionType s theme
+            colorForSessionType s colors

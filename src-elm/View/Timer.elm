@@ -91,7 +91,7 @@ dialView eventHandlers sessionType currentTime maxTime maxStrokeDasharray theme 
             "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
 
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme
+            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme.colors
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
