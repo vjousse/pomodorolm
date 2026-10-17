@@ -243,13 +243,17 @@ update msg ({ config } as model) =
                             -- We found a theme with the same name than in the config: everything's fine
                             if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
                                 updatedThemes
+                                    |> ListWithCurrent.toList
 
                             else
                                 -- If we didn't find a corresponding theme name, pomodorolm should be the default theme
-                                updatedThemes |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+                                updatedThemes
+                                    |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == "pomodorolm")
+                                    |> ListWithCurrent.toList
 
                         Nothing ->
                             updatedThemes
+                                |> ListWithCurrent.toList
 
                 ( newModel, newCmd ) =
                     { model
@@ -257,7 +261,7 @@ update msg ({ config } as model) =
                         , focusLabel = c.config.defaultFocusLabel
                         , longBreakLabel = c.config.defaultLongBreakLabel
                         , shortBreakLabel = c.config.defaultShortBreakLabel
-                        , themes = ListWithCurrent.toList newThemes
+                        , themes = newThemes
                     }
                         |> processExternalRustMessage c.pomodoroState
 
