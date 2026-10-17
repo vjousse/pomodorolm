@@ -832,18 +832,18 @@ view model =
 pomodorolmTheme : Theme
 pomodorolmTheme =
     { colors =
-        { longRound = Color.fromCSSHexToRGB "#0bbddb"
-        , shortRound = Color.fromCSSHexToRGB "#ff4e4d"
-        , focusRound = Color.fromCSSHexToRGB "#05ec8c"
-        , focusRoundMiddle = Color.fromCSSHexToRGB "#ff7f0e"
-        , focusRoundEnd = Color.fromCSSHexToRGB "#ff4e4d"
-        , background = Color.fromCSSHexToRGB "#2f384b"
-        , backgroundLight = Color.fromCSSHexToRGB "#3d4457"
-        , backgroundLightest = Color.fromCSSHexToRGB "#858c99"
-        , foreground = Color.fromCSSHexToRGB "#f6f2eb"
-        , foregroundDarker = Color.fromCSSHexToRGB "#c0c9da"
-        , foregroundDarkest = Color.fromCSSHexToRGB "#dbe1ef"
-        , accent = Color.fromCSSHexToRGB "#05ec8c"
+        { longRound = Color.fromCSSHex "#0bbddb"
+        , shortRound = Color.fromCSSHex "#ff4e4d"
+        , focusRound = Color.fromCSSHex "#05ec8c"
+        , focusRoundMiddle = Color.fromCSSHex "#ff7f0e"
+        , focusRoundEnd = Color.fromCSSHex "#ff4e4d"
+        , background = Color.fromCSSHex "#2f384b"
+        , backgroundLight = Color.fromCSSHex "#3d4457"
+        , backgroundLightest = Color.fromCSSHex "#858c99"
+        , foreground = Color.fromCSSHex "#f6f2eb"
+        , foregroundDarker = Color.fromCSSHex "#c0c9da"
+        , foregroundDarkest = Color.fromCSSHex "#dbe1ef"
+        , accent = Color.fromCSSHex "#05ec8c"
         }
     , name = "Pomodorolm"
     }

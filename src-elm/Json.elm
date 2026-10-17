@@ -72,7 +72,7 @@ themeColorsDecoder =
 
 decodeRGB : Decode.Decoder Color.RGB
 decodeRGB =
-    Decode.map Color.fromCSSHexToRGB Decode.string
+    Decode.map Color.fromCSSHex Decode.string
 
 
 themeColorsEncoder : ThemeColors -> Encode.Value
