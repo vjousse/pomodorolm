@@ -1,6 +1,6 @@
 module Themes exposing (Theme)
 
-import ColorHelper exposing (ThemeColors)
+import Color exposing (ThemeColors)
 
 
 type alias Theme =

@@ -1,7 +1,7 @@
 port module Main exposing (Flags, Model, Msg, main)
 
 import Browser
-import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor)
+import Color exposing (RGB(..), colorForSessionType, computeCurrentColor)
 import Config exposing (Config)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
@@ -832,18 +832,18 @@ view model =
 pomodorolmTheme : Theme
 pomodorolmTheme =
     { colors =
-        { longRound = ColorHelper.fromCSSHexToRGB "#0bbddb"
-        , shortRound = ColorHelper.fromCSSHexToRGB "#ff4e4d"
-        , focusRound = ColorHelper.fromCSSHexToRGB "#05ec8c"
-        , focusRoundMiddle = ColorHelper.fromCSSHexToRGB "#ff7f0e"
-        , focusRoundEnd = ColorHelper.fromCSSHexToRGB "#ff4e4d"
-        , background = ColorHelper.fromCSSHexToRGB "#2f384b"
-        , backgroundLight = ColorHelper.fromCSSHexToRGB "#3d4457"
-        , backgroundLightest = ColorHelper.fromCSSHexToRGB "#858c99"
-        , foreground = ColorHelper.fromCSSHexToRGB "#f6f2eb"
-        , foregroundDarker = ColorHelper.fromCSSHexToRGB "#c0c9da"
-        , foregroundDarkest = ColorHelper.fromCSSHexToRGB "#dbe1ef"
-        , accent = ColorHelper.fromCSSHexToRGB "#05ec8c"
+        { longRound = Color.fromCSSHexToRGB "#0bbddb"
+        , shortRound = Color.fromCSSHexToRGB "#ff4e4d"
+        , focusRound = Color.fromCSSHexToRGB "#05ec8c"
+        , focusRoundMiddle = Color.fromCSSHexToRGB "#ff7f0e"
+        , focusRoundEnd = Color.fromCSSHexToRGB "#ff4e4d"
+        , background = Color.fromCSSHexToRGB "#2f384b"
+        , backgroundLight = Color.fromCSSHexToRGB "#3d4457"
+        , backgroundLightest = Color.fromCSSHexToRGB "#858c99"
+        , foreground = Color.fromCSSHexToRGB "#f6f2eb"
+        , foregroundDarker = Color.fromCSSHexToRGB "#c0c9da"
+        , foregroundDarkest = Color.fromCSSHexToRGB "#dbe1ef"
+        , accent = Color.fromCSSHexToRGB "#05ec8c"
         }
     , name = "Pomodorolm"
     }

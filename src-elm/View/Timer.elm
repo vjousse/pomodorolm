@@ -1,6 +1,6 @@
 module View.Timer exposing (EventHandlers, view)
 
-import ColorHelper exposing (RGB(..), computeCurrentColor)
+import Color exposing (RGB(..), computeCurrentColor)
 import Config exposing (Config)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)

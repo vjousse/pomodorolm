@@ -1,6 +1,6 @@
 module View.Drawer exposing (EventHandlers, view)
 
-import ColorHelper
+import Color
 import Config exposing (Config)
 import Html exposing (Html, a, div, h2, input, option, p, section, select, span, text)
 import Html.Attributes exposing (class, href, id, selected, style, target, title, type_, value)
@@ -765,13 +765,13 @@ themeSettingView { onThemeChange } themes theme =
                             in
                             div
                                 [ class "setting-wrapper"
-                                , style "background-color" (ColorHelper.fromRGBToCSSHex colors.background)
-                                , style "border-color" (ColorHelper.fromRGBToCSSHex colors.accent)
+                                , style "background-color" (Color.fromRGBToCSSHex colors.background)
+                                , style "border-color" (Color.fromRGBToCSSHex colors.accent)
                                 , onClick <| onThemeChange t
                                 ]
                                 [ p
                                     [ class "setting-title"
-                                    , style "color" (ColorHelper.fromRGBToCSSHex colors.foreground)
+                                    , style "color" (Color.fromRGBToCSSHex colors.foreground)
                                     ]
                                     [ text name ]
                                 , if t == theme then
@@ -780,7 +780,7 @@ themeSettingView { onThemeChange } themes theme =
                                         , SvgAttr.width "5vw"
                                         ]
                                         [ path
-                                            [ SvgAttr.fill (ColorHelper.fromRGBToCSSHex colors.accent)
+                                            [ SvgAttr.fill (Color.fromRGBToCSSHex colors.accent)
                                             , SvgAttr.d "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
                                             ]
                                             []

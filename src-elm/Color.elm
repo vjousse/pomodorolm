@@ -1,7 +1,7 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module ColorHelper exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
 
 import Hex
 import Seconds exposing (Seconds)

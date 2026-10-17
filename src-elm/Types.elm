@@ -6,7 +6,7 @@ module Types exposing
     , SettingType(..)
     )
 
-import ColorHelper exposing (RGB)
+import Color exposing (RGB)
 import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 

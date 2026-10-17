@@ -13,7 +13,7 @@ module Json exposing
     , themeColorsEncoder
     )
 
-import ColorHelper exposing (ThemeColors)
+import Color exposing (ThemeColors)
 import Config exposing (Config)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
@@ -70,9 +70,9 @@ themeColorsDecoder =
         |> Pipe.required "short_round" decodeRGB
 
 
-decodeRGB : Decode.Decoder ColorHelper.RGB
+decodeRGB : Decode.Decoder Color.RGB
 decodeRGB =
-    Decode.map ColorHelper.fromCSSHexToRGB Decode.string
+    Decode.map Color.fromCSSHexToRGB Decode.string
 
 
 themeColorsEncoder : ThemeColors -> Encode.Value
@@ -93,9 +93,9 @@ themeColorsEncoder themeColors =
         ]
 
 
-encodeRGB : ColorHelper.RGB -> Encode.Value
+encodeRGB : Color.RGB -> Encode.Value
 encodeRGB color =
-    Encode.string (ColorHelper.fromRGBToCSSHex color)
+    Encode.string (Color.fromRGBToCSSHex color)
 
 
 themeDecoder : Decode.Decoder Theme
