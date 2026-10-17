@@ -234,8 +234,11 @@ update msg ({ config } as model) =
                         |> ListWithCurrent.fromList
                         |> ListWithCurrent.setCurrentByPredicate (\t -> (t.name |> String.toLower) == c.config.theme)
 
+                maybeCurrentTheme =
+                    ListWithCurrent.getCurrent updatedThemes
+
                 newThemes =
-                    case ListWithCurrent.getCurrent updatedThemes of
+                    case maybeCurrentTheme of
                         Just theme ->
                             -- We found a theme with the same name than in the config: everything's fine
                             if (theme.name |> String.toLower) == (c.config.theme |> String.toLower) then
@@ -259,7 +262,7 @@ update msg ({ config } as model) =
                         |> processExternalRustMessage c.pomodoroState
 
                 ( modelWithTheme, cmdWithTheme ) =
-                    case newThemes |> ListWithCurrent.getCurrent of
+                    case maybeCurrentTheme of
                         Just currentTheme ->
                             let
                                 ( updatedModel, updatedCmd ) =
