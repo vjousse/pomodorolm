@@ -6,6 +6,7 @@ module Types exposing
     , SettingType(..)
     )
 
+import ColorHelper exposing (RGB)
 import SessionStatus exposing (SessionStatus)
 import SessionType exposing (SessionType)
 
@@ -16,7 +17,7 @@ type ResetType
 
 
 type alias CurrentState =
-    { color : String
+    { color : RGB
     , percentage : Float
     , paused : Bool
     , sessionStatus : SessionStatus

@@ -1,7 +1,7 @@
 port module Main exposing (Flags, Model, Msg, main)
 
 import Browser
-import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromRGBToCSSHex)
+import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor)
 import Config exposing (Config)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
@@ -100,7 +100,7 @@ init flags =
             pomodorolmTheme
 
         currentState =
-            { color = fromRGBToCSSHex theme.colors.focusRound
+            { color = theme.colors.focusRound
             , percentage = 1
             , paused = False
             , sessionStatus = NotStarted
@@ -249,11 +249,10 @@ update msg ({ config } as model) =
                     { color =
                         case model.pomodoroState of
                             Just state ->
-                                fromRGBToCSSHex
-                                    (colorForSessionType state.currentSession.sessionType model.theme.colors)
+                                colorForSessionType state.currentSession.sessionType model.theme.colors
 
                             Nothing ->
-                                fromRGBToCSSHex model.theme.colors.focusRound
+                                model.theme.colors.focusRound
                     , percentage = 1
                     , paused =
                         model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
@@ -508,11 +507,9 @@ changeTheme theme ({ config } as model) =
         newState =
             { currentState
                 | color =
-                    fromRGBToCSSHex
-                        (model.pomodoroState
-                            |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme.colors)
-                            |> Maybe.withDefault theme.colors.focusRound
-                        )
+                    model.pomodoroState
+                        |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme.colors)
+                        |> Maybe.withDefault theme.colors.focusRound
             }
 
         newConfig =
@@ -630,7 +627,7 @@ processExternalRustMessage pomodoroState model =
                 1
 
         currentState =
-            { color = fromRGBToCSSHex currentColor
+            { color = currentColor
             , percentage = percent
             , paused =
                 pomodoroState.currentSession.status == Paused
@@ -731,12 +728,11 @@ togglePlayStatus model =
 
                             currentState =
                                 { color =
-                                    fromRGBToCSSHex <|
-                                        computeCurrentColor
-                                            state.currentSession.currentTime
-                                            (getCurrentMaxTime model.config state.currentSession)
-                                            state.currentSession.sessionType
-                                            model.theme.colors
+                                    computeCurrentColor
+                                        state.currentSession.currentTime
+                                        (getCurrentMaxTime model.config state.currentSession)
+                                        state.currentSession.sessionType
+                                        model.theme.colors
                                 , percentage =
                                     if maxTime /= 0 then
                                         toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime
@@ -761,11 +757,10 @@ togglePlayStatus model =
 
                             currentState =
                                 { color =
-                                    fromRGBToCSSHex <|
-                                        computeCurrentColor state.currentSession.currentTime
-                                            (getCurrentMaxTime model.config state.currentSession)
-                                            state.currentSession.sessionType
-                                            model.theme.colors
+                                    computeCurrentColor state.currentSession.currentTime
+                                        (getCurrentMaxTime model.config state.currentSession)
+                                        state.currentSession.sessionType
+                                        model.theme.colors
                                 , percentage =
                                     if maxTime /= 0 then
                                         toFloat (maxTime - state.currentSession.currentTime) / toFloat maxTime

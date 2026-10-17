@@ -113,7 +113,7 @@ themesDecoder =
 currentStateEncoder : CurrentState -> Encode.Value
 currentStateEncoder currentState =
     Encode.object
-        [ ( "color", Encode.string currentState.color )
+        [ ( "color", encodeRGB currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
         , ( "sessionStatus", Encode.string (SessionStatus.toString currentState.sessionStatus) )
