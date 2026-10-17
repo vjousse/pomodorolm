@@ -253,8 +253,7 @@ update msg ({ config } as model) =
                                     (colorForSessionType state.currentSession.sessionType model.theme)
 
                             Nothing ->
-                                fromRGBToCSSHex
-                                    (fromCSSHexToRGB <| model.theme.colors.focusRound)
+                                model.theme.colors.focusRound
                     , percentage = 1
                     , paused =
                         model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
