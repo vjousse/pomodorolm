@@ -12,7 +12,7 @@ import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import Themes exposing (Theme, pomodorolmTheme)
+import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
 import View.Drawer
@@ -832,6 +832,26 @@ view model =
                 }
                 model
         ]
+
+
+pomodorolmTheme : Theme
+pomodorolmTheme =
+    { colors =
+        { longRound = "#0bbddb"
+        , shortRound = "#ff4e4d"
+        , focusRound = "#05ec8c"
+        , focusRoundMiddle = "#ff7f0e"
+        , focusRoundEnd = "#ff4e4d"
+        , background = "#2f384b"
+        , backgroundLight = "#3d4457"
+        , backgroundLightest = "#858c99"
+        , foreground = "#f6f2eb"
+        , foregroundDarker = "#c0c9da"
+        , foregroundDarkest = "#dbe1ef"
+        , accent = "#05ec8c"
+        }
+    , name = "Pomodorolm"
+    }
 
 
 
