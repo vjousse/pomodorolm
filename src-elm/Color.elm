@@ -1,9 +1,10 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, fromCSSHex, toCSSHex)
+module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, encode, fromCSSHex, toCSSHex)
 
 import Hex
+import Json.Encode as Encode
 import Seconds exposing (Seconds)
 import SessionType exposing (SessionType(..))
 
@@ -109,3 +110,8 @@ computeCurrentColor currentTime maxTime sessionType colors =
 
         s ->
             colorForSessionType s colors
+
+
+encode : RGB -> Encode.Value
+encode color =
+    Encode.string (toCSSHex color)

@@ -78,24 +78,19 @@ decodeRGB =
 themeColorsEncoder : ThemeColors -> Encode.Value
 themeColorsEncoder themeColors =
     Encode.object
-        [ ( "accent", encodeRGB themeColors.accent )
-        , ( "background", encodeRGB themeColors.background )
-        , ( "backgroundLight", encodeRGB themeColors.backgroundLight )
-        , ( "backgroundLightest", encodeRGB themeColors.backgroundLightest )
-        , ( "focusRound", encodeRGB themeColors.focusRound )
-        , ( "focusRoundEnd", encodeRGB themeColors.focusRoundEnd )
-        , ( "focusRoundMiddle", encodeRGB themeColors.focusRoundMiddle )
-        , ( "foreground", encodeRGB themeColors.foreground )
-        , ( "foregroundDarker", encodeRGB themeColors.foregroundDarker )
-        , ( "foregroundDarkest", encodeRGB themeColors.foregroundDarkest )
-        , ( "longRound", encodeRGB themeColors.longRound )
-        , ( "shortRound", encodeRGB themeColors.shortRound )
+        [ ( "accent", Color.encode themeColors.accent )
+        , ( "background", Color.encode themeColors.background )
+        , ( "backgroundLight", Color.encode themeColors.backgroundLight )
+        , ( "backgroundLightest", Color.encode themeColors.backgroundLightest )
+        , ( "focusRound", Color.encode themeColors.focusRound )
+        , ( "focusRoundEnd", Color.encode themeColors.focusRoundEnd )
+        , ( "focusRoundMiddle", Color.encode themeColors.focusRoundMiddle )
+        , ( "foreground", Color.encode themeColors.foreground )
+        , ( "foregroundDarker", Color.encode themeColors.foregroundDarker )
+        , ( "foregroundDarkest", Color.encode themeColors.foregroundDarkest )
+        , ( "longRound", Color.encode themeColors.longRound )
+        , ( "shortRound", Color.encode themeColors.shortRound )
         ]
-
-
-encodeRGB : Color.RGB -> Encode.Value
-encodeRGB color =
-    Encode.string (Color.toCSSHex color)
 
 
 themeDecoder : Decode.Decoder Theme
@@ -113,7 +108,7 @@ themesDecoder =
 currentStateEncoder : CurrentState -> Encode.Value
 currentStateEncoder currentState =
     Encode.object
-        [ ( "color", encodeRGB currentState.color )
+        [ ( "color", Color.encode currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
         , ( "sessionStatus", Encode.string (SessionStatus.toString currentState.sessionStatus) )
