@@ -1,7 +1,7 @@
 port module Main exposing (Flags, Model, Msg, main)
 
 import Browser
-import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromCSSHexToRGB, fromRGBToCSSHex)
+import ColorHelper exposing (RGB(..), colorForSessionType, computeCurrentColor, fromRGBToCSSHex)
 import Config exposing (Config)
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
@@ -100,7 +100,7 @@ init flags =
             pomodorolmTheme
 
         currentState =
-            { color = theme.colors.focusRound
+            { color = fromRGBToCSSHex theme.colors.focusRound
             , percentage = 1
             , paused = False
             , sessionStatus = NotStarted
@@ -141,7 +141,7 @@ init flags =
             , tickSoundsDuringBreak = flags.tickSoundsDuringBreak
             , volume = flags.volume
             }
-      , currentColor = fromCSSHexToRGB theme.colors.focusRound
+      , currentColor = theme.colors.focusRound
       , currentState = currentState
       , drawerOpen = False
       , focusLabel = flags.defaultFocusLabel
@@ -253,7 +253,7 @@ update msg ({ config } as model) =
                                     (colorForSessionType state.currentSession.sessionType model.theme.colors)
 
                             Nothing ->
-                                model.theme.colors.focusRound
+                                fromRGBToCSSHex model.theme.colors.focusRound
                     , percentage = 1
                     , paused =
                         model.pomodoroState |> Maybe.map (\state -> state.currentSession.status == Paused) |> Maybe.withDefault False
@@ -511,7 +511,7 @@ changeTheme theme ({ config } as model) =
                     fromRGBToCSSHex
                         (model.pomodoroState
                             |> Maybe.map (\state -> colorForSessionType state.currentSession.sessionType theme.colors)
-                            |> Maybe.withDefault (fromCSSHexToRGB <| theme.colors.focusRound)
+                            |> Maybe.withDefault theme.colors.focusRound
                         )
             }
 
@@ -837,18 +837,18 @@ view model =
 pomodorolmTheme : Theme
 pomodorolmTheme =
     { colors =
-        { longRound = "#0bbddb"
-        , shortRound = "#ff4e4d"
-        , focusRound = "#05ec8c"
-        , focusRoundMiddle = "#ff7f0e"
-        , focusRoundEnd = "#ff4e4d"
-        , background = "#2f384b"
-        , backgroundLight = "#3d4457"
-        , backgroundLightest = "#858c99"
-        , foreground = "#f6f2eb"
-        , foregroundDarker = "#c0c9da"
-        , foregroundDarkest = "#dbe1ef"
-        , accent = "#05ec8c"
+        { longRound = ColorHelper.fromCSSHexToRGB "#0bbddb"
+        , shortRound = ColorHelper.fromCSSHexToRGB "#ff4e4d"
+        , focusRound = ColorHelper.fromCSSHexToRGB "#05ec8c"
+        , focusRoundMiddle = ColorHelper.fromCSSHexToRGB "#ff7f0e"
+        , focusRoundEnd = ColorHelper.fromCSSHexToRGB "#ff4e4d"
+        , background = ColorHelper.fromCSSHexToRGB "#2f384b"
+        , backgroundLight = ColorHelper.fromCSSHexToRGB "#3d4457"
+        , backgroundLightest = ColorHelper.fromCSSHexToRGB "#858c99"
+        , foreground = ColorHelper.fromCSSHexToRGB "#f6f2eb"
+        , foregroundDarker = ColorHelper.fromCSSHexToRGB "#c0c9da"
+        , foregroundDarkest = ColorHelper.fromCSSHexToRGB "#dbe1ef"
+        , accent = ColorHelper.fromCSSHexToRGB "#05ec8c"
         }
     , name = "Pomodorolm"
     }

@@ -56,36 +56,46 @@ elmMessageBuilder name value valueEncoder =
 themeColorsDecoder : Decode.Decoder ThemeColors
 themeColorsDecoder =
     Decode.succeed ThemeColors
-        |> Pipe.required "accent" Decode.string
-        |> Pipe.required "background" Decode.string
-        |> Pipe.required "background_light" Decode.string
-        |> Pipe.required "background_lightest" Decode.string
-        |> Pipe.required "focus_round" Decode.string
-        |> Pipe.required "focus_round_end" Decode.string
-        |> Pipe.required "focus_round_middle" Decode.string
-        |> Pipe.required "foreground" Decode.string
-        |> Pipe.required "foreground_darker" Decode.string
-        |> Pipe.required "foreground_darkest" Decode.string
-        |> Pipe.required "long_round" Decode.string
-        |> Pipe.required "short_round" Decode.string
+        |> Pipe.required "accent" decodeRGB
+        |> Pipe.required "background" decodeRGB
+        |> Pipe.required "background_light" decodeRGB
+        |> Pipe.required "background_lightest" decodeRGB
+        |> Pipe.required "focus_round" decodeRGB
+        |> Pipe.required "focus_round_end" decodeRGB
+        |> Pipe.required "focus_round_middle" decodeRGB
+        |> Pipe.required "foreground" decodeRGB
+        |> Pipe.required "foreground_darker" decodeRGB
+        |> Pipe.required "foreground_darkest" decodeRGB
+        |> Pipe.required "long_round" decodeRGB
+        |> Pipe.required "short_round" decodeRGB
+
+
+decodeRGB : Decode.Decoder ColorHelper.RGB
+decodeRGB =
+    Decode.map ColorHelper.fromCSSHexToRGB Decode.string
 
 
 themeColorsEncoder : ThemeColors -> Encode.Value
 themeColorsEncoder themeColors =
     Encode.object
-        [ ( "accent", Encode.string themeColors.accent )
-        , ( "background", Encode.string themeColors.background )
-        , ( "backgroundLight", Encode.string themeColors.backgroundLight )
-        , ( "backgroundLightest", Encode.string themeColors.backgroundLightest )
-        , ( "focusRound", Encode.string themeColors.focusRound )
-        , ( "focusRoundEnd", Encode.string themeColors.focusRoundEnd )
-        , ( "focusRoundMiddle", Encode.string themeColors.focusRoundMiddle )
-        , ( "foreground", Encode.string themeColors.foreground )
-        , ( "foregroundDarker", Encode.string themeColors.foregroundDarker )
-        , ( "foregroundDarkest", Encode.string themeColors.foregroundDarkest )
-        , ( "longRound", Encode.string themeColors.longRound )
-        , ( "shortRound", Encode.string themeColors.shortRound )
+        [ ( "accent", encodeRGB themeColors.accent )
+        , ( "background", encodeRGB themeColors.background )
+        , ( "backgroundLight", encodeRGB themeColors.backgroundLight )
+        , ( "backgroundLightest", encodeRGB themeColors.backgroundLightest )
+        , ( "focusRound", encodeRGB themeColors.focusRound )
+        , ( "focusRoundEnd", encodeRGB themeColors.focusRoundEnd )
+        , ( "focusRoundMiddle", encodeRGB themeColors.focusRoundMiddle )
+        , ( "foreground", encodeRGB themeColors.foreground )
+        , ( "foregroundDarker", encodeRGB themeColors.foregroundDarker )
+        , ( "foregroundDarkest", encodeRGB themeColors.foregroundDarkest )
+        , ( "longRound", encodeRGB themeColors.longRound )
+        , ( "shortRound", encodeRGB themeColors.shortRound )
         ]
+
+
+encodeRGB : ColorHelper.RGB -> Encode.Value
+encodeRGB color =
+    Encode.string (ColorHelper.fromRGBToCSSHex color)
 
 
 themeDecoder : Decode.Decoder Theme
