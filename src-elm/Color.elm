@@ -1,7 +1,7 @@
 -- Initial code is courtesy of to https://package.elm-lang.org/packages/juliusl/elm-ui-hexcolor/latest/Element-HexColor
 
 
-module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, fromCSSHex, fromRGBToCSSHex)
+module Color exposing (RGB(..), ThemeColors, colorForSessionType, computeCurrentColor, fromCSSHex, toCSSHex)
 
 import Hex
 import Seconds exposing (Seconds)
@@ -48,8 +48,8 @@ fromCSSHex hexcode =
         (Hex.fromString (String.slice 5 7 hexcode) |> Result.withDefault 0)
 
 
-fromRGBToCSSHex : RGB -> String
-fromRGBToCSSHex (RGB r g b) =
+toCSSHex : RGB -> String
+toCSSHex (RGB r g b) =
     "#" ++ toStringWithZeroPadding r ++ toStringWithZeroPadding g ++ toStringWithZeroPadding b
 
 

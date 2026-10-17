@@ -95,7 +95,7 @@ themeColorsEncoder themeColors =
 
 encodeRGB : Color.RGB -> Encode.Value
 encodeRGB color =
-    Encode.string (Color.fromRGBToCSSHex color)
+    Encode.string (Color.toCSSHex color)
 
 
 themeDecoder : Decode.Decoder Theme
