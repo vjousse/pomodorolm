@@ -12,7 +12,6 @@ import Pomodoro
 import Seconds exposing (Seconds)
 import SessionStatus exposing (SessionStatus(..))
 import SessionType exposing (SessionType(..))
-import ThemeColors exposing (ThemeColors)
 import Themes exposing (Theme, pomodorolmTheme)
 import TimeHelper exposing (getCurrentMaxTime)
 import Types exposing (CurrentState, ResetType(..), Setting(..), SettingTab(..), SettingType(..))
@@ -158,7 +157,7 @@ init flags =
     , Cmd.batch
         [ sendMessageFromElm (elmMessageBuilder "update_current_state" currentState currentStateEncoder)
         , sendMessageFromElm (elmMessageEncoder { name = "get_init_data", value = Nothing })
-        , setThemeColors <| theme.colors
+        , setThemeColors (Json.themeColorsEncoder theme.colors)
         ]
     )
 
@@ -527,7 +526,7 @@ changeTheme theme ({ config } as model) =
         , theme = theme
       }
     , Cmd.batch
-        [ setThemeColors theme.colors
+        [ setThemeColors (Json.themeColorsEncoder theme.colors)
         , sendMessageFromElm (elmMessageBuilder "update_config" newConfig configEncoder)
         , sendMessageFromElm (elmMessageBuilder "update_current_state" newState currentStateEncoder)
         ]
@@ -886,4 +885,4 @@ type alias Notification =
 port notify : Notification -> Cmd msg
 
 
-port setThemeColors : ThemeColors -> Cmd msg
+port setThemeColors : Encode.Value -> Cmd msg

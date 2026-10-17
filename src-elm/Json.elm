@@ -10,6 +10,7 @@ module Json exposing
     , externalMessageDecoder
     , sessionTypeDecoder
     , soundMessageEncoder
+    , themeColorsEncoder
     )
 
 import Config exposing (Config)
@@ -67,6 +68,24 @@ themeColorsDecoder =
         |> Pipe.required "foreground_darkest" Decode.string
         |> Pipe.required "long_round" Decode.string
         |> Pipe.required "short_round" Decode.string
+
+
+themeColorsEncoder : ThemeColors -> Encode.Value
+themeColorsEncoder themeColors =
+    Encode.object
+        [ ( "accent", Encode.string themeColors.accent )
+        , ( "background", Encode.string themeColors.background )
+        , ( "backgroundLight", Encode.string themeColors.backgroundLight )
+        , ( "backgroundLightest", Encode.string themeColors.backgroundLightest )
+        , ( "focusRound", Encode.string themeColors.focusRound )
+        , ( "focusRoundEnd", Encode.string themeColors.focusRoundEnd )
+        , ( "focusRoundMiddle", Encode.string themeColors.focusRoundMiddle )
+        , ( "foreground", Encode.string themeColors.foreground )
+        , ( "foregroundDarker", Encode.string themeColors.foregroundDarker )
+        , ( "foregroundDarkest", Encode.string themeColors.foregroundDarkest )
+        , ( "longRound", Encode.string themeColors.longRound )
+        , ( "shortRound", Encode.string themeColors.shortRound )
+        ]
 
 
 themeDecoder : Decode.Decoder Theme
