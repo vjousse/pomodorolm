@@ -1,11 +1,20 @@
 module TimeHelper exposing (getCurrentMaxTime)
 
-import Types exposing (Config, PomodoroState, Seconds, SessionType(..))
+import Pomodoro
+import Seconds exposing (Seconds)
+import SessionType exposing (SessionType(..))
 
 
-getCurrentMaxTime : Config -> PomodoroState -> Seconds
-getCurrentMaxTime config state =
-    case state.currentSession.sessionType of
+getCurrentMaxTime :
+    { config
+        | focusDuration : Seconds
+        , longBreakDuration : Seconds
+        , shortBreakDuration : Seconds
+    }
+    -> Pomodoro.Session
+    -> Seconds
+getCurrentMaxTime config currentSession =
+    case currentSession.sessionType of
         Focus ->
             config.focusDuration
 

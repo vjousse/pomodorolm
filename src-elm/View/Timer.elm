@@ -1,18 +1,81 @@
-module View.Timer exposing (timerView)
+module View.Timer exposing (EventHandlers, view)
 
-import ColorHelper exposing (computeCurrentColor)
+import Color exposing (computeCurrentColor)
+import Config exposing (Config)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, id, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onMouseLeave, onMouseOver)
+import Pomodoro
+import Seconds exposing (Seconds)
+import SessionStatus exposing (SessionStatus(..))
+import SessionType exposing (SessionType(..))
 import Svg exposing (path, svg)
 import Svg.Attributes as SvgAttr
 import Themes exposing (Theme)
 import TimeHelper exposing (getCurrentMaxTime)
-import Types exposing (Model, Msg(..), RGB(..), ResetType(..), Seconds, SessionStatus(..), SessionType(..))
+import Types exposing (ResetType(..))
 
 
-dialView : SessionType -> Seconds -> Seconds -> Float -> Theme -> String -> String -> String -> Html Msg
-dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
+type alias EventHandlers msg =
+    { onReset : ResetType -> msg
+    , onCurrentRoundSkip : msg
+    , onSetVolumeBarVisibility : Bool -> msg
+    , onVolumeUpdate : String -> msg
+    , onToggleMute : Bool -> msg
+    , onUpdateLabel : SessionType -> String -> msg
+    , onTogglePlayStatus : msg
+    }
+
+
+view :
+    EventHandlers msg
+    ->
+        { model
+            | config : Config
+            , strokeDasharray : Float
+            , theme : Theme
+            , pomodoroState : Maybe Pomodoro.State
+            , focusLabel : String
+            , shortBreakLabel : String
+            , longBreakLabel : String
+            , volumeSliderHidden : Bool
+        }
+    -> Html msg
+view eventHandlers ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
+    div [ class "timer-wrapper" ]
+        (case pomodoroState of
+            Just state ->
+                [ dialView
+                    eventHandlers
+                    state.currentSession.sessionType
+                    state.currentSession.currentTime
+                    (getCurrentMaxTime config state.currentSession)
+                    strokeDasharray
+                    theme
+                    focusLabel
+                    shortBreakLabel
+                    longBreakLabel
+                , playPauseView eventHandlers state.currentSession.status
+                , footerView eventHandlers model
+                ]
+
+            Nothing ->
+                [ div [] [ text "" ], footerView eventHandlers model ]
+        )
+
+
+dialView :
+    { eventHandlers | onUpdateLabel : SessionType -> String -> msg }
+    -> SessionType
+    -> Seconds
+    -> Seconds
+    -> Float
+    -> Theme
+    -> String
+    -> String
+    -> String
+    -> Html msg
+dialView eventHandlers sessionType currentTime maxTime maxStrokeDasharray theme focusLabel shortBreakLabel longBreakLabel =
     let
         remainingPercent =
             if maxTime /= 0 then
@@ -24,11 +87,8 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
         strokeDasharray =
             maxStrokeDasharray - maxStrokeDasharray * remainingPercent
 
-        colorToHtmlRgbString (RGB r g b) =
-            "rgb(" ++ String.fromInt r ++ ", " ++ String.fromInt g ++ ", " ++ String.fromInt b ++ ")"
-
         color =
-            colorToHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme
+            Color.toHtmlRgbString <| computeCurrentColor currentTime maxTime sessionType theme.colors
     in
     div [ class "dial-wrapper" ]
         [ p [ class "dial-time" ]
@@ -48,7 +108,7 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
                             longBreakLabel
                     )
                 , style "color" color
-                , onInput <| UpdateLabel sessionType
+                , onInput <| eventHandlers.onUpdateLabel sessionType
                 ]
                 []
             ]
@@ -100,28 +160,10 @@ dialView sessionType currentTime maxTime maxStrokeDasharray theme focusLabel sho
         ]
 
 
-timerView : Model -> Html Msg
-timerView ({ config, strokeDasharray, theme, pomodoroState, focusLabel, shortBreakLabel, longBreakLabel } as model) =
-    pomodoroState
-        |> Maybe.map
-            (\state ->
-                div [ class "timer-wrapper" ]
-                    [ dialView state.currentSession.sessionType state.currentSession.currentTime (getCurrentMaxTime config state) strokeDasharray theme focusLabel shortBreakLabel longBreakLabel
-                    , playPauseView state.currentSession.status
-                    , footerView model
-                    ]
-            )
-        |> Maybe.withDefault
-            (div
-                [ class "timer-wrapper" ]
-                [ div [] [ text "" ], footerView model ]
-            )
-
-
-playPauseView : SessionStatus -> Html Msg
-playPauseView sessionStatus =
+playPauseView : { eventHandlers | onTogglePlayStatus : msg } -> SessionStatus -> Html msg
+playPauseView { onTogglePlayStatus } sessionStatus =
     section [ class "container", class "button-wrapper" ]
-        [ div [ class "button", onClick TogglePlayStatus ]
+        [ div [ class "button", onClick onTogglePlayStatus ]
             [ div [ class "button-icon-wrapper" ]
                 [ case sessionStatus of
                     Running ->
@@ -185,19 +227,33 @@ playPauseView sessionStatus =
         ]
 
 
-footerView : Model -> Html Msg
-footerView model =
+footerView :
+    { eventHandlers
+        | onReset : ResetType -> msg
+        , onCurrentRoundSkip : msg
+        , onSetVolumeBarVisibility : Bool -> msg
+        , onVolumeUpdate : String -> msg
+        , onToggleMute : Bool -> msg
+    }
+    ->
+        { model
+            | pomodoroState : Maybe Pomodoro.State
+            , config : Config
+            , volumeSliderHidden : Bool
+        }
+    -> Html msg
+footerView eventHandlers model =
     section [ class "container", class "footer" ]
         [ div [ class "round-wrapper" ]
             [ p [ class "total-rounds" ] [ text <| String.fromInt (model.pomodoroState |> Maybe.map (\state -> state.currentWorkRoundNumber) |> Maybe.withDefault 1) ++ "/" ++ String.fromInt model.config.maxRoundNumber ]
             , div [ class "reset-rounds" ]
-                [ p [ class "text-button", title "Reset current round", onClick <| Reset CurrentRound ] [ text "Reset round" ]
+                [ p [ class "text-button", title "Reset current round", onClick <| eventHandlers.onReset CurrentRound ] [ text "Reset round" ]
                 , text " or "
-                , p [ class "text-button", title "Reset the whole session", onClick <| Reset EntireSession ] [ text "session" ]
+                , p [ class "text-button", title "Reset the whole session", onClick <| eventHandlers.onReset EntireSession ] [ text "session" ]
                 ]
             ]
         , div [ class "icon-group", style "position" "absolute", style "right" "0px" ]
-            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick SkipCurrentRound ]
+            [ div [ class "icon-wrapper", class "icon-wrapper--double--left", title "Skip the current round", onClick eventHandlers.onCurrentRoundSkip ]
                 [ svg
                     [ SvgAttr.version "1.2"
                     , SvgAttr.baseProfile "tiny"
@@ -224,7 +280,10 @@ footerView model =
                         []
                     ]
                 ]
-            , div [ onMouseOver ShowVolumeBar, onMouseLeave HideVolumeBar ]
+            , div
+                [ onMouseOver (eventHandlers.onSetVolumeBarVisibility True)
+                , onMouseLeave (eventHandlers.onSetVolumeBarVisibility False)
+                ]
                 [ div
                     [ class "slider-wrapper"
                     , class "slider-wrapper--vert"
@@ -242,7 +301,7 @@ footerView model =
                         , Html.Attributes.min "0"
                         , Html.Attributes.max "100"
                         , class "slider"
-                        , onInput UpdateVolume
+                        , onInput eventHandlers.onVolumeUpdate
                         , value
                             (model.config.volume
                                 |> Maybe.withDefault
@@ -258,7 +317,14 @@ footerView model =
                         []
                     , div [ class "slider-bar", class "slider-bar--blue-grey" ] []
                     ]
-                , div [ class "icon-wrapper", class "icon-wrapper--double--right", id "toggle-mute", onMouseOver ShowVolumeBar, onClick ToggleMute, title "Mute" ]
+                , div
+                    [ class "icon-wrapper"
+                    , class "icon-wrapper--double--right"
+                    , id "toggle-mute"
+                    , onMouseOver (eventHandlers.onSetVolumeBarVisibility True)
+                    , onClick (eventHandlers.onToggleMute (not model.config.muted))
+                    , title "Mute"
+                    ]
                     [ if model.config.muted == False then
                         svg
                             [ SvgAttr.version "1.2"

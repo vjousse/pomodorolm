@@ -1,24 +1,34 @@
-module Json exposing (configEncoder, currentStateEncoder, elmMessageBuilder, elmMessageEncoder, externalMessageDecoder, sessionTypeDecoder, soundMessageEncoder)
+module Json exposing
+    ( ElmMessage
+    , ExternalMessage(..)
+    , InitData
+    , SoundMessageValue
+    , configEncoder
+    , currentStateEncoder
+    , elmMessageBuilder
+    , elmMessageEncoder
+    , externalMessageDecoder
+    , sessionTypeDecoder
+    , soundMessageEncoder
+    , themeColorsEncoder
+    )
 
+import Color exposing (ThemeColors)
+import Config exposing (Config)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipe
 import Json.Encode as Encode
-import Themes exposing (Theme, ThemeColors)
-import Types
-    exposing
-        ( Config
-        , CurrentState
-        , ElmMessage
-        , ExternalMessage(..)
-        , InitData
-        , PomodoroSession
-        , PomodoroState
-        , SessionStatus(..)
-        , SessionType(..)
-        , SoundMessageValue
-        , sessionStatusToString
-        , sessionTypeToString
-        )
+import Pomodoro
+import SessionStatus exposing (SessionStatus(..))
+import SessionType exposing (SessionType(..))
+import Themes exposing (Theme)
+import Types exposing (CurrentState)
+
+
+type alias ElmMessage =
+    { name : String
+    , value : Maybe String
+    }
 
 
 elmMessageEncoder : ElmMessage -> Encode.Value
@@ -46,18 +56,41 @@ elmMessageBuilder name value valueEncoder =
 themeColorsDecoder : Decode.Decoder ThemeColors
 themeColorsDecoder =
     Decode.succeed ThemeColors
-        |> Pipe.required "accent" Decode.string
-        |> Pipe.required "background" Decode.string
-        |> Pipe.required "background_light" Decode.string
-        |> Pipe.required "background_lightest" Decode.string
-        |> Pipe.required "focus_round" Decode.string
-        |> Pipe.required "focus_round_end" Decode.string
-        |> Pipe.required "focus_round_middle" Decode.string
-        |> Pipe.required "foreground" Decode.string
-        |> Pipe.required "foreground_darker" Decode.string
-        |> Pipe.required "foreground_darkest" Decode.string
-        |> Pipe.required "long_round" Decode.string
-        |> Pipe.required "short_round" Decode.string
+        |> Pipe.required "accent" decodeRGB
+        |> Pipe.required "background" decodeRGB
+        |> Pipe.required "background_light" decodeRGB
+        |> Pipe.required "background_lightest" decodeRGB
+        |> Pipe.required "focus_round" decodeRGB
+        |> Pipe.required "focus_round_end" decodeRGB
+        |> Pipe.required "focus_round_middle" decodeRGB
+        |> Pipe.required "foreground" decodeRGB
+        |> Pipe.required "foreground_darker" decodeRGB
+        |> Pipe.required "foreground_darkest" decodeRGB
+        |> Pipe.required "long_round" decodeRGB
+        |> Pipe.required "short_round" decodeRGB
+
+
+decodeRGB : Decode.Decoder Color.RGB
+decodeRGB =
+    Decode.map Color.fromCSSHex Decode.string
+
+
+themeColorsEncoder : ThemeColors -> Encode.Value
+themeColorsEncoder themeColors =
+    Encode.object
+        [ ( "accent", Color.encode themeColors.accent )
+        , ( "background", Color.encode themeColors.background )
+        , ( "backgroundLight", Color.encode themeColors.backgroundLight )
+        , ( "backgroundLightest", Color.encode themeColors.backgroundLightest )
+        , ( "focusRound", Color.encode themeColors.focusRound )
+        , ( "focusRoundEnd", Color.encode themeColors.focusRoundEnd )
+        , ( "focusRoundMiddle", Color.encode themeColors.focusRoundMiddle )
+        , ( "foreground", Color.encode themeColors.foreground )
+        , ( "foregroundDarker", Color.encode themeColors.foregroundDarker )
+        , ( "foregroundDarkest", Color.encode themeColors.foregroundDarkest )
+        , ( "longRound", Color.encode themeColors.longRound )
+        , ( "shortRound", Color.encode themeColors.shortRound )
+        ]
 
 
 themeDecoder : Decode.Decoder Theme
@@ -75,11 +108,17 @@ themesDecoder =
 currentStateEncoder : CurrentState -> Encode.Value
 currentStateEncoder currentState =
     Encode.object
-        [ ( "color", Encode.string currentState.color )
+        [ ( "color", Color.encode currentState.color )
         , ( "percentage", Encode.float currentState.percentage )
         , ( "paused", Encode.bool currentState.paused )
-        , ( "sessionStatus", Encode.string (sessionStatusToString currentState.sessionStatus) )
+        , ( "sessionStatus", Encode.string (SessionStatus.toString currentState.sessionStatus) )
         ]
+
+
+type alias SoundMessageValue =
+    { soundId : String
+    , quitAfterPlay : Bool
+    }
 
 
 soundMessageEncoder : SoundMessageValue -> Encode.Value
@@ -96,7 +135,7 @@ configEncoder config =
         [ ( "alwaysOnTop", Encode.bool config.alwaysOnTop )
         , ( "autoQuit"
           , config.autoQuit
-                |> Maybe.map (\c -> Encode.string (sessionTypeToString c))
+                |> Maybe.map (\c -> Encode.string (SessionType.toString c))
                 |> Maybe.withDefault Encode.null
           )
         , ( "autoStartBreakTimer", Encode.bool config.autoStartBreakTimer )
@@ -173,6 +212,13 @@ configDecoder =
         |> Pipe.optional "volume" (Decode.maybe Decode.int) Nothing
 
 
+type alias InitData =
+    { config : Config
+    , pomodoroState : Pomodoro.State
+    , themes : List Theme
+    }
+
+
 initDataDecoder : Decode.Decoder InitData
 initDataDecoder =
     Decode.succeed InitData
@@ -181,9 +227,9 @@ initDataDecoder =
         |> Pipe.required "themes" themesDecoder
 
 
-rustStateDecoder : Decode.Decoder PomodoroState
+rustStateDecoder : Decode.Decoder Pomodoro.State
 rustStateDecoder =
-    Decode.succeed PomodoroState
+    Decode.succeed Pomodoro.State
         |> Pipe.required "current_session" rustSessionDecoder
         |> Pipe.required "current_work_round_number" Decode.int
 
@@ -230,13 +276,18 @@ sessionStatusFromStringDecoder string =
             Decode.fail ("Unknown sessionStatus: " ++ string)
 
 
-rustSessionDecoder : Decode.Decoder PomodoroSession
+rustSessionDecoder : Decode.Decoder Pomodoro.Session
 rustSessionDecoder =
-    Decode.succeed PomodoroSession
+    Decode.succeed Pomodoro.Session
         |> Pipe.required "current_time" Decode.int
-        |> Pipe.optional "label" (Decode.maybe Decode.string) Nothing
         |> Pipe.required "session_type" sessionTypeDecoder
         |> Pipe.required "status" sessionStatusDecoder
+
+
+type ExternalMessage
+    = RustStateMsg Pomodoro.State
+    | InitDataMsg InitData
+    | SoundFilePath SessionType String
 
 
 externalMessageDecoder : Decode.Decoder ExternalMessage
