@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 pub mod cli;
 mod config;
+mod error;
 pub mod gui;
 mod icon;
 pub mod pomodoro;

@@ -2,8 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
+use anyhow::{Context, Result};
 
 use crate::config::Config;
+use crate::error::CommandResult;
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
@@ -578,51 +580,48 @@ async fn update_config(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
     config: Config,
-) -> Result<pomodoro::PomodoroUnborrowed, ()> {
+) -> CommandResult<pomodoro::PomodoroUnborrowed> {
     let mut state_guard = state.0.lock().await;
 
-    match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
-        Ok(config_file_pathbuf) => {
-            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
+    let config_file_pathbuf =
+        get_config_file_path(&state_guard.config_dir_name, app_handle.path())?;
+    let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
 
-            let file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(config_file_path);
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(config_file_path);
 
-            // FIX: We should not fail silently and we should hanlde the errors properly
-            let _: Result<(), _> = match file {
-                Ok(mut f) => {
-                    let _ = f.write_all(toml::to_string(&config).unwrap().as_bytes());
+    // FIX: We should not fail silently and we should hanlde the errors properly
+    let _: Result<(), _> = match file {
+        Ok(mut f) => {
+            let _ = f.write_all(toml::to_string(&config).unwrap().as_bytes());
 
-                    *state_guard = App {
-                        config: config.clone(),
-                        config_dir_name: state_guard.config_dir_name.clone(),
-                        pomodoro: pomodoro::Pomodoro {
-                            config: pomodoro_config(&config),
-                            ..state_guard.pomodoro.clone()
-                        },
-                    };
-
-                    // Manage autostart status
-                    let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
-
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.set_always_on_top(config.always_on_top);
-                    }
-
-                    Ok::<(), ()>(())
-                }
-                Err(_) => {
-                    println!("Error opening config file on update");
-                    Ok(())
-                }
+            *state_guard = App {
+                config: config.clone(),
+                config_dir_name: state_guard.config_dir_name.clone(),
+                pomodoro: pomodoro::Pomodoro {
+                    config: pomodoro_config(&config),
+                    ..state_guard.pomodoro.clone()
+                },
             };
+
+            // Manage autostart status
+            let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
+
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = window.set_always_on_top(config.always_on_top);
+            }
+
+            Ok::<(), ()>(())
         }
-        Err(e) => eprintln!("Unable to get config file path: {e:?}."),
-    }
+        Err(_) => {
+            println!("Error opening config file on update");
+            Ok(())
+        }
+    };
 
     Ok(state_guard.pomodoro.to_unborrowed())
 }
@@ -759,12 +758,14 @@ fn hide_window<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-async fn close_window(app_handle: tauri::AppHandle) {
+async fn close_window(app_handle: tauri::AppHandle) -> CommandResult<()> {
     let window = app_handle
         .get_webview_window("main")
-        .expect("window not found");
+        .context("window not found")?;
 
-    window.close().expect("failed to close window");
+    window.close().context("failed to close window")?;
+
+    Ok(())
 }
 
 #[tauri::command]
