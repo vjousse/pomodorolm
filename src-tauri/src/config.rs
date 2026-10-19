@@ -1,8 +1,7 @@
 use crate::pomodoro;
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -70,27 +69,23 @@ impl Config {
     pub fn get_or_create_from_disk(
         config_dir: &Path,
         config_file_name: Option<String>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<Self> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
 
         // Create the config dir and the themes one if they don’t exist
-        let _ = fs::create_dir_all(config_dir.join("themes/"));
+        fs::create_dir_all(config_dir.join("themes/")).context("Unable to creat themes dir")?;
 
         let metadata = fs::metadata(&config_file_path);
 
         Ok(if metadata.is_err() {
-            let mut file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(config_file_path)?;
-
             let default_config = Config {
                 ..Default::default()
             };
 
-            file.write_all(toml::to_string(&default_config)?.as_bytes())?;
+            let file_content = toml::to_string(&default_config)?;
+            fs::write(&config_file_path, file_content)
+                .with_context(|| format!("writing {}", config_file_path.display()))?;
+
             default_config
         } else {
             // Open the file

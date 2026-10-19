@@ -382,7 +382,7 @@ fn manage_autostart(app_handle: &AppHandle, system_startup_auto_start: bool) -> 
 fn read_config_from_disk<R: Runtime>(
     config_dir_name: &str,
     app_path: &tauri::path::PathResolver<R>,
-) -> Result<Config, Box<dyn std::error::Error>> {
+) -> anyhow::Result<Config> {
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
     Config::get_or_create_from_disk(&config_dir, None)
@@ -613,13 +613,12 @@ async fn update_config(
 async fn load_init_data(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
-) -> Result<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed), ()> {
+) -> CommandResult<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed)> {
     let state_guard = state.0.lock().await;
 
-    let config_dir =
-        get_config_dir(&state_guard.config_dir_name, app_handle.path()).map_err(|_| ())?;
+    let config_dir = get_config_dir(&state_guard.config_dir_name, app_handle.path())?;
 
-    let config = Config::get_or_create_from_disk(&config_dir, None).map_err(|_| ());
+    let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
         .expect("Unable to resolve `themes/{}` resource.");
@@ -647,7 +646,7 @@ async fn load_init_data(
         }
     }
 
-    config.map(|c| (c, themes, state_guard.pomodoro.to_unborrowed()))
+    Ok((config, themes, state_guard.pomodoro.to_unborrowed()))
 }
 
 #[tauri::command]
