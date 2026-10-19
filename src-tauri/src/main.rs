@@ -19,7 +19,7 @@ enum Commands {
 
 const CONFIG_DIR_NAME: &str = "pomodorolm";
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     // You can check for the existence of subcommands, and if found use their
@@ -28,6 +28,9 @@ fn main() {
         Some(command) => match command {
             Commands::Cli => pomodorolm_lib::cli::run(CONFIG_DIR_NAME),
         },
-        None => pomodorolm_lib::run_gui(CONFIG_DIR_NAME),
+        None => {
+            pomodorolm_lib::run_gui(CONFIG_DIR_NAME);
+            Ok(())
+        }
     }
 }

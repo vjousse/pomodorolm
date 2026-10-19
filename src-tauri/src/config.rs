@@ -63,7 +63,7 @@ fn default_max_session_duration() -> u16 {
 
 impl Config {
     pub fn get_config_file_path(config_dir: &Path, config_file_name: Option<String>) -> PathBuf {
-        config_dir.join(config_file_name.unwrap_or("config.toml".to_string()))
+        config_dir.join(config_file_name.unwrap_or_else(|| "config.toml".to_string()))
     }
 
     pub fn get_or_create_from_disk(
@@ -72,15 +72,13 @@ impl Config {
     ) -> anyhow::Result<Self> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
 
+        let themes_dir = config_dir.join("themes/");
         // Create the config dir and the themes one if they don’t exist
-        fs::create_dir_all(config_dir.join("themes/")).context("Unable to creat themes dir")?;
+        fs::create_dir_all(&themes_dir)
+            .with_context(|| format!("creating {}", themes_dir.display()))?;
 
-        let metadata = fs::metadata(&config_file_path);
-
-        Ok(if metadata.is_err() {
-            let default_config = Config {
-                ..Default::default()
-            };
+        Ok(if !fs::exists(&config_file_path)? {
+            let default_config = Config::default();
 
             let file_content = toml::to_string(&default_config)?;
             fs::write(&config_file_path, file_content)
@@ -89,8 +87,10 @@ impl Config {
             default_config
         } else {
             // Open the file
-            let toml_str = fs::read_to_string(config_file_path)?;
-            toml::from_str(toml_str.as_str())?
+            let toml_str = fs::read_to_string(&config_file_path)
+                .with_context(|| format!("reading {}", config_file_path.display()))?;
+            toml::from_str(toml_str.as_str())
+                .with_context(|| format!("parsing {}", config_file_path.display()))?
         })
     }
 }

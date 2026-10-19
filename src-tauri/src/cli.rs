@@ -6,17 +6,18 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tokio::time::interval;
 
-pub fn run(config_dir_name: &str) {
+pub fn run(config_dir_name: &str) -> anyhow::Result<()> {
     let config_dir = dirs::config_dir()
         .expect("Error while getting the config directory")
         .join(config_dir_name);
 
-    let config =
-        Config::get_or_create_from_disk(&config_dir, None).expect("Unable to get config file");
+    let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     // Initialize the Tokio runtime
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(run_pomodoro_checker(config));
+
+    Ok(())
 }
 
 async fn run_pomodoro_checker(config: Config) {

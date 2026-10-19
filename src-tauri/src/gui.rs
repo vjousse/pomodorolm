@@ -621,7 +621,7 @@ async fn load_init_data(
     let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
-        .expect("Unable to resolve `themes/{}` resource.");
+        .context("resolving `themes/{}` resource.")?;
 
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
@@ -637,12 +637,21 @@ async fn load_init_data(
     let mut themes: Vec<Theme> = vec![];
 
     for path in themes_paths {
-        let file = fs::File::open(path.clone()).expect("file should open read only");
-        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
+        let file = fs::File::open(path.clone());
+        match file {
+            Ok(f) => {
+                let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(f);
 
-        match loaded_theme {
-            Ok(theme) => themes.push(Theme::from(theme)),
-            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+                match loaded_theme {
+                    Ok(theme) => themes.push(Theme::from(theme)),
+                    Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+                }
+            }
+            Err(err) => eprintln!(
+                "Impossible to read theme file {}: {:?}",
+                path.display(),
+                err
+            ),
         }
     }
 
