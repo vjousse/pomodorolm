@@ -639,7 +639,7 @@ async fn load_init_data(
     );
 
     if let Ok(path) = custom_themes_path {
-        themes_paths.extend_from_slice(&get_themes_for_directory(path));
+        themes_paths.extend(get_themes_for_directory(path));
     }
 
     let themes: Vec<Theme> = themes_paths
