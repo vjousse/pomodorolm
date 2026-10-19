@@ -638,8 +638,11 @@ async fn load_init_data(
         BaseDirectory::Config,
     );
 
-    if let Ok(path) = custom_themes_path {
-        themes_paths.extend(get_themes_for_directory(path));
+    match custom_themes_path {
+        Ok(path) => themes_paths.extend(get_themes_for_directory(path)),
+        Err(e) => {
+            eprintln!("Unable to resolve custom themes directory, skipping custom themes: {e}")
+        }
     }
 
     let themes: Vec<Theme> = themes_paths
