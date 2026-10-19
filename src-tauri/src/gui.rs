@@ -12,8 +12,6 @@ use crate::sound;
 use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::AppHandle;
@@ -582,16 +580,10 @@ async fn update_config(
 
     let config_file_pathbuf =
         get_config_file_path(&state_guard.config_dir_name, app_handle.path())?;
+    let file_content = toml::to_string(&config)?;
 
-    let mut file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&config_file_pathbuf)
-        .context("Error opening config file on update")?;
-
-    file.write_all(toml::to_string(&config).unwrap().as_bytes())?;
+    fs::write(&config_file_pathbuf, file_content)
+        .with_context(|| format!("writing {}", config_file_pathbuf.display()))?;
 
     *state_guard = App {
         config: config.clone(),
@@ -603,8 +595,8 @@ async fn update_config(
     };
 
     // Manage autostart status
-    if manage_autostart(&app_handle, config.system_startup_auto_start).is_err() {
-        eprintln!("Failed to manage autostart while updating config");
+    if let Err(e) = manage_autostart(&app_handle, config.system_startup_auto_start) {
+        eprintln!("Failed to manage autostart: {e:#}");
     }
 
     if let Some(window) = app_handle.get_webview_window("main") {
