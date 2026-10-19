@@ -642,14 +642,14 @@ async fn load_init_data(
         themes_paths.extend_from_slice(&get_themes_for_directory(path));
     }
 
-    let mut themes: Vec<Theme> = vec![];
-
-    for path in themes_paths {
-        match load_theme(&path) {
-            Ok(theme) => themes.push(theme),
-            Err(e) => eprintln!("Skipping theme: {e:#}"),
-        }
-    }
+    let themes: Vec<Theme> = themes_paths
+        .iter()
+        .filter_map(|path| {
+            load_theme(path)
+                .inspect_err(|e| eprintln!("Skipping theme: {e:#}"))
+                .ok()
+        })
+        .collect();
 
     Ok((config, themes, state_guard.pomodoro.to_unborrowed()))
 }

@@ -9,7 +9,7 @@ use tokio::time::interval;
 
 pub fn run(config_dir_name: &str) -> anyhow::Result<()> {
     let config_dir = dirs::config_dir()
-        .context("getting the sytem config directory")?
+        .context("getting the system config directory")?
         .join(config_dir_name);
 
     let config = Config::get_or_create_from_disk(&config_dir, None)?;
