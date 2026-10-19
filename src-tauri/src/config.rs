@@ -1,8 +1,7 @@
 use crate::pomodoro;
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,38 +63,34 @@ fn default_max_session_duration() -> u16 {
 
 impl Config {
     pub fn get_config_file_path(config_dir: &Path, config_file_name: Option<String>) -> PathBuf {
-        config_dir.join(config_file_name.unwrap_or("config.toml".to_string()))
+        config_dir.join(config_file_name.unwrap_or_else(|| "config.toml".to_string()))
     }
 
     pub fn get_or_create_from_disk(
         config_dir: &Path,
         config_file_name: Option<String>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<Self> {
         let config_file_path = Self::get_config_file_path(config_dir, config_file_name);
 
+        let themes_dir = config_dir.join("themes/");
         // Create the config dir and the themes one if they don’t exist
-        let _ = fs::create_dir_all(config_dir.join("themes/"));
+        fs::create_dir_all(&themes_dir)
+            .with_context(|| format!("creating {}", themes_dir.display()))?;
 
-        let metadata = fs::metadata(&config_file_path);
+        Ok(if !fs::exists(&config_file_path)? {
+            let default_config = Config::default();
 
-        Ok(if metadata.is_err() {
-            let mut file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(config_file_path)?;
+            let file_content = toml::to_string(&default_config)?;
+            fs::write(&config_file_path, file_content)
+                .with_context(|| format!("writing {}", config_file_path.display()))?;
 
-            let default_config = Config {
-                ..Default::default()
-            };
-
-            file.write_all(toml::to_string(&default_config)?.as_bytes())?;
             default_config
         } else {
             // Open the file
-            let toml_str = fs::read_to_string(config_file_path)?;
-            toml::from_str(toml_str.as_str())?
+            let toml_str = fs::read_to_string(&config_file_path)
+                .with_context(|| format!("reading {}", config_file_path.display()))?;
+            toml::from_str(toml_str.as_str())
+                .with_context(|| format!("parsing {}", config_file_path.display()))?
         })
     }
 }

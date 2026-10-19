@@ -203,7 +203,9 @@ app.ports.minimizeWindow.subscribe(function () {
 });
 
 app.ports.closeWindow.subscribe(function () {
-  invoke("close_window");
+  invoke("close_window").catch((err) => {
+    console.error("close_window failed:", err);
+  });
 });
 
 app.ports.notify.subscribe(function (notification: Notification) {
@@ -313,9 +315,13 @@ app.ports.sendMessageFromElm.subscribe(async function (message: Message) {
           tick_sounds_during_break: config.tickSoundsDuringBreak,
           volume: config.volume,
         },
-      }).then((newState) => {
-        app.ports.sendMessageToElm.send(newState);
-      });
+      })
+        .then((newState) => {
+          app.ports.sendMessageToElm.send(newState);
+        })
+        .catch((err) => {
+          console.error("update_config failed:", err);
+        });
       break;
 
     default:

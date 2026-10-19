@@ -2,16 +2,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 // Fix for https://github.com/tauri-apps/tauri/issues/12382
 #![allow(deprecated)]
+use anyhow::Context;
 
 use crate::config::Config;
+use crate::error::CommandResult;
 use crate::icon;
 use crate::pomodoro;
 use crate::sound;
 use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::AppHandle;
@@ -360,10 +361,7 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
         .expect("error while running tauri application");
 }
 
-fn manage_autostart(
-    app_handle: &AppHandle,
-    system_startup_auto_start: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn manage_autostart(app_handle: &AppHandle, system_startup_auto_start: bool) -> anyhow::Result<()> {
     #[cfg(desktop)]
     {
         use tauri_plugin_autostart::ManagerExt;
@@ -373,9 +371,9 @@ fn manage_autostart(
 
         if system_startup_auto_start != autostart_manager.is_enabled()? {
             if system_startup_auto_start {
-                let _ = autostart_manager.enable();
+                autostart_manager.enable()?;
             } else {
-                let _ = autostart_manager.disable();
+                autostart_manager.disable()?;
             }
         }
     }
@@ -385,7 +383,7 @@ fn manage_autostart(
 fn read_config_from_disk<R: Runtime>(
     config_dir_name: &str,
     app_path: &tauri::path::PathResolver<R>,
-) -> Result<Config, Box<dyn std::error::Error>> {
+) -> anyhow::Result<Config> {
     let config_dir = get_config_dir(config_dir_name, app_path)?;
 
     Config::get_or_create_from_disk(&config_dir, None)
@@ -578,69 +576,60 @@ async fn update_config(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
     config: Config,
-) -> Result<pomodoro::PomodoroUnborrowed, ()> {
+) -> CommandResult<pomodoro::PomodoroUnborrowed> {
     let mut state_guard = state.0.lock().await;
 
-    match get_config_file_path(&state_guard.config_dir_name, app_handle.path()) {
-        Ok(config_file_pathbuf) => {
-            let config_file_path = config_file_pathbuf.to_string_lossy().to_string();
+    let config_file_pathbuf =
+        get_config_file_path(&state_guard.config_dir_name, app_handle.path())?;
+    let file_content = toml::to_string(&config)?;
 
-            let file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(config_file_path);
+    tokio::fs::write(&config_file_pathbuf, file_content)
+        .await
+        .with_context(|| format!("writing {}", config_file_pathbuf.display()))?;
 
-            // FIX: We should not fail silently and we should hanlde the errors properly
-            let _: Result<(), _> = match file {
-                Ok(mut f) => {
-                    let _ = f.write_all(toml::to_string(&config).unwrap().as_bytes());
+    *state_guard = App {
+        config: config.clone(),
+        config_dir_name: state_guard.config_dir_name.clone(),
+        pomodoro: pomodoro::Pomodoro {
+            config: pomodoro_config(&config),
+            ..state_guard.pomodoro.clone()
+        },
+    };
 
-                    *state_guard = App {
-                        config: config.clone(),
-                        config_dir_name: state_guard.config_dir_name.clone(),
-                        pomodoro: pomodoro::Pomodoro {
-                            config: pomodoro_config(&config),
-                            ..state_guard.pomodoro.clone()
-                        },
-                    };
+    // Manage autostart status
+    if let Err(e) = manage_autostart(&app_handle, config.system_startup_auto_start) {
+        eprintln!("Failed to manage autostart: {e:#}");
+    }
 
-                    // Manage autostart status
-                    let _ = manage_autostart(&app_handle, config.system_startup_auto_start);
-
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.set_always_on_top(config.always_on_top);
-                    }
-
-                    Ok::<(), ()>(())
-                }
-                Err(_) => {
-                    println!("Error opening config file on update");
-                    Ok(())
-                }
-            };
-        }
-        Err(e) => eprintln!("Unable to get config file path: {e:?}."),
+    if let Some(window) = app_handle.get_webview_window("main")
+        && let Err(e) = window.set_always_on_top(config.always_on_top)
+    {
+        eprintln!("Failed to set window always on top : {e:#}");
     }
 
     Ok(state_guard.pomodoro.to_unborrowed())
+}
+
+fn load_theme(path: &Path) -> anyhow::Result<Theme> {
+    let file = fs::File::open(path).with_context(|| format!("opening {}", path.display()))?;
+    let json_theme: JsonTheme =
+        serde_json::from_reader(file).with_context(|| format!("parsing {}", path.display()))?;
+    Ok(Theme::from(json_theme))
 }
 
 #[tauri::command]
 async fn load_init_data(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
-) -> Result<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed), ()> {
+) -> CommandResult<(Config, Vec<Theme>, pomodoro::PomodoroUnborrowed)> {
     let state_guard = state.0.lock().await;
 
-    let config_dir =
-        get_config_dir(&state_guard.config_dir_name, app_handle.path()).map_err(|_| ())?;
+    let config_dir = get_config_dir(&state_guard.config_dir_name, app_handle.path())?;
 
-    let config = Config::get_or_create_from_disk(&config_dir, None).map_err(|_| ());
+    let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
-        .expect("Unable to resolve `themes/{}` resource.");
+        .context("resolving `themes/` resource")?;
 
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
@@ -649,23 +638,23 @@ async fn load_init_data(
         BaseDirectory::Config,
     );
 
-    if let Ok(path) = custom_themes_path {
-        themes_paths.extend_from_slice(&get_themes_for_directory(path));
-    }
-
-    let mut themes: Vec<Theme> = vec![];
-
-    for path in themes_paths {
-        let file = fs::File::open(path.clone()).expect("file should open read only");
-        let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(file);
-
-        match loaded_theme {
-            Ok(theme) => themes.push(Theme::from(theme)),
-            Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
+    match custom_themes_path {
+        Ok(path) => themes_paths.extend(get_themes_for_directory(path)),
+        Err(e) => {
+            eprintln!("Unable to resolve custom themes directory, skipping custom themes: {e}")
         }
     }
 
-    config.map(|c| (c, themes, state_guard.pomodoro.to_unborrowed()))
+    let themes: Vec<Theme> = themes_paths
+        .iter()
+        .filter_map(|path| {
+            load_theme(path)
+                .inspect_err(|e| eprintln!("Skipping theme: {e:#}"))
+                .ok()
+        })
+        .collect();
+
+    Ok((config, themes, state_guard.pomodoro.to_unborrowed()))
 }
 
 #[tauri::command]
@@ -759,12 +748,14 @@ fn hide_window<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-async fn close_window(app_handle: tauri::AppHandle) {
+async fn close_window(app_handle: tauri::AppHandle) -> CommandResult<()> {
     let window = app_handle
         .get_webview_window("main")
-        .expect("window not found");
+        .context("window not found")?;
 
-    window.close().expect("failed to close window");
+    window.close().context("failed to close window")?;
+
+    Ok(())
 }
 
 #[tauri::command]

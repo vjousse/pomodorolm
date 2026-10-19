@@ -1,22 +1,24 @@
 extern crate dirs;
 use crate::config::Config;
 
+use anyhow::Context;
 use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tokio::time::interval;
 
-pub fn run(config_dir_name: &str) {
+pub fn run(config_dir_name: &str) -> anyhow::Result<()> {
     let config_dir = dirs::config_dir()
-        .expect("Error while getting the config directory")
+        .context("getting the system config directory")?
         .join(config_dir_name);
 
-    let config =
-        Config::get_or_create_from_disk(&config_dir, None).expect("Unable to get config file");
+    let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     // Initialize the Tokio runtime
-    let rt = tokio::runtime::Runtime::new().unwrap();
+    let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(run_pomodoro_checker(config));
+
+    Ok(())
 }
 
 async fn run_pomodoro_checker(config: Config) {
