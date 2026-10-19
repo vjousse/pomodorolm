@@ -582,7 +582,8 @@ async fn update_config(
         get_config_file_path(&state_guard.config_dir_name, app_handle.path())?;
     let file_content = toml::to_string(&config)?;
 
-    fs::write(&config_file_pathbuf, file_content)
+    tokio::fs::write(&config_file_pathbuf, file_content)
+        .await
         .with_context(|| format!("writing {}", config_file_pathbuf.display()))?;
 
     *state_guard = App {
@@ -599,8 +600,10 @@ async fn update_config(
         eprintln!("Failed to manage autostart: {e:#}");
     }
 
-    if let Some(window) = app_handle.get_webview_window("main") {
-        let _ = window.set_always_on_top(config.always_on_top);
+    if let Some(window) = app_handle.get_webview_window("main")
+        && let Err(e) = window.set_always_on_top(config.always_on_top)
+    {
+        eprintln!("Failed to set window always on top : {e:#}");
     }
 
     Ok(state_guard.pomodoro.to_unborrowed())
