@@ -12,6 +12,7 @@ use crate::sound;
 use pomodoro::{Pomodoro, SessionStatus, SessionType};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::AppHandle;
@@ -609,6 +610,13 @@ async fn update_config(
     Ok(state_guard.pomodoro.to_unborrowed())
 }
 
+fn load_theme(path: &Path) -> anyhow::Result<Theme> {
+    let file = fs::File::open(path).with_context(|| format!("opening {}", path.display()))?;
+    let json_theme: JsonTheme =
+        serde_json::from_reader(file).with_context(|| format!("parsing {}", path.display()))?;
+    Ok(Theme::from(json_theme))
+}
+
 #[tauri::command]
 async fn load_init_data(
     state: tauri::State<'_, AppState>,
@@ -621,7 +629,7 @@ async fn load_init_data(
     let config = Config::get_or_create_from_disk(&config_dir, None)?;
 
     let theme_resource_path = resolve_resource_path(&app_handle, String::from("themes/"))
-        .context("resolving `themes/{}` resource.")?;
+        .context("resolving `themes/` resource")?;
 
     let mut themes_paths: Vec<PathBuf> = get_themes_for_directory(theme_resource_path);
 
@@ -637,21 +645,9 @@ async fn load_init_data(
     let mut themes: Vec<Theme> = vec![];
 
     for path in themes_paths {
-        let file = fs::File::open(path.clone());
-        match file {
-            Ok(f) => {
-                let loaded_theme: Result<JsonTheme, serde_json::Error> = serde_json::from_reader(f);
-
-                match loaded_theme {
-                    Ok(theme) => themes.push(Theme::from(theme)),
-                    Err(err) => eprintln!("Impossible to read JSON {}: {:?}", path.display(), err),
-                }
-            }
-            Err(err) => eprintln!(
-                "Impossible to read theme file {}: {:?}",
-                path.display(),
-                err
-            ),
+        match load_theme(&path) {
+            Ok(theme) => themes.push(theme),
+            Err(e) => eprintln!("Skipping theme: {e:#}"),
         }
     }
 
