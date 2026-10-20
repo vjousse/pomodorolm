@@ -57,3 +57,15 @@ strip = true # Ensures debug symbols are removed.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Enable KSNI backend for tray-icon (instead of libappindicator) to handle clicks on Linux
+# See https://github.com/vjousse/pomodorolm/issues/170
+tray-icon = { version = "0.25", default-features = false, features = ["ksni"] }
+
+# Backport of two KSNI fixes released in tray-icon 0.26 onto 0.25.1:
+# - 3e67801 (#372): wait for a StatusNotifierWatcher that starts after the app
+# - fd14a51 (#379): don't own a D-Bus name when running in Flatpak/Snap
+# Remove once tauri depends on tray-icon >= 0.26 (see `cargo tree -i tray-icon`).
+[patch.crates-io]
+tray-icon = { git = "https://github.com/vjousse/tray-icon", branch = "pomodorolm-0.25-backport" }
