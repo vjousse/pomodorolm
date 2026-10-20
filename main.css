@@ -301,7 +301,7 @@ input:focus {
 .slider-bar {
   position: absolute;
   height: 0.83vw;
-  top: calc(50% + 0.83vw);
+  top: calc(50% + 1vw);
 }
 .slider-bar--blue {
   background-color: var(--color-long-round);
