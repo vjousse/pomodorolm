@@ -57,3 +57,8 @@ strip = true # Ensures debug symbols are removed.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Enable KSNI backend for tray-icon (instead of libappindicator) to handle clicks on Linux
+# See https://github.com/vjousse/pomodorolm/issues/170
+tray-icon = { version = "0.25", default-features = false, features = ["ksni"] }

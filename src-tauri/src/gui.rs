@@ -18,7 +18,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri::Runtime;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
-use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, path::BaseDirectory};
 use tokio::sync::Mutex;
 use tokio::time; // 1.3.0 //
@@ -196,6 +196,37 @@ fn get_config_dir<R: Runtime>(
     path.resolve(format!("{config_dir_name}/"), BaseDirectory::Config)
 }
 
+fn toggle_main_window_visibility<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("main") {
+        let new_title = if window.is_visible().unwrap_or_default() {
+            #[cfg(target_os = "macos")]
+            let _ = app.hide();
+            #[cfg(not(target_os = "macos"))]
+            let _ = window.hide();
+            "Show"
+        } else {
+            #[cfg(target_os = "macos")]
+            let _ = app.show();
+            let _ = window.show();
+            let _ = window.set_focus();
+            "Hide"
+        };
+
+        let state: tauri::State<'_, AppMenuStates<R>> = app.state();
+
+        let state_guard = state.0.lock();
+        match state_guard {
+            Ok(guard) => {
+                let set_text_result = guard.toggle_visibility_menu.set_text(new_title);
+                if let Err(e) = set_text_result {
+                    eprintln!("Error setting MenuItem title: {e:?}.");
+                }
+            }
+            Err(e) => eprintln!("Error getting state lock: {e:?}."),
+        };
+    }
+}
+
 pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
     let config_dir_name_owned = config_dir_name.to_string();
 
@@ -233,20 +264,19 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
                 .item(&quit)
                 .build()?;
 
-            let _ = TrayIconBuilder::with_id("app-tray")
+            if let Err(e) = TrayIconBuilder::with_id("app-tray")
                 .menu(&tray_menu)
+                // Let me handle the left click
+                .show_menu_on_left_click(false)
                 .on_tray_icon_event(|tray, event| {
                     // Doesn’t work on Linux for now due to tauri limitations
-                    if let TrayIconEvent::DoubleClick {
+                    if let TrayIconEvent::Click {
                         button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        toggle_main_window_visibility(tray.app_handle());
                     }
                 })
                 .on_menu_event(move |app, event| match event.id().as_ref() {
@@ -264,39 +294,14 @@ pub fn run_app<R: Runtime>(config_dir_name: &str, _builder: tauri::Builder<R>) {
                         }
                     }
                     "toggle_visibility" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let new_title = if window.is_visible().unwrap_or_default() {
-                                #[cfg(target_os = "macos")]
-                                let _ = app.hide();
-                                #[cfg(not(target_os = "macos"))]
-                                let _ = window.hide();
-                                "Show"
-                            } else {
-                                #[cfg(target_os = "macos")]
-                                let _ = app.show();
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                                "Hide"
-                            };
-
-                            let state: tauri::State<'_, AppMenuStates<R>> = app.state();
-
-                            let state_guard = state.0.lock();
-                            match state_guard {
-                                Ok(guard) => {
-                                    let set_text_result =
-                                        guard.toggle_visibility_menu.set_text(new_title);
-                                    if let Err(e) = set_text_result {
-                                        eprintln!("Error setting MenuItem title: {e:?}.");
-                                    }
-                                }
-                                Err(e) => eprintln!("Error getting state lock: {e:?}."),
-                            };
-                        }
+                        toggle_main_window_visibility(app);
                     }
                     _ => (),
                 })
-                .build(app);
+                .build(app)
+            {
+                eprintln!("Unable to create tray icon: {e}");
+            }
 
             let config = read_config_from_disk(&config_dir_name_owned, app.path())?;
 
