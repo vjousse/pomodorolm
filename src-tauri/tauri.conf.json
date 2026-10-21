@@ -36,7 +36,11 @@
     "shortDescription": "",
     "linux": {
       "deb": {
-        "depends": []
+        "depends": [],
+        "desktopTemplate": "linux/main.desktop"
+      },
+      "rpm": {
+        "desktopTemplate": "linux/main.desktop"
       }
     }
   },
@@ -52,7 +56,7 @@
         "fullscreen": false,
         "height": 478,
         "resizable": true,
-        "title": "Pomodorolm",
+        "title": "Concentré",
         "width": 360,
         "decorations": false
       }

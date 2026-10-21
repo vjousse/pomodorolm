@@ -30,6 +30,6 @@ If applicable, add screenshots to help explain your problem.
 ## ⚙️ Additional context
 Add any other context about the problem here.
 
-## 🍅 Pomodorolm information
-How did you install pomodorolm?
+## ⏱️ Concentré information
+How did you install Concentré?
 What version number are you using? (click on the top left menu, and the the ℹ️ icon at the bottom right)
