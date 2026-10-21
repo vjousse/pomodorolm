@@ -1,14 +1,16 @@
 # check https://github.com/BlueBubblesApp/bluebubbles-app/blob/3f659afcb06e0b5766b4f1fc74cabc98c9498359/snap/snapcraft.yaml#L34
 name: pomodorolm
+# Display name in the Snap Store; `name` is the technical id and cannot be changed
+title: Concentré
 base: core24
 platforms:
   amd64:
   arm64:
 
 version: "0.9.3"
-summary: A simple, good looking and multi-platform pomodoro tracker
+summary: Focus timer with a visual countdown and tray icon
 description: |
-  Pomodorolm is a simple and configurable Pomodoro timer. It aims to provide a visually-pleasing and reliable way to track productivity using the Pomodoro Technique.
+  Concentré (formerly Pomodorolm) is a simple and configurable focus timer. Work in focused rounds, take short breaks between them, and a longer break every few rounds. The timer circle and the tray icon change color as time runs out, so the remaining time is always visible.
 
 grade: stable
 confinement: strict

@@ -52,7 +52,7 @@ navView { onWindowMinimize, onDrawerToggle, onWindowClose } drawerOpen =
                     ]
                 ]
             ]
-        , h1 [ class "title", attribute "data-tauri-drag-region" "" ] [ text "Pomodorolm" ]
+        , h1 [ class "title", attribute "data-tauri-drag-region" "" ] [ text "Concentré" ]
         , div [ class "icon-group" ]
             [ div [ class "icon-wrapper icon-wrapper--titlebar icon-wrapper--double--left", style "padding-left" "5vw", onClick onWindowMinimize ]
                 [ svg

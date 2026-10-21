@@ -1,0 +1,13 @@
+[Desktop Entry]
+Categories={{categories}}
+Comment=Focus timer with a visual countdown and tray icon
+Exec={{exec}}
+StartupWMClass={{exec}}
+Icon={{icon}}
+Name=Concentré
+Keywords=focus;timer;concentration;productivity;pomodoro;concentre;pomodorolm;
+Terminal=false
+Type=Application
+{{#if mime_type}}
+MimeType={{mime_type}}
+{{/if}}

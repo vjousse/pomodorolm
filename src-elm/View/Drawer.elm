@@ -713,7 +713,8 @@ aboutSettingView appVersion =
     div [ class "container", id "about" ]
         [ p [ class "drawer-heading" ] [ text "About" ]
         , section []
-            [ h2 [] [ text "Pomodorolm" ]
+            [ h2 [] [ text "Concentré" ]
+            , p [ class "label" ] [ text "Formerly Pomodorolm" ]
             , p [ class "label" ]
                 [ text <| "Version: " ++ appVersion ++ " "
                 , a
@@ -734,7 +735,7 @@ aboutSettingView appVersion =
                     [ text "Licence, Documentation and Source Code" ]
                 ]
             , p [ class "label", style "padding-top" "2em" ]
-                [ text "❤️ Support Pomodorolm"
+                [ text "❤️ Support Concentré"
                 ]
             , p [ class "label" ]
                 [ a
