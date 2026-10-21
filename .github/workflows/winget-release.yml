@@ -10,10 +10,49 @@ on:
         required: true
         default: "app-v0.7.0"
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   publish:
     runs-on: windows-latest
     steps:
+      # The release can be published while publish-to-auto-release.yml is still
+      # building and (re)uploading assets. Wait for every run of that workflow to
+      # be over, so komac hashes the final setup.exe and not a soon-to-be-replaced one.
+      - name: Wait for Tauri builds to finish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 60); do
+            running=$(gh run list -R "$GITHUB_REPOSITORY" \
+              --workflow publish-to-auto-release.yml \
+              --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$running" = "0" ]; then
+              echo "No build in progress, going on."
+              exit 0
+            fi
+            echo "$running build run(s) still in progress, waiting 30s…"
+            sleep 30
+          done
+          echo "Builds still running after 30 minutes, giving up."
+          exit 1
+
+      # Fail early if the Windows installer is not attached to the release
+      - name: Check setup.exe is present
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag_name || github.event.release.tag_name }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[] | select(.name | endswith("setup.exe")) | "\(.name) \(.digest)"' \
+            | tee assets.txt
+          [ -s assets.txt ] || { echo "No setup.exe asset on $TAG"; exit 1; }
+
       # use regex to transform the tag to a semantical versioning number
       - name: Get Clean Version
         id: get_version
