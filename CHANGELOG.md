@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[app-v0.9.3](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.3)] - 2026-10-21
+
+### 🐛 Bug Fixes
+
+- Slider gap in settings ([#342](https://github.com/vjousse/pomodorolm/issues/342))
+- Handle left click on Linux ([#343](https://github.com/vjousse/pomodorolm/issues/343))
+
+### 🚜 Refactor
+
+- Elm code re-organization and best practices ([#338](https://github.com/vjousse/pomodorolm/issues/338))
+- Enhance rust error handling ([#340](https://github.com/vjousse/pomodorolm/issues/340))
+
+### ⚙️ Miscellaneous Tasks
+
+- Fix python import
+- Update AUR checksum
+- Update flatpak runtime to 51 ([#337](https://github.com/vjousse/pomodorolm/issues/337))
+
 ## [[app-v0.9.2](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.2)] - 2026-10-15
 
 ### 🐛 Bug Fixes
@@ -22,6 +40,7 @@ All notable changes to this project will be documented in this file.
 - Add ko-fi to funding ([#330](https://github.com/vjousse/pomodorolm/issues/330))
 - Add donation links ([#334](https://github.com/vjousse/pomodorolm/issues/334))
 - Update deps ([#336](https://github.com/vjousse/pomodorolm/issues/336))
+- Bump to 0.9.2
 
 ## [[app-v0.9.1](https://github.com/vjousse/pomodorolm/releases/tag/app-v0.9.1)] - 2026-04-19
 
